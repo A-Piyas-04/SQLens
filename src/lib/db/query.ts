@@ -31,3 +31,10 @@ export async function runQuery(sql: string): Promise<QueryResult> {
     };
   }
 }
+
+export async function resetDatabase() {
+  await db.exec(`
+    DROP SCHEMA public CASCADE;
+    CREATE SCHEMA public;
+  `);
+}
