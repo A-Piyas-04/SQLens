@@ -1,15 +1,19 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { sql } from "@codemirror/lang-sql";
 import { keymap, type ViewUpdate } from "@codemirror/view";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import Panel from "../common/Panel";
+import { QueryToolbarHint } from "../features/QueryToolbar";
 
 type Props = {
   value: string;
   onChange: (value: string) => void;
   onSelectionChange?: (selectedText: string) => void;
   onRun?: () => void;
+  /** Run / Reset controls rendered in the panel header (top right) */
+  toolbar?: ReactNode;
+  hasSelection?: boolean;
 };
 
 export default function SqlEditor({
@@ -17,14 +21,14 @@ export default function SqlEditor({
   onChange,
   onSelectionChange,
   onRun,
+  toolbar,
+  hasSelection = false,
 }: Props) {
-  // Stable ref so the keymap extension never stales across renders
   const onRunRef = useRef(onRun);
   useEffect(() => {
     onRunRef.current = onRun;
   }, [onRun]);
 
-  // Extensions are created once — keymap reads from the ref at call time
   const extensions = useMemo(
     () => [
       sql(),
@@ -53,7 +57,7 @@ export default function SqlEditor({
   }
 
   return (
-    <Panel title="SQL Editor" interactive>
+    <Panel title="SQL Editor" action={toolbar} interactive>
       <div className="overflow-hidden rounded-lg border border-slate-700/80 transition-colors duration-200 hover:border-slate-600/80">
         <CodeMirror
           value={value}
@@ -64,6 +68,7 @@ export default function SqlEditor({
           onUpdate={handleUpdate}
         />
       </div>
+      <QueryToolbarHint hasSelection={hasSelection} />
     </Panel>
   );
 }

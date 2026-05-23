@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "../../lib/utils/cn";
 
 type Props = {
+  id?: string;
   title?: string;
   action?: ReactNode;
   children: ReactNode;
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function Panel({
+  id,
   title,
   action,
   children,
@@ -19,6 +21,7 @@ export default function Panel({
 }: Props) {
   return (
     <section
+      id={id}
       className={cn(
         "rounded-xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-sm",
         "shadow-lg shadow-slate-950/30",

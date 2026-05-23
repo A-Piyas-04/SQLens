@@ -9,6 +9,7 @@ import QueryToolbar from "./components/features/QueryToolbar";
 import StatusMessage from "./components/common/StatusMessage";
 import Panel from "./components/common/Panel";
 import ErdViewer from "./components/erd/ErdViewer";
+import ErdScrollButton from "./components/layout/ErdScrollButton";
 import ProjectSwitcher from "./components/projects/ProjectSwitcher";
 import { useActiveProject } from "./hooks/useActiveProject";
 import { useResizablePanel } from "./hooks/useResizablePanel";
@@ -28,6 +29,7 @@ export default function App() {
   } = useActiveProject();
 
   const workspace = useSqlWorkspace(db, activeProject?.id ?? "");
+  const hasSelection = !!workspace.selectedText.trim();
 
   const sidebar = (
     <div className="flex h-full flex-col gap-4">
@@ -70,13 +72,19 @@ export default function App() {
             onChange={workspace.setQuery}
             onSelectionChange={workspace.setSelectedText}
             onRun={workspace.handleRunQuery}
-          />
-
-          <QueryToolbar
-            isRunning={workspace.isRunning}
-            hasSelection={!!workspace.selectedText.trim()}
-            onRun={workspace.handleRunQuery}
-            onReset={workspace.handleResetDatabase}
+            hasSelection={hasSelection}
+            toolbar={
+              <div className="flex items-center gap-2">
+                <ErdScrollButton className="mr-10" />
+                <QueryToolbar
+                  variant="header"
+                  isRunning={workspace.isRunning}
+                  hasSelection={hasSelection}
+                  onRun={workspace.handleRunQuery}
+                  onReset={workspace.handleResetDatabase}
+                />
+              </div>
+            }
           />
 
           <LoadingBanner isVisible={workspace.isRunning} />
@@ -89,14 +97,18 @@ export default function App() {
             <StatusMessage variant="success" message={workspace.message} />
           ) : null}
 
+          <ResultTable rows={workspace.rows} />
+
           <QueryHistory
             items={workspace.history}
             onSelect={workspace.loadHistoryItem}
           />
 
-          <ResultTable rows={workspace.rows} />
-
-          <Panel title="Entity Relationship Diagram">
+          <Panel
+            id="erd-section"
+            title="Entity Relationship Diagram"
+            className="scroll-mt-6"
+          >
             <ErdViewer tables={workspace.tables} />
           </Panel>
         </WorkspaceLayout>
