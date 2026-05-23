@@ -65,10 +65,16 @@ export default function App() {
           onResizeStart={onResizeStart}
           sidebar={sidebar}
         >
-          <SqlEditor value={workspace.query} onChange={workspace.setQuery} />
+          <SqlEditor
+            value={workspace.query}
+            onChange={workspace.setQuery}
+            onSelectionChange={workspace.setSelectedText}
+            onRun={workspace.handleRunQuery}
+          />
 
           <QueryToolbar
             isRunning={workspace.isRunning}
+            hasSelection={!!workspace.selectedText.trim()}
             onRun={workspace.handleRunQuery}
             onReset={workspace.handleResetDatabase}
           />

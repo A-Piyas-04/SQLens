@@ -15,6 +15,7 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   const [query, setQuery] = useState(
     () => getProjectDraft(projectId) || DEFAULT_QUERY
   );
+  const [selectedText, setSelectedText] = useState("");
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -25,7 +26,7 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   const [tables, setTables] = useState<SchemaTable[]>([]);
   const [, startUiTransition] = useTransition();
 
-  // Keep a ref so async callbacks always read the latest projectId/db
+  // Refs so async callbacks always see the latest values without stale closures
   const projectIdRef = useRef(projectId);
   const dbRef = useRef(db);
   useEffect(() => {
@@ -48,6 +49,7 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     withViewTransition(() => {
       startUiTransition(() => {
         setQuery(draft || DEFAULT_QUERY);
+        setSelectedText("");
         setRows([]);
         setError("");
         setMessage("");
@@ -58,26 +60,32 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     void refreshSchema();
   }, [projectId, refreshSchema, startUiTransition]);
 
-  // Persist editor draft whenever the query changes
+  // Persist editor draft on every change
   useEffect(() => {
     setProjectDraft(projectId, query);
   }, [projectId, query]);
 
   async function handleRunQuery() {
+    // Prefer selected text; fall back to the full editor content
+    const sqlToRun = selectedText.trim() || query;
+    const isPartial = !!selectedText.trim();
+
     setError("");
     setMessage("");
     setIsRunning(true);
 
-    const result = await runQuery(dbRef.current, query);
+    const result = await runQuery(dbRef.current, sqlToRun);
 
     if (result.success) {
       withViewTransition(() => {
         startUiTransition(() => {
           setRows(result.rows);
-          setMessage(result.message ?? "Query executed successfully.");
+          const baseMessage = result.message ?? "Query executed successfully.";
+          setMessage(isPartial ? `${baseMessage} (selection)` : baseMessage);
         });
       });
-      saveQueryToHistory(projectIdRef.current, query);
+      // Save the actual SQL that was executed to history
+      saveQueryToHistory(projectIdRef.current, sqlToRun);
       setHistory(getQueryHistory(projectIdRef.current));
       await refreshSchema();
     } else {
@@ -115,6 +123,8 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   return {
     query,
     setQuery,
+    selectedText,
+    setSelectedText,
     rows,
     error,
     message,

@@ -21,6 +21,8 @@ Users can currently:
 - ✅ Terminal-style loading banner during query execution
 - ✅ Mobile-responsive layout (stacked sidebar, responsive header and buttons)
 - ✅ Interactive ERD viewer — live schema visualised as a React Flow graph with FK arrows, zoom, pan, fit view, and minimap
+- ✅ Project workspaces — isolated PGlite databases per project with independent schema, ERD, history, and editor draft
+- ✅ Selected query runner — run only selected SQL (or fall back to full editor content); Ctrl+Enter shortcut
 
 ---
 
@@ -34,7 +36,7 @@ All core features shipped. Database persists via IndexedDB (PGlite). Schema extr
 
 **Shipped.** An interactive, live Entity Relationship Diagram rendered beside the query workspace.
 
-### What was built
+### Phase 1.5a — ERD Viewer v1
 
 | File | Purpose |
 |------|---------|
@@ -45,20 +47,35 @@ All core features shipped. Database persists via IndexedDB (PGlite). Schema extr
 | `src/App.tsx` | ERD panel added below the results table, receives `workspace.tables` |
 | `src/index.css` | Dark-theme CSS variable overrides for ReactFlow Controls and MiniMap |
 
-### Capabilities
+Capabilities: live schema refresh, zoom/pan/fit-view, minimap, FK arrows with labels, PK/FK column badges, empty-state message. No export, no manual editing, no AI (intentionally scoped out).
 
-- Live refresh: ERD rebuilds automatically after every query run or DB reset
-- Zoom / pan / fit-view (Controls toolbar)
-- Minimap in the bottom-right corner
-- FK arrows (`smoothstep` edges with arrow markers) labelled `column → referenced_column`
-- Per-column PK badge (amber) and FK badge (green)
-- Empty state message when no tables exist
-- Dot-grid background matching the dark slate palette
-- No PNG/PDF export, no manual editing, no AI features (intentionally scoped out)
+**Dependency added:** `@xyflow/react` (MIT)
 
-### Dependencies added
+### Phase 1.5b — Project Workspaces
 
-- `@xyflow/react` — React Flow v1 (MIT)
+| File | Purpose |
+|------|---------|
+| `src/lib/projects/projectStore.ts` | `Project` type, CRUD, draft/history localStorage keys, `ensureDefaultProject()` |
+| `src/lib/db/createDatabase.ts` | Module-level PGlite instance registry — `getDatabase(projectId)` |
+| `src/hooks/useActiveProject.ts` | React state for project list + active project + live `db` instance |
+| `src/components/projects/ProjectSwitcher.tsx` | Sidebar dropdown: switch, inline rename, inline delete-confirm, new project |
+| `src/lib/db/query.ts` | Refactored to accept `db: PGlite` parameter |
+| `src/lib/db/schema.ts` | Refactored to accept `db: PGlite` parameter |
+| `src/hooks/useQueryHistory.ts` | Per-project keys (`sqlens-history-{id}`) |
+| `src/hooks/useSqlWorkspace.ts` | Accepts `(db, projectId)`; resets on project switch; auto-saves draft |
+
+Each project has its own `idb://sqlens-{projectId}` IndexedDB database, editor draft, and query history.
+
+### Phase 1.5c — Selected Query Runner
+
+| File | Change |
+|------|--------|
+| `src/components/editor/SqlEditor.tsx` | `onSelectionChange` prop via `onUpdate`; `onRun` prop wired to `Mod-Enter` keymap |
+| `src/components/features/QueryToolbar.tsx` | `hasSelection` prop; button label "Run Selection" vs "Run Query"; hint/indicator row |
+| `src/hooks/useSqlWorkspace.ts` | `selectedText` + `setSelectedText` state; `handleRunQuery` uses selection if present |
+| `src/App.tsx` | Wires `setSelectedText` and `handleRunQuery` into `SqlEditor` and `QueryToolbar` |
+
+Behavior: if selected text is non-empty, only that SQL runs and is saved to history; otherwise the full editor content runs. `Ctrl+Enter` / `Cmd+Enter` triggers the run.
 
 ---
 
