@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
 import AiSqlGeneratorPopover from "./components/ai/AiSqlGeneratorPopover";
+import SimulatorPanel from "./components/simulator/SimulatorPanel";
 import AppHeader from "./components/layout/AppHeader";
 import LoadingBanner from "./components/layout/LoadingBanner";
 import WorkspaceLayout from "./components/layout/WorkspaceLayout";
@@ -166,6 +167,11 @@ export default function App() {
           ) : null}
 
           <ResultTable rows={workspace.rows} />
+
+          <SimulatorPanel
+            query={workspace.query}
+            selectedText={workspace.selectedText}
+          />
 
           <QueryHistory
             items={workspace.history}
