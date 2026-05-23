@@ -1,12 +1,13 @@
 import { useState } from "react";
 
 import SqlEditor from "./components/editor/SqlEditor";
+import LoadingBanner from "./components/layout/LoadingBanner";
 import ResultTable from "./components/results/ResultTable";
 import SchemaSidebar from "./components/schema/SchemaSidebar";
 
 import { getQueryHistory, saveQueryToHistory } from "./hooks/useQueryHistory";
 import { runQuery, resetDatabase } from "./lib/db/query";
-import { getTables, type SchemaTable } from "./lib/db/schema";
+import { getSchema, type SchemaTable } from "./lib/db/schema";
 
 export default function App() {
   const [query, setQuery] = useState(`CREATE TABLE students (
@@ -28,8 +29,8 @@ SELECT * FROM students;`);
   const [tables, setTables] = useState<SchemaTable[]>([]);
 
   async function refreshSchema() {
-    const currentTables = await getTables();
-    setTables(currentTables);
+    const currentSchema = await getSchema();
+    setTables(currentSchema);
   }
 
   async function handleRunQuery() {
@@ -62,22 +63,28 @@ SELECT * FROM students;`);
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6">
+    <div className="min-h-screen bg-slate-950 text-white p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-4xl font-bold">
-          SQL Simulator
-        </h1>
+        <header className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold">
+            SQL Simulator
+          </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          <p className="text-slate-400">
+            Real PostgreSQL in your browser.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
           <SchemaSidebar tables={tables} onRefresh={refreshSchema} />
 
-          <main className="space-y-6">
+          <main className="space-y-6 min-w-0">
             <SqlEditor
               value={query}
               onChange={setQuery}
             />
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleRunQuery}
                 disabled={isRunning}
@@ -93,6 +100,8 @@ SELECT * FROM students;`);
                 Reset DB
               </button>
             </div>
+
+            <LoadingBanner isVisible={isRunning} />
 
             {error && (
               <div className="bg-red-950 border border-red-700 text-red-300 p-4 rounded-lg">

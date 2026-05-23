@@ -13,10 +13,13 @@ Users can currently:
 - ✅ Insert data
 - ✅ Perform joins
 - ✅ Persist database after refresh
-- ✅ View schema tables
+- ✅ View rich schema sidebar (columns, types, NULL/default constraints, foreign keys)
 - ✅ View query history
 - ✅ Reset database
 - ✅ Use browser-based PostgreSQL without a backend
+- ✅ Results table with sticky headers, NULL styling, copy/export JSON
+- ✅ Terminal-style loading banner during query execution
+- ✅ Mobile-responsive layout (stacked sidebar, responsive header and buttons)
 
 ---
 
@@ -24,54 +27,7 @@ Users can currently:
 
 ## Small Polish Remaining
 
-### 1. Better Schema Sidebar
-
-Add support for:
-
-- Columns
-- Data types
-- Constraints
-- Foreign key relations
-
----
-
-### 2. Better Results UX
-
-Enhancements planned:
-
-- Pagination
-- Sticky headers
-- NULL value styling
-- Copy/export functionality
-
----
-
-### 3. Better Loading Screen
-
-Current state:
-
-```txt
-Running...
-```
-
-Planned improvements:
-
-- Terminal-style loader
-- PostgreSQL environment startup animation
-
----
-
-### 4. Mobile Responsiveness
-
-Optimize the platform for:
-
-- Mobile devices
-- Tablets
-- Smaller screens
-
----
-
-### 5. Initial Deployment
+### 1. Initial Deployment
 
 Deployment target:
 

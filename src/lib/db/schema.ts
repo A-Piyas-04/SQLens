@@ -1,17 +1,57 @@
 import { db } from "./pglite";
 
-export type SchemaTable = {
+export type SchemaColumn = {
   table_name: string;
+  column_name: string;
+  data_type: string;
+  is_nullable: string;
+  column_default: string | null;
 };
 
-export async function getTables(): Promise<SchemaTable[]> {
-  const result = await db.query(`
-    SELECT table_name
-    FROM information_schema.tables
+export type ForeignKeyRelation = {
+  table_name: string;
+  column_name: string;
+  foreign_table_name: string;
+  foreign_column_name: string;
+};
+
+export type SchemaTable = {
+  table_name: string;
+  columns: SchemaColumn[];
+  foreignKeys: ForeignKeyRelation[];
+};
+
+export async function getSchema(): Promise<SchemaTable[]> {
+  const columnsResult = await db.query(`
+    SELECT table_name, column_name, data_type, is_nullable, column_default
+    FROM information_schema.columns
     WHERE table_schema = 'public'
-    AND table_type = 'BASE TABLE'
-    ORDER BY table_name;
+    ORDER BY table_name, ordinal_position;
   `);
 
-  return result.rows as SchemaTable[];
+  const fkResult = await db.query(`
+    SELECT
+      tc.table_name,
+      kcu.column_name,
+      ccu.table_name AS foreign_table_name,
+      ccu.column_name AS foreign_column_name
+    FROM information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND tc.table_schema = 'public';
+  `);
+
+  const columns = columnsResult.rows as SchemaColumn[];
+  const foreignKeys = fkResult.rows as ForeignKeyRelation[];
+
+  const tableNames = [...new Set(columns.map((col) => col.table_name))];
+
+  return tableNames.map((tableName) => ({
+    table_name: tableName,
+    columns: columns.filter((col) => col.table_name === tableName),
+    foreignKeys: foreignKeys.filter((fk) => fk.table_name === tableName),
+  }));
 }
