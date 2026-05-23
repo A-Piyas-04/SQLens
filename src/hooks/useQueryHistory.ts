@@ -19,3 +19,7 @@ export function saveQueryToHistory(projectId: string, query: string): void {
   );
   localStorage.setItem(historyKey(projectId), JSON.stringify(updated));
 }
+
+export function clearQueryHistory(projectId: string): void {
+  localStorage.removeItem(historyKey(projectId));
+}

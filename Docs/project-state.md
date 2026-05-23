@@ -1,6 +1,6 @@
 # PostgreSQL Learning Platform Roadmap
 
-> A browser-based PostgreSQL playground with real SQL execution, persistence, and future AI-powered learning features.
+> A browser-based SQL practice and visualization platform with real PostgreSQL execution, persistence, and fast experimentation workflows.
 
 ---
 
@@ -23,6 +23,9 @@ Users can currently:
 - ✅ Interactive ERD viewer — live schema visualised as a React Flow graph with FK arrows, zoom, pan, fit view, and minimap
 - ✅ Project workspaces — isolated PGlite databases per project with independent schema, ERD, history, and editor draft
 - ✅ Selected query runner — run only selected SQL (or fall back to full editor content); Ctrl+Enter shortcut
+- ✅ Practice sidebar — sample databases, query templates, SQL snippets, visualization presets
+- ✅ One-click sample DB loaders (Students, E-commerce, Library, HR) with relational schemas and seed data
+- ✅ Concise PostgreSQL error simplification (non-tutorial)
 
 ---
 
@@ -77,6 +80,28 @@ Each project has its own `idb://sqlens-{projectId}` IndexedDB database, editor d
 
 Behavior: if selected text is non-empty, only that SQL runs and is saved to history; otherwise the full editor content runs. `Ctrl+Enter` / `Cmd+Enter` triggers the run.
 
+## Phase 2 — Practice Acceleration Layer
+
+**Shipped.** Fast experimentation tooling — not a tutorial platform.
+
+| Area | Files |
+|------|-------|
+| Sample databases | `src/data/sampleDatabases.ts`, `src/components/practice/SampleDatabasePanel.tsx` |
+| Query templates | `src/data/queryTemplates.ts`, `src/components/practice/QueryTemplates.tsx` |
+| SQL snippets | `src/data/sqlSnippets.ts`, `src/components/practice/SqlSnippets.tsx` |
+| Visualization presets | `src/data/visualizationPresets.ts`, `src/components/practice/VisualizationPresets.tsx` |
+| Error simplification | `src/lib/sql/simplifyError.ts` |
+| Practice sidebar shell | `src/components/practice/PracticeSidebar.tsx`, `PracticeSection.tsx` |
+| Workspace actions | `useSqlWorkspace` — `loadSampleDatabase`, `loadQuery`, `applyVisualizationPreset` |
+| Editor insert API | `SqlEditor` — `insertAtCursor` via ref |
+
+Capabilities:
+- Sample DB: resets project DB, runs DDL + seed script, clears history, loads starter query, refreshes schema + ERD
+- Templates: load SQL into editor (adapt table names to your schema)
+- Snippets: insert at CodeMirror cursor
+- Presets: load sample DB + query + auto-run for visualization demos
+- Errors: short readable messages (FK, missing table/column, syntax, etc.)
+
 ---
 
 # 🚧 Remaining Phase 1 Tasks
@@ -95,20 +120,17 @@ Deployment target:
 
 ---
 
-# Phase 2 — Beginner Experience Layer
+# Phase 2+ — Future Experience Layer
 
 ## Goal
 
-Make the platform beginner-friendly.
+Continue reducing friction for practice and visualization workflows.
 
 ## Planned Features
 
-- Sample databases
-- Query templates
-- Interactive onboarding
-- SQL snippets
-- Error simplification
-- Beginner query explanations
+- Interactive onboarding (minimal, non-course style)
+- Deeper visualization engine integration for presets
+- Additional sample databases
 
 ---
 

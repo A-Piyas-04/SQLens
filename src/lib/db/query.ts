@@ -37,3 +37,26 @@ export async function resetDatabase(db: PGlite): Promise<void> {
     CREATE SCHEMA public;
   `);
 }
+
+/** Runs multi-statement SQL scripts (DDL + seed data). */
+export async function execSqlScript(
+  db: PGlite,
+  sql: string
+): Promise<QueryResult> {
+  try {
+    await db.exec(sql);
+    return {
+      success: true,
+      rows: [],
+      error: null,
+      message: "Script executed successfully.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      rows: [],
+      error: error instanceof Error ? error.message : "Unknown SQL error",
+      message: null,
+    };
+  }
+}

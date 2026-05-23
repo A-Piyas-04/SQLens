@@ -2,14 +2,25 @@ import type { PGlite } from "@electric-sql/pglite";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 import { DEFAULT_QUERY } from "../constants/queries";
-import { runQuery, resetDatabase } from "../lib/db/query";
+import { getSampleDatabaseById } from "../data/sampleDatabases";
+import { VISUALIZATION_PRESETS } from "../data/visualizationPresets";
+import {
+  execSqlScript,
+  resetDatabase,
+  runQuery,
+} from "../lib/db/query";
 import { getSchema, type SchemaTable } from "../lib/db/schema";
 import {
   getProjectDraft,
   setProjectDraft,
 } from "../lib/projects/projectStore";
+import { simplifySqlError } from "../lib/sql/simplifyError";
 import { withViewTransition } from "../lib/utils/viewTransition";
-import { getQueryHistory, saveQueryToHistory } from "./useQueryHistory";
+import {
+  clearQueryHistory,
+  getQueryHistory,
+  saveQueryToHistory,
+} from "./useQueryHistory";
 
 export function useSqlWorkspace(db: PGlite, projectId: string) {
   const [query, setQuery] = useState(
@@ -26,13 +37,20 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   const [tables, setTables] = useState<SchemaTable[]>([]);
   const [, startUiTransition] = useTransition();
 
-  // Refs so async callbacks always see the latest values without stale closures
   const projectIdRef = useRef(projectId);
   const dbRef = useRef(db);
+  const queryRef = useRef(query);
+  const selectedTextRef = useRef(selectedText);
+
   useEffect(() => {
     projectIdRef.current = projectId;
     dbRef.current = db;
   });
+
+  useEffect(() => {
+    queryRef.current = query;
+    selectedTextRef.current = selectedText;
+  }, [query, selectedText]);
 
   const refreshSchema = useCallback(async () => {
     const currentSchema = await getSchema(dbRef.current);
@@ -43,7 +61,6 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     });
   }, [startUiTransition]);
 
-  // Reset workspace state when the active project changes
   useEffect(() => {
     const draft = getProjectDraft(projectId);
     withViewTransition(() => {
@@ -60,43 +77,54 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     void refreshSchema();
   }, [projectId, refreshSchema, startUiTransition]);
 
-  // Persist editor draft on every change
   useEffect(() => {
     setProjectDraft(projectId, query);
   }, [projectId, query]);
 
+  const applyQueryResult = useCallback(
+    async (
+      sql: string,
+      result: Awaited<ReturnType<typeof runQuery>>,
+      options: { isPartial?: boolean; saveHistory?: boolean } = {}
+    ) => {
+      const { isPartial = false, saveHistory = true } = options;
+
+      if (result.success) {
+        withViewTransition(() => {
+          startUiTransition(() => {
+            setRows(result.rows);
+            const baseMessage =
+              result.message ?? "Query executed successfully.";
+            setMessage(isPartial ? `${baseMessage} (selection)` : baseMessage);
+          });
+        });
+        if (saveHistory) {
+          saveQueryToHistory(projectIdRef.current, sql);
+          setHistory(getQueryHistory(projectIdRef.current));
+        }
+        await refreshSchema();
+      } else {
+        withViewTransition(() => {
+          startUiTransition(() => {
+            setRows([]);
+            setError(simplifySqlError(result.error ?? "Unknown error"));
+          });
+        });
+      }
+    },
+    [refreshSchema, startUiTransition]
+  );
+
   async function handleRunQuery() {
-    // Prefer selected text; fall back to the full editor content
-    const sqlToRun = selectedText.trim() || query;
-    const isPartial = !!selectedText.trim();
+    const sqlToRun = selectedTextRef.current.trim() || queryRef.current;
+    const isPartial = !!selectedTextRef.current.trim();
 
     setError("");
     setMessage("");
     setIsRunning(true);
 
     const result = await runQuery(dbRef.current, sqlToRun);
-
-    if (result.success) {
-      withViewTransition(() => {
-        startUiTransition(() => {
-          setRows(result.rows);
-          const baseMessage = result.message ?? "Query executed successfully.";
-          setMessage(isPartial ? `${baseMessage} (selection)` : baseMessage);
-        });
-      });
-      // Save the actual SQL that was executed to history
-      saveQueryToHistory(projectIdRef.current, sqlToRun);
-      setHistory(getQueryHistory(projectIdRef.current));
-      await refreshSchema();
-    } else {
-      withViewTransition(() => {
-        startUiTransition(() => {
-          setRows([]);
-          setError(result.error ?? "Unknown error");
-        });
-      });
-    }
-
+    await applyQueryResult(sqlToRun, result, { isPartial, saveHistory: true });
     setIsRunning(false);
   }
 
@@ -112,12 +140,101 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     await refreshSchema();
   }
 
-  function loadHistoryItem(item: string) {
+  function loadQuery(sql: string) {
     withViewTransition(() => {
       startUiTransition(() => {
-        setQuery(item);
+        setQuery(sql);
+        setSelectedText("");
+        setError("");
       });
     });
+  }
+
+  async function loadSampleDatabase(databaseId: string) {
+    const sample = getSampleDatabaseById(databaseId);
+    if (!sample) return;
+
+    setIsRunning(true);
+    setError("");
+    setMessage("");
+
+    await resetDatabase(dbRef.current);
+    const result = await execSqlScript(dbRef.current, sample.sql);
+
+    if (!result.success) {
+      withViewTransition(() => {
+        startUiTransition(() => {
+          setRows([]);
+          setError(simplifySqlError(result.error ?? "Failed to load sample."));
+        });
+      });
+      setIsRunning(false);
+      return;
+    }
+
+    clearQueryHistory(projectIdRef.current);
+
+    withViewTransition(() => {
+      startUiTransition(() => {
+        setHistory([]);
+        setRows([]);
+        setSelectedText("");
+        setQuery(
+          sample.starterQuery ?? `-- ${sample.name} loaded\nSELECT 1;`
+        );
+        setMessage(`${sample.name} loaded.`);
+      });
+    });
+
+    await refreshSchema();
+    setIsRunning(false);
+  }
+
+  async function applyVisualizationPreset(presetId: string) {
+    const preset = VISUALIZATION_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    const sample = getSampleDatabaseById(preset.databaseId);
+    if (!sample) return;
+
+    setIsRunning(true);
+    setError("");
+    setMessage("");
+
+    await resetDatabase(dbRef.current);
+    const loadResult = await execSqlScript(dbRef.current, sample.sql);
+
+    if (!loadResult.success) {
+      withViewTransition(() => {
+        startUiTransition(() => {
+          setRows([]);
+          setError(simplifySqlError(loadResult.error ?? "Failed to load database."));
+        });
+      });
+      setIsRunning(false);
+      return;
+    }
+
+    clearQueryHistory(projectIdRef.current);
+
+    withViewTransition(() => {
+      startUiTransition(() => {
+        setHistory([]);
+        setSelectedText("");
+        setQuery(preset.sql);
+        setMessage(`Running ${preset.title}…`);
+      });
+    });
+
+    await refreshSchema();
+
+    const runResult = await runQuery(dbRef.current, preset.sql);
+    await applyQueryResult(preset.sql, runResult, { saveHistory: true });
+    setIsRunning(false);
+  }
+
+  function loadHistoryItem(item: string) {
+    loadQuery(item);
   }
 
   return {
@@ -135,5 +252,8 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     handleRunQuery,
     handleResetDatabase,
     loadHistoryItem,
+    loadQuery,
+    loadSampleDatabase,
+    applyVisualizationPreset,
   };
 }
