@@ -19,6 +19,7 @@ export type SchemaTable = {
   table_name: string;
   columns: SchemaColumn[];
   foreignKeys: ForeignKeyRelation[];
+  primaryKeys: string[];
 };
 
 export async function getSchema(): Promise<SchemaTable[]> {
@@ -44,8 +45,21 @@ export async function getSchema(): Promise<SchemaTable[]> {
       AND tc.table_schema = 'public';
   `);
 
+  const pkResult = await db.query(`
+    SELECT
+      tc.table_name,
+      kcu.column_name
+    FROM information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    WHERE tc.constraint_type = 'PRIMARY KEY'
+      AND tc.table_schema = 'public';
+  `);
+
   const columns = columnsResult.rows as SchemaColumn[];
   const foreignKeys = fkResult.rows as ForeignKeyRelation[];
+  const primaryKeyRows = pkResult.rows as { table_name: string; column_name: string }[];
 
   const tableNames = [...new Set(columns.map((col) => col.table_name))];
 
@@ -53,5 +67,8 @@ export async function getSchema(): Promise<SchemaTable[]> {
     table_name: tableName,
     columns: columns.filter((col) => col.table_name === tableName),
     foreignKeys: foreignKeys.filter((fk) => fk.table_name === tableName),
+    primaryKeys: primaryKeyRows
+      .filter((pk) => pk.table_name === tableName)
+      .map((pk) => pk.column_name),
   }));
 }

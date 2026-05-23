@@ -7,6 +7,8 @@ import SchemaSidebar from "./components/schema/SchemaSidebar";
 import QueryHistory from "./components/features/QueryHistory";
 import QueryToolbar from "./components/features/QueryToolbar";
 import StatusMessage from "./components/common/StatusMessage";
+import Panel from "./components/common/Panel";
+import ErdViewer from "./components/erd/ErdViewer";
 import { useResizablePanel } from "./hooks/useResizablePanel";
 import { useSqlWorkspace } from "./hooks/useSqlWorkspace";
 
@@ -59,6 +61,10 @@ export default function App() {
           />
 
           <ResultTable rows={workspace.rows} />
+
+          <Panel title="Entity Relationship Diagram">
+            <ErdViewer tables={workspace.tables} />
+          </Panel>
         </WorkspaceLayout>
       </div>
     </div>

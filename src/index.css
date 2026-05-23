@@ -85,6 +85,32 @@ body {
   background-color: rgb(71 85 105 / 0.9);
 }
 
+/* React Flow dark theme overrides */
+.react-flow__controls {
+  --xy-controls-button-background-color: #1e293b;
+  --xy-controls-button-background-color-hover: #334155;
+  --xy-controls-button-border-color: #334155;
+  --xy-controls-button-color: #94a3b8;
+  --xy-controls-button-color-hover: #e2e8f0;
+  box-shadow: none;
+  border: 1px solid rgb(51 65 85 / 0.6);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  border: none !important;
+  border-bottom: 1px solid rgb(51 65 85 / 0.4) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__minimap {
+  --xy-minimap-background-color: #0f172a;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
