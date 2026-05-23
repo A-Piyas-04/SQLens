@@ -1,0 +1,11 @@
+services:
+  sql-simulator:
+    build: .
+    container_name: sql-simulator
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
