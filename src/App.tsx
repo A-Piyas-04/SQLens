@@ -171,6 +171,7 @@ export default function App() {
           <SimulatorPanel
             query={workspace.query}
             selectedText={workspace.selectedText}
+            db={db}
           />
 
           <QueryHistory
