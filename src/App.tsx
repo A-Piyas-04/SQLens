@@ -9,12 +9,45 @@ import QueryToolbar from "./components/features/QueryToolbar";
 import StatusMessage from "./components/common/StatusMessage";
 import Panel from "./components/common/Panel";
 import ErdViewer from "./components/erd/ErdViewer";
+import ProjectSwitcher from "./components/projects/ProjectSwitcher";
+import { useActiveProject } from "./hooks/useActiveProject";
 import { useResizablePanel } from "./hooks/useResizablePanel";
 import { useSqlWorkspace } from "./hooks/useSqlWorkspace";
 
 export default function App() {
   const { width, isResizing, onResizeStart } = useResizablePanel();
-  const workspace = useSqlWorkspace();
+
+  const {
+    projects,
+    activeProject,
+    db,
+    createProject,
+    renameProject,
+    deleteProject,
+    switchProject,
+  } = useActiveProject();
+
+  const workspace = useSqlWorkspace(db, activeProject?.id ?? "");
+
+  const sidebar = (
+    <div className="flex h-full flex-col gap-4">
+      <ProjectSwitcher
+        projects={projects}
+        activeProject={activeProject}
+        onCreate={createProject}
+        onRename={renameProject}
+        onDelete={deleteProject}
+        onSwitch={switchProject}
+      />
+
+      <div className="h-px shrink-0 bg-slate-800/60" aria-hidden />
+
+      <SchemaSidebar
+        tables={workspace.tables}
+        onRefresh={workspace.refreshSchema}
+      />
+    </div>
+  );
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-white">
@@ -30,12 +63,7 @@ export default function App() {
           sidebarWidth={width}
           isResizing={isResizing}
           onResizeStart={onResizeStart}
-          sidebar={
-            <SchemaSidebar
-              tables={workspace.tables}
-              onRefresh={workspace.refreshSchema}
-            />
-          }
+          sidebar={sidebar}
         >
           <SqlEditor value={workspace.query} onChange={workspace.setQuery} />
 

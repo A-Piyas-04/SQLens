@@ -8,14 +8,18 @@ import {
   ReactFlow,
   useEdgesState,
   useNodesState,
+  type Edge,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import { GitFork } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
 import type { SchemaTable } from "../../lib/db/schema";
-import { buildErdGraph } from "../../lib/erd/buildErdGraph";
+import { buildErdGraph, type ErdTableNodeData } from "../../lib/erd/buildErdGraph";
+import type { Node } from "@xyflow/react";
 import ErdTableNode from "./ErdTableNode";
+
+type ErdNode = Node<ErdTableNodeData, "erdTable">;
 
 const nodeTypes = { erdTable: ErdTableNode };
 
@@ -24,9 +28,9 @@ type Props = {
 };
 
 export default function ErdViewer({ tables }: Props) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const rfInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ErdNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const rfInstanceRef = useRef<ReactFlowInstance<ErdNode, Edge> | null>(null);
 
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildErdGraph(tables);
@@ -41,7 +45,7 @@ export default function ErdViewer({ tables }: Props) {
     }
   }, [tables, setNodes, setEdges]);
 
-  const onInit = useCallback((instance: ReactFlowInstance) => {
+  const onInit = useCallback((instance: ReactFlowInstance<ErdNode, Edge>) => {
     rfInstanceRef.current = instance;
     instance.fitView({ padding: 0.15 });
   }, []);

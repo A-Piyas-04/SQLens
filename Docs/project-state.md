@@ -20,6 +20,45 @@ Users can currently:
 - ✅ Results table with sticky headers, NULL styling, copy/export JSON
 - ✅ Terminal-style loading banner during query execution
 - ✅ Mobile-responsive layout (stacked sidebar, responsive header and buttons)
+- ✅ Interactive ERD viewer — live schema visualised as a React Flow graph with FK arrows, zoom, pan, fit view, and minimap
+
+---
+
+# ✅ Completed Phases
+
+## Phase 1 — Core SQL Playground
+
+All core features shipped. Database persists via IndexedDB (PGlite). Schema extracted from `information_schema` on every query run and DB reset.
+
+## Phase 1.5 — ERD Viewer v1
+
+**Shipped.** An interactive, live Entity Relationship Diagram rendered beside the query workspace.
+
+### What was built
+
+| File | Purpose |
+|------|---------|
+| `src/lib/db/schema.ts` | Extended with `primaryKeys: string[]` per table via `information_schema` PK query |
+| `src/lib/erd/buildErdGraph.ts` | Converts `SchemaTable[]` into React Flow `Node[]` and `Edge[]` with auto grid layout |
+| `src/components/erd/ErdTableNode.tsx` | Custom React Flow node — table name header, column rows with PK/FK badges and data types |
+| `src/components/erd/ErdViewer.tsx` | ReactFlow canvas with Background, Controls, MiniMap, fitView on schema change |
+| `src/App.tsx` | ERD panel added below the results table, receives `workspace.tables` |
+| `src/index.css` | Dark-theme CSS variable overrides for ReactFlow Controls and MiniMap |
+
+### Capabilities
+
+- Live refresh: ERD rebuilds automatically after every query run or DB reset
+- Zoom / pan / fit-view (Controls toolbar)
+- Minimap in the bottom-right corner
+- FK arrows (`smoothstep` edges with arrow markers) labelled `column → referenced_column`
+- Per-column PK badge (amber) and FK badge (green)
+- Empty state message when no tables exist
+- Dot-grid background matching the dark slate palette
+- No PNG/PDF export, no manual editing, no AI features (intentionally scoped out)
+
+### Dependencies added
+
+- `@xyflow/react` — React Flow v1 (MIT)
 
 ---
 

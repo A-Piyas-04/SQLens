@@ -1,4 +1,4 @@
-import { db } from "./pglite";
+import type { PGlite } from "@electric-sql/pglite";
 
 export type SchemaColumn = {
   table_name: string;
@@ -22,7 +22,7 @@ export type SchemaTable = {
   primaryKeys: string[];
 };
 
-export async function getSchema(): Promise<SchemaTable[]> {
+export async function getSchema(db: PGlite): Promise<SchemaTable[]> {
   const columnsResult = await db.query(`
     SELECT table_name, column_name, data_type, is_nullable, column_default
     FROM information_schema.columns

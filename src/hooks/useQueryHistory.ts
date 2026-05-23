@@ -1,17 +1,21 @@
-const STORAGE_KEY = "sql-simulator-query-history";
+import { historyKey } from "../lib/projects/projectStore";
 
-export function getQueryHistory(): string[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  return raw ? JSON.parse(raw) : [];
+const MAX_HISTORY = 10;
+
+export function getQueryHistory(projectId: string): string[] {
+  try {
+    const raw = localStorage.getItem(historyKey(projectId));
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
 }
 
-export function saveQueryToHistory(query: string) {
-  const existing = getQueryHistory();
-
-  const updated = [
-    query,
-    ...existing.filter((item) => item !== query),
-  ].slice(0, 10);
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+export function saveQueryToHistory(projectId: string, query: string): void {
+  const existing = getQueryHistory(projectId);
+  const updated = [query, ...existing.filter((item) => item !== query)].slice(
+    0,
+    MAX_HISTORY
+  );
+  localStorage.setItem(historyKey(projectId), JSON.stringify(updated));
 }

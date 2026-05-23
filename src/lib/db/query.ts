@@ -1,4 +1,4 @@
-import { db } from "./pglite";
+import type { PGlite } from "@electric-sql/pglite";
 
 export type QueryResult = {
   success: boolean;
@@ -7,10 +7,9 @@ export type QueryResult = {
   message: string | null;
 };
 
-export async function runQuery(sql: string): Promise<QueryResult> {
+export async function runQuery(db: PGlite, sql: string): Promise<QueryResult> {
   try {
     const result = await db.query(sql);
-
     const rows = result.rows as Record<string, unknown>[];
 
     return {
@@ -32,7 +31,7 @@ export async function runQuery(sql: string): Promise<QueryResult> {
   }
 }
 
-export async function resetDatabase() {
+export async function resetDatabase(db: PGlite): Promise<void> {
   await db.exec(`
     DROP SCHEMA public CASCADE;
     CREATE SCHEMA public;
