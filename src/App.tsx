@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 
+import AiSqlGeneratorPopover from "./components/ai/AiSqlGeneratorPopover";
 import AppHeader from "./components/layout/AppHeader";
 import LoadingBanner from "./components/layout/LoadingBanner";
 import WorkspaceLayout from "./components/layout/WorkspaceLayout";
@@ -23,6 +24,7 @@ export default function App() {
   const editorRef = useRef<SqlEditorHandle>(null);
   const { width, isResizing, onResizeStart } = useResizablePanel();
 
+  const [aiMenuOpen, setAiMenuOpen] = useState(false);
   const [practiceMenuOpen, setPracticeMenuOpen] = useState(false);
   const [practiceCategory, setPracticeCategory] = useState<PracticeCategoryId | null>(
     null
@@ -41,11 +43,20 @@ export default function App() {
   const workspace = useSqlWorkspace(db, activeProject?.id ?? "");
   const hasSelection = !!workspace.selectedText.trim();
 
+  function handleToggleAiMenu() {
+    setAiMenuOpen((open) => !open);
+    if (!aiMenuOpen) {
+      setPracticeMenuOpen(false);
+      setPracticeCategory(null);
+    }
+  }
+
   function handleTogglePracticeMenu() {
     setPracticeMenuOpen((open) => {
       if (open) setPracticeCategory(null);
       return !open;
     });
+    if (!practiceMenuOpen) setAiMenuOpen(false);
   }
 
   function handleSelectPracticeCategory(id: PracticeCategoryId | null) {
@@ -92,20 +103,30 @@ export default function App() {
         aria-hidden
       />
 
-      <PracticeRadialMenu
-        isOpen={practiceMenuOpen}
-        activeCategory={practiceCategory}
-        isLoading={workspace.isRunning}
-        onToggle={handleTogglePracticeMenu}
-        onSelectCategory={handleSelectPracticeCategory}
-        onLoadSampleDatabase={workspace.loadSampleDatabase}
-        onLoadQuery={workspace.loadQuery}
-        onInsertSnippet={handleInsertSnippet}
-        onApplyVisualizationPreset={workspace.applyVisualizationPreset}
-      />
-
       <div className="relative mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
-        <AppHeader />
+        <AppHeader
+          actions={
+            <>
+              <AiSqlGeneratorPopover
+                isOpen={aiMenuOpen}
+                onToggle={handleToggleAiMenu}
+                onApplySql={workspace.loadQuery}
+                disabled={workspace.isRunning}
+              />
+              <PracticeRadialMenu
+                isOpen={practiceMenuOpen}
+                activeCategory={practiceCategory}
+                isLoading={workspace.isRunning}
+                onToggle={handleTogglePracticeMenu}
+                onSelectCategory={handleSelectPracticeCategory}
+                onLoadSampleDatabase={workspace.loadSampleDatabase}
+                onLoadQuery={workspace.loadQuery}
+                onInsertSnippet={handleInsertSnippet}
+                onApplyVisualizationPreset={workspace.applyVisualizationPreset}
+              />
+            </>
+          }
+        />
 
         <WorkspaceLayout
           sidebarWidth={width}
@@ -122,7 +143,7 @@ export default function App() {
             hasSelection={hasSelection}
             toolbar={
               <div className="flex items-center gap-2">
-                <ErdScrollButton className="mr-10" />
+                <ErdScrollButton />
                 <QueryToolbar
                   variant="header"
                   isRunning={workspace.isRunning}

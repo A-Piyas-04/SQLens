@@ -77,7 +77,12 @@ export default function PracticeRadialMenu({
   const activeMeta = activeCategory ? getPracticeCategory(activeCategory) : null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 overflow-visible sm:top-5 sm:right-5">
+    <div
+      className={cn(
+        "relative z-50 shrink-0 overflow-visible",
+        isOpen ? "h-[210px] w-[min(100vw-2rem,300px)] sm:w-[300px]" : "size-14"
+      )}
+    >
       {isOpen ? (
         <button
           type="button"
@@ -90,8 +95,8 @@ export default function PracticeRadialMenu({
         />
       ) : null}
 
-      {/* Anchor box: hub top-right; arc expands left/down with room for labels */}
-      <div className="relative z-50 h-[210px] w-[min(100vw-2rem,300px)] overflow-visible sm:w-[300px]">
+      {/* Above backdrop (z-40) so orbit labels/buttons stay sharp */}
+      <div className="absolute inset-0 z-50 overflow-visible">
         {isOpen && activeCategory && activeMeta ? (
           <div
             ref={panelRef}
@@ -193,7 +198,7 @@ export default function PracticeRadialMenu({
           aria-label={isOpen ? "Close practice menu" : "Open practice menu"}
           aria-expanded={isOpen}
           className={cn(
-            "practice-hub-toggle absolute right-0 top-0 z-20 flex size-14 items-center justify-center rounded-full",
+            "practice-hub-toggle absolute right-0 top-0 z-20 flex size-14 items-center justify-center rounded-full sm:right-0",
             "border border-slate-600/80 bg-slate-800/95 text-blue-300",
             "shadow-xl shadow-slate-950/60 backdrop-blur-sm",
             "hover:border-blue-500/50 hover:bg-slate-700 hover:text-blue-200",
