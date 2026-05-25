@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { PGlite } from "@electric-sql/pglite";
-import { AlertTriangle, Cpu, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, Cpu, Info, Loader2, Play } from "lucide-react";
 
 import Panel from "../common/Panel";
 import Button from "../common/Button";
@@ -9,6 +9,10 @@ import SimulatorDebugPanel from "./SimulatorDebugPanel";
 import { generateSnapshots } from "../../lib/simulator/snapshot/generateSnapshots";
 import type { SimulatorSnapshot, StageDiff } from "../../lib/simulator/types/snapshotTypes";
 import { cn } from "../../lib/utils/cn";
+
+const SimulatorPlaybackModal = lazy(
+  () => import("./playback/SimulatorPlaybackModal")
+);
 
 type Props = {
   query: string;
@@ -148,21 +152,46 @@ type SuccessStateProps = {
 };
 
 function SuccessState({ snapshots, diffs, isSelection }: SuccessStateProps) {
+  const [showPlayback, setShowPlayback] = useState(false);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-slate-400">
-          {snapshots.length} execution{" "}
-          {snapshots.length === 1 ? "stage" : "stages"}
-        </span>
-        {isSelection && (
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-            selection
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-400">
+            {snapshots.length} execution{" "}
+            {snapshots.length === 1 ? "stage" : "stages"}
           </span>
-        )}
+          {isSelection && (
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+              selection
+            </span>
+          )}
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowPlayback(true)}
+        >
+          <Play className="size-3.5" aria-hidden />
+          Play Simulation
+        </Button>
       </div>
+
+      {/* Existing snapshot viewer — untouched */}
       <SimulatorSnapshotViewer snapshots={snapshots} diffs={diffs} />
       <SimulatorDebugPanel snapshots={snapshots} diffs={diffs} />
+
+      {/* Immersive playback modal — lazy loaded, zero cost until opened */}
+      {showPlayback && (
+        <Suspense fallback={null}>
+          <SimulatorPlaybackModal
+            snapshots={snapshots}
+            diffs={diffs}
+            onClose={() => setShowPlayback(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
