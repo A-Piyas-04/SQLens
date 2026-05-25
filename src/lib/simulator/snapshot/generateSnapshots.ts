@@ -34,10 +34,16 @@ function buildAnnotation(
   switch (stageType) {
     case "FROM":
       return hasJoin
-        ? `Loaded all rows from "${tableName}" (base table — before JOIN).`
+        ? `Loaded all rows from "${tableName}" (base table — before JOINs).`
         : `Loaded all rows from "${tableName}".`;
-    case "JOIN":
-      return `Applied ${joinType} — combined rows from both tables using the ON condition.`;
+    case "JOIN": {
+      const prevCount = prevSnapshot?.rowCount ?? 0;
+      const currCount = snapshot?.rowCount ?? 0;
+      return (
+        `Applied ${joinType} — combined ${prevCount} row${prevCount !== 1 ? "s" : ""} ` +
+        `with the joined table. Intermediate result: ${currCount} row${currCount !== 1 ? "s" : ""}.`
+      );
+    }
     case "WHERE":
       return "Filtered rows using the WHERE condition.";
     case "GROUP_BY": {
@@ -68,9 +74,11 @@ function getBaseTableName(select: Select): string {
   return "table";
 }
 
-function getJoinType(select: Select): string {
+/** Returns the normalised join type string for the join at `joinIndex`. */
+function getJoinType(select: Select, joinIndex = 0): string {
   const froms = Array.isArray(select.from) ? select.from : [];
-  const joinItem = froms.find((item) => "join" in item);
+  const joinItems = froms.filter((item) => "join" in item);
+  const joinItem = joinItems[joinIndex];
   if (!joinItem) return "JOIN";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = (joinItem as any).join as string | undefined;
@@ -108,13 +116,13 @@ export async function generateSnapshots({
   const pipeline = buildPipeline(parseResult.ast, sql);
   const tableName = getBaseTableName(select);
   const hasJoin = selectHasJoin(select);
-  const joinType = getJoinType(select);
 
   const snapshots: SimulatorSnapshot[] = [];
   let prevTrackedRows: TrackedRow[] | null = null;
 
   for (const stage of pipeline.stages) {
-    const stageSqlResult = buildStageSql(select, stage.type);
+    // Pass joinIndex so JOIN stages build SQL only up to their specific join.
+    const stageSqlResult = buildStageSql(select, stage.type, stage.joinIndex);
 
     if (!stageSqlResult.ok) {
       return { success: false, error: stageSqlResult.reason };
@@ -131,6 +139,12 @@ export async function generateSnapshots({
 
     // Assign stable row IDs by matching against the previous stage's rows.
     const trackedRows = assignRowIds(queryResult.rows, prevTrackedRows);
+
+    // For JOIN stages, use the join type specific to this join (not the first one).
+    const stageJoinType =
+      stage.type === "JOIN"
+        ? getJoinType(select, stage.joinIndex ?? 0)
+        : getJoinType(select, 0); // fallback for non-JOIN stages (unused)
 
     // Build a partial snapshot to pass row counts into dynamic annotations.
     const partialSnapshot: SimulatorSnapshot = {
@@ -150,14 +164,15 @@ export async function generateSnapshots({
       stage.type,
       tableName,
       hasJoin,
-      joinType,
+      stageJoinType,
       partialSnapshot,
       prevSnapshot
     );
 
-    // For JOIN stages, also fetch right-table rows for the canvas.
+    // For JOIN stages, fetch the right-hand table rows for the animation canvas.
+    // joinIndex selects which join item's table to fetch (not always the first one).
     if (stage.type === "JOIN") {
-      const rightSql = buildRightTableSql(select);
+      const rightSql = buildRightTableSql(select, stage.joinIndex ?? 0);
       if (rightSql) {
         const rightResult = await runQuery(db, rightSql);
         if (rightResult.success) {

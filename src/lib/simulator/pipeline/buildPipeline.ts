@@ -1,4 +1,4 @@
-import type { AST, Select } from "node-sql-parser";
+import type { AST, Join, Select } from "node-sql-parser";
 
 import type {
   SimulatorPipeline,
@@ -81,10 +81,27 @@ export function buildPipeline(ast: AST, sql: string): SimulatorPipeline {
     stages.push(makeStage("FROM", index++));
   }
 
-  // 2. JOIN — detected when any FROM item has a `join` property
-  const hasJoin = froms.some((item) => "join" in item);
-  if (hasJoin) {
-    stages.push(makeStage("JOIN", index++));
+  // 2. JOIN — one stage per JOIN item so learners see each join step-by-step.
+  //    Label: "LEFT JOIN orders", "INNER JOIN departments", etc.
+  const joinItems = froms.filter((item) => "join" in item) as Join[];
+  for (let i = 0; i < joinItems.length; i++) {
+    const jItem = joinItems[i];
+    const rawType = (jItem.join as string).toUpperCase();
+    // Normalise shorthand: bare "JOIN" → "INNER JOIN"
+    const displayType =
+      rawType === "JOIN" || rawType === "INNER JOIN" ? "INNER JOIN"
+      : rawType === "LEFT JOIN" || rawType === "LEFT OUTER JOIN" ? "LEFT JOIN"
+      : rawType;
+    const tableName =
+      "table" in jItem && jItem.table ? String(jItem.table) : "joined_table";
+    stages.push({
+      id:          `stage-${index}-join-${i}`,
+      type:        "JOIN",
+      label:       `${displayType} ${tableName}`,
+      description: `Combine with "${tableName}" using the ON condition.`,
+      joinIndex:   i,
+    });
+    index++;
   }
 
   // 3. WHERE — row filtering

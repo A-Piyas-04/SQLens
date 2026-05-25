@@ -96,7 +96,14 @@ export type StageSqlResult =
  */
 export function buildStageSql(
   select: Select,
-  stageType: SimulatorStageType
+  stageType: SimulatorStageType,
+  /**
+   * For JOIN stages in multi-JOIN queries: 0-based index of the join to
+   * include. SQL is built with joins 0..joinIndex so each stage shows the
+   * cumulative working table up to that join.
+   * Omit (or pass undefined) to include all joins (single-JOIN queries).
+   */
+  joinIndex?: number
 ): StageSqlResult {
   const parser = getParser();
 
@@ -122,8 +129,8 @@ export function buildStageSql(
       }
 
       case "JOIN": {
-        // Include all FROM items (base table + join tables + ON conditions).
         // SELECT *, no WHERE, no ORDER BY, no GROUP BY, no HAVING, no LIMIT.
+        // For multi-JOIN: include only joins 0..joinIndex (cumulative working table).
         const ast = cloneSelect(select);
         ast.columns = STAR_COLUMN as Select["columns"];
         ast.where = null;
@@ -132,6 +139,15 @@ export function buildStageSql(
         clearGroupBy(ast);
         clearHaving(ast);
         ast.distinct = null;
+
+        if (joinIndex !== undefined && Array.isArray(ast.from)) {
+          const baseItems = ast.from.filter((item) => !("join" in item));
+          const joinOnlyItems = ast.from
+            .filter((item) => "join" in item)
+            .slice(0, joinIndex + 1);
+          ast.from = [...baseItems, ...joinOnlyItems];
+        }
+
         stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
         break;
       }
@@ -218,12 +234,14 @@ export function buildStageSql(
  * Builds an executable SQL string for the right-hand table of a JOIN, used
  * by the JOIN canvas to retrieve the raw right-table rows for visualization.
  *
- * Returns null if the AST has no JOIN items or if sqlify fails.
+ * `joinIndex` selects which join item to target (0-based, default 0).
+ * Returns null if the AST has no JOIN item at that index or if sqlify fails.
  */
-export function buildRightTableSql(select: Select): string | null {
+export function buildRightTableSql(select: Select, joinIndex = 0): string | null {
   const parser = getParser();
   const froms = Array.isArray(select.from) ? select.from : [];
-  const joinItem = froms.find((item) => "join" in item);
+  const joinItems = froms.filter((item) => "join" in item);
+  const joinItem = joinItems[joinIndex];
   if (!joinItem || !("table" in joinItem)) return null;
 
   try {

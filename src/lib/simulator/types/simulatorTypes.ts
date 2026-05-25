@@ -13,6 +13,12 @@ export type SimulatorStage = {
   type: SimulatorStageType;
   label: string;
   description: string;
+  /**
+   * 0-based index into the JOIN items array for multi-JOIN queries.
+   * Undefined for all non-JOIN stages and single-JOIN queries.
+   * joinIndex=0 → first JOIN, joinIndex=1 → second JOIN, etc.
+   */
+  joinIndex?: number;
 };
 
 export type SimulatorPipeline = {

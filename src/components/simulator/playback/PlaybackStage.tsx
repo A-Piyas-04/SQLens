@@ -17,10 +17,15 @@ type Props = {
   speed:         PlaybackSpeed;
 };
 
-/** Extract join type from the annotation text ("INNER JOIN", "LEFT JOIN", etc.). */
-function extractJoinType(annotation: string): string {
-  const m = annotation.match(/\b(INNER|LEFT|RIGHT|FULL(?: OUTER)?|CROSS)?\s*JOIN\b/i);
-  return m ? m[0].toUpperCase() : "JOIN";
+/**
+ * Extract the join type from the stage label (preferred — e.g. "LEFT JOIN orders")
+ * or fall back to the annotation text. Using the label is more reliable for
+ * multi-JOIN queries where the annotation may only describe the first join.
+ */
+function extractJoinType(annotation: string, label?: string): string {
+  const src = label ?? annotation;
+  const m = src.match(/\b(INNER|LEFT|RIGHT|FULL(?: OUTER)?|CROSS)?\s*JOIN\b/i);
+  return m ? m[0].trim().toUpperCase() : "JOIN";
 }
 
 const PlaybackStage = memo(function PlaybackStage({
@@ -55,7 +60,8 @@ const PlaybackStage = memo(function PlaybackStage({
             leftRows={prevSnapshot?.rows ?? []}
             rightRows={snapshot.rightTableRows ?? []}
             joinedRows={snapshot.rows}
-            joinType={extractJoinType(snapshot.annotation)}
+            joinType={extractJoinType(snapshot.annotation, snapshot.label)}
+            joinSql={snapshot.sql}
             animationKey={animationKey}
             speed={speed}
           />
