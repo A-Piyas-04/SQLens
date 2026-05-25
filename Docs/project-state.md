@@ -24,7 +24,7 @@ Users can currently:
 - ✅ Practice sidebar — sample databases, query templates, SQL snippets, visualization presets
 - ✅ One-click sample DB loaders (Students, E-commerce, Library, HR) with relational schemas and seed data
 - ✅ AI SQL Generator — natural language → SQL via Gemini, inserted into editor for manual review and run
-- ✅ SQL Execution Simulator — parse SQL into a logical execution pipeline and step through stage-by-stage table snapshots
+- ✅ SQL Execution Simulator — full visual simulator with JOIN, GROUP BY, HAVING, row diffing, diff annotations, JOIN canvas, and debug inspector
 
 ---
 
@@ -262,13 +262,17 @@ src/
 │   ├── erd/buildErdGraph.ts       # SchemaTable[] → React Flow nodes/edges
 │   ├── projects/projectStore.ts   # Project CRUD + localStorage helpers
 │   ├── simulator/
-│   │   ├── simulatorTypes.ts      # Stage types, pipeline types
-│   │   ├── snapshotTypes.ts       # Snapshot + result types
+│   │   ├── simulatorTypes.ts      # Stage types (incl. GROUP_BY, HAVING), pipeline types
+│   │   ├── snapshotTypes.ts       # TrackedRow, SimulatorSnapshot, StageDiff, RowDiff, SnapshotResult
 │   │   ├── parseSql.ts            # SQL → AST (node-sql-parser)
 │   │   ├── supportedSql.ts        # Validation gate
-│   │   ├── buildPipeline.ts       # AST → ordered stage list
-│   │   ├── buildStageSql.ts       # Stage → executable SQL string
-│   │   └── generateSnapshots.ts   # Orchestrates parse→execute→collect
+│   │   ├── buildPipeline.ts       # AST → ordered stage list (8 stage types)
+│   │   ├── buildStageSql.ts       # Stage → executable SQL string (all stages incl. JOIN, GROUP BY, HAVING)
+│   │   ├── assignRowIds.ts        # JS-side stable row ID assignment across stages
+│   │   ├── diffSnapshots.ts       # Consecutive snapshot diffing + reason strings
+│   │   ├── generateSnapshots.ts   # Orchestrates parse→execute→assign IDs→diff→collect
+│   │   ├── __fixtures__/queries.ts  # 11 fixture queries for testing
+│   │   └── __tests__/simulator.test.ts  # 32 regression tests (vitest)
 │   ├── sql/
 │   │   ├── assertSafeSql.ts       # Blocks destructive AI-generated SQL
 │   │   └── simplifyError.ts       # User-friendly PG error messages
@@ -287,45 +291,81 @@ src/
     ├── results/ResultTable.tsx
     ├── schema/               # SchemaSidebar, SchemaTableCard
     └── simulator/
-        ├── SimulatorPanel.tsx
-        ├── SimulatorStageList.tsx
-        ├── SimulatorSnapshotViewer.tsx
-        └── SimulatorSnapshotTable.tsx
+        ├── SimulatorPanel.tsx             # Orchestrates simulate button + debug panel
+        ├── SimulatorStageList.tsx         # Vertical stage pipeline display (unused in success state)
+        ├── SimulatorSnapshotViewer.tsx    # Stage pills + animated card + JOIN canvas wiring
+        ├── SimulatorSnapshotTable.tsx     # Diff-aware table: status colours, reason badges, NULL highlighting
+        ├── SimulatorJoinCanvas.tsx        # SVG row-matching visualization for JOIN stages
+        └── SimulatorDebugPanel.tsx        # Collapsible debug inspector (SQL / Row IDs / Diff tabs)
 ```
 
 ---
 
-# 🚧 Phase 4 — Remaining Simulator Work
+# ✅ Phase 4 — Simulator (Completed)
 
-## Phase 4.3 — JOIN Snapshots *(next)*
+## Phase 4.3 — JOIN Snapshots
 
-Currently, queries with INNER JOIN / LEFT JOIN are parsed and detected in the pipeline, but the JOIN stage returns an unsupported error in `buildStageSql`. This phase will:
+- FROM stage strips JOIN items — shows only the base table.
+- JOIN case implemented in `buildStageSql.ts`: keeps all FROM items + ON condition, `SELECT *`, no WHERE/ORDER BY/LIMIT.
+- Dynamic annotations for INNER JOIN and LEFT JOIN.
+- Right-table rows fetched in a separate query for the JOIN canvas.
 
-- Build JOIN stage SQL (cross-product + ON filter)
-- Execute JOIN snapshot against PGlite
-- Show joined rows in the snapshot table
+## Phase 4.4 — Stable Row Identity Tracking
 
-## Phase 4.4 — Row-Level Diffing *(future)*
+- `TrackedRow` type added to `snapshotTypes.ts`.
+- `assignRowIds.ts` — JS-side ID assignment by content-matching against previous stage rows.
+- Sequential `row-0`, `row-1`… IDs at the FROM stage; `row-new-N` for new rows.
+- IDs wired into `generateSnapshots.ts` after every stage.
 
-Compare rows between consecutive stages to identify:
-- Which rows were removed (WHERE filtering)
-- Which columns were hidden (SELECT projection)
-- How row order changed (ORDER BY)
-- Which rows were dropped (LIMIT)
+## Phase 4.5 + 4.6 — Snapshot Diffing + Explanation Metadata
 
-This is the foundation for future animation.
+- `diffSnapshots.ts` — computes `StageDiff` between consecutive snapshots.
+- Detects: removed, added, reordered, null-introduced, unchanged rows + hidden columns.
+- Human-readable `reason` strings per `RowDiff` (e.g. "Filtered out by WHERE condition", "Dropped — exceeds LIMIT N").
+- Diffs attached to `SnapshotResult` and passed through to UI.
 
-## Phase 4.5 — Visual Animations *(future)*
+## Phase 4.7 — Stage Animations + Enhanced Table
 
-Row-level animations using React View Transitions:
-- WHERE: rows fade out when filtered
-- SELECT: column projection (unused columns fade/collapse)
-- ORDER BY: rows reorder with motion
-- LIMIT: excess rows slide out
+- `SimulatorSnapshotTable` is diff-aware: colored rows by status (removed/added/reordered/null-introduced), reason badges, NULL cell highlighting, hidden column strikethrough headers.
+- `SimulatorSnapshotViewer` receives and looks up diffs per stage; fade-out/in card transition on stage navigate; removed row count badges on stage pills; removed rows shown inline at WHERE/HAVING/LIMIT stages.
 
-## Phase 4.6 — GROUP BY / HAVING *(future)*
+## Phase 4.8 — JOIN Visualization Canvas
 
-Extend `supportedSql.ts` and `buildStageSql.ts` to handle aggregation stages.
+- `SimulatorJoinCanvas.tsx` — two-column layout with SVG connector lines.
+- Solid green lines for matched pairs; dashed amber lines for LEFT JOIN NULLs.
+- Row pill colours reflect match / no-match / NULL status.
+- Embedded below the snapshot table in JOIN stage cards.
+
+## Phase 4.9 — GROUP BY / HAVING Support
+
+- `GROUP_BY` and `HAVING` added to `SimulatorStageType`, pipeline, stage SQL builder, and UI.
+- `supportedSql.ts` no longer rejects GROUP BY or HAVING.
+- Logical order: FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT.
+- Annotations: "Grouped N rows into K groups." / "K of N groups passed HAVING."
+
+## Phase 4.0 — Test Harness + Debug Mode
+
+- `vitest` added; 32 regression tests in `__tests__/simulator.test.ts` covering `buildStageSql`, `buildPipeline`, `validateSqlSupport`, `assignRowIds`, and `diffSnapshots`.
+- `__fixtures__/queries.ts` — 11 fixture queries covering every major pipeline path.
+- `SimulatorDebugPanel.tsx` — collapsible panel with SQL, Row IDs, and Diff tabs; wired into `SimulatorPanel`.
+
+### Updated supported query structures
+
+| Clause | Supported |
+|--------|-----------|
+| SELECT (any columns or `*`) | ✅ |
+| FROM (single table) | ✅ |
+| WHERE | ✅ |
+| INNER JOIN, LEFT JOIN | ✅ with JOIN canvas |
+| ORDER BY | ✅ |
+| LIMIT | ✅ |
+| GROUP BY | ✅ |
+| HAVING | ✅ |
+| CTEs (WITH) | ❌ not supported yet |
+| UNION | ❌ not supported yet |
+| Subqueries | ❌ not supported yet |
+| Window functions | ❌ not supported yet |
+| RIGHT / FULL / CROSS JOIN | ❌ not supported yet |
 
 ---
 

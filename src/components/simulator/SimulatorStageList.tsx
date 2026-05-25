@@ -1,6 +1,8 @@
 import {
   ArrowUpDown,
+  ChartBarStacked,
   Filter,
+  Funnel,
   GitMerge,
   Hash,
   Layers,
@@ -9,12 +11,14 @@ import {
 } from "lucide-react";
 
 import { cn } from "../../lib/utils/cn";
-import type { SimulatorStage, SimulatorStageType } from "../../lib/simulator/simulatorTypes";
+import type { SimulatorStage, SimulatorStageType } from "../../lib/simulator/types/simulatorTypes";
 
 const STAGE_ICONS: Record<SimulatorStageType, LucideIcon> = {
   FROM: Table2,
   JOIN: GitMerge,
   WHERE: Filter,
+  GROUP_BY: ChartBarStacked,
+  HAVING: Funnel,
   SELECT: Layers,
   ORDER_BY: ArrowUpDown,
   LIMIT: Hash,
@@ -24,6 +28,8 @@ const STAGE_COLORS: Record<SimulatorStageType, string> = {
   FROM: "text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/15",
   JOIN: "text-purple-400 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/15",
   WHERE: "text-amber-400 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/15",
+  GROUP_BY: "text-violet-400 bg-violet-500/10 border-violet-500/20 hover:bg-violet-500/15",
+  HAVING: "text-orange-400 bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/15",
   SELECT: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/15",
   ORDER_BY: "text-sky-400 bg-sky-500/10 border-sky-500/20 hover:bg-sky-500/15",
   LIMIT: "text-rose-400 bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/15",
@@ -33,6 +39,8 @@ const CONNECTOR_COLORS: Record<SimulatorStageType, string> = {
   FROM: "bg-blue-500/30",
   JOIN: "bg-purple-500/30",
   WHERE: "bg-amber-500/30",
+  GROUP_BY: "bg-violet-500/30",
+  HAVING: "bg-orange-500/30",
   SELECT: "bg-emerald-500/30",
   ORDER_BY: "bg-sky-500/30",
   LIMIT: "bg-rose-500/30",

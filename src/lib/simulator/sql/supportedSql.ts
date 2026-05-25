@@ -28,21 +28,6 @@ export function validateSqlSupport(ast: AST): ValidationResult {
     };
   }
 
-  // groupby is an object { columns, modifiers } — null columns means no GROUP BY
-  if (select.groupby?.columns && select.groupby.columns.length > 0) {
-    return {
-      supported: false,
-      reason: "GROUP BY simulation is not supported yet.",
-    };
-  }
-
-  if (select.having && select.having.length > 0) {
-    return {
-      supported: false,
-      reason: "HAVING simulation is not supported yet.",
-    };
-  }
-
   // UNION produces a linked chain via _next
   if (select._next) {
     return {

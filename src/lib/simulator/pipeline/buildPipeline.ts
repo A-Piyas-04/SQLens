@@ -4,7 +4,7 @@ import type {
   SimulatorPipeline,
   SimulatorStage,
   SimulatorStageType,
-} from "./simulatorTypes";
+} from "../types/simulatorTypes";
 
 const STAGE_METADATA: Record<
   SimulatorStageType,
@@ -22,6 +22,16 @@ const STAGE_METADATA: Record<
     label: "WHERE",
     description:
       "Filter rows using the WHERE condition — only matching rows continue.",
+  },
+  GROUP_BY: {
+    label: "GROUP BY",
+    description:
+      "Collapse rows into groups by the specified columns and compute aggregates.",
+  },
+  HAVING: {
+    label: "HAVING",
+    description:
+      "Filter groups using the HAVING condition — only matching groups continue.",
   },
   SELECT: {
     label: "SELECT",
@@ -53,7 +63,8 @@ function makeStage(type: SimulatorStageType, index: number): SimulatorStage {
  * Converts a parsed SELECT AST into a logical SQL execution pipeline.
  *
  * The pipeline follows SQL's logical execution order, which differs from
- * the written order: FROM → JOIN → WHERE → SELECT → ORDER BY → LIMIT.
+ * the written order:
+ *   FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
  */
 export function buildPipeline(ast: AST, sql: string): SimulatorPipeline {
   if (ast.type !== "select") {
@@ -81,16 +92,32 @@ export function buildPipeline(ast: AST, sql: string): SimulatorPipeline {
     stages.push(makeStage("WHERE", index++));
   }
 
-  // 4. SELECT — always present for a SELECT query
+  // 4. GROUP BY — aggregation
+  if (select.groupby?.columns && select.groupby.columns.length > 0) {
+    stages.push(makeStage("GROUP_BY", index++));
+  }
+
+  // 5. HAVING — group filtering (only valid after GROUP BY).
+  // node-sql-parser represents `having` as a single expression object (not an
+  // array), so we test for presence only, not `.length`.
+  if (select.having) {
+    stages.push(makeStage("HAVING", index++));
+  }
+
+  // 6. SELECT — always present for a SELECT query
   stages.push(makeStage("SELECT", index++));
 
-  // 5. ORDER BY — sorting
+  // 7. ORDER BY — sorting
   if (select.orderby && select.orderby.length > 0) {
     stages.push(makeStage("ORDER_BY", index++));
   }
 
-  // 6. LIMIT — row count restriction
-  if (select.limit) {
+  // 8. LIMIT — row count restriction.
+  // node-sql-parser sometimes populates `limit` with an empty value array as a
+  // parser artefact (e.g. `WHERE gpa > 3`).  Only add a LIMIT stage when the
+  // value array is non-empty and contains an actual numeric value.
+  const limitVal = select.limit?.value?.[0]?.value;
+  if (limitVal !== undefined && limitVal !== null) {
     stages.push(makeStage("LIMIT", index++));
   }
 

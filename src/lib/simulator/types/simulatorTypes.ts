@@ -2,6 +2,8 @@ export type SimulatorStageType =
   | "FROM"
   | "JOIN"
   | "WHERE"
+  | "GROUP_BY"
+  | "HAVING"
   | "SELECT"
   | "ORDER_BY"
   | "LIMIT";

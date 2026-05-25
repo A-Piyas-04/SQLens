@@ -5,8 +5,9 @@ import { AlertTriangle, Cpu, Info, Loader2 } from "lucide-react";
 import Panel from "../common/Panel";
 import Button from "../common/Button";
 import SimulatorSnapshotViewer from "./SimulatorSnapshotViewer";
-import { generateSnapshots } from "../../lib/simulator/generateSnapshots";
-import type { SimulatorSnapshot } from "../../lib/simulator/snapshotTypes";
+import SimulatorDebugPanel from "./SimulatorDebugPanel";
+import { generateSnapshots } from "../../lib/simulator/snapshot/generateSnapshots";
+import type { SimulatorSnapshot, StageDiff } from "../../lib/simulator/types/snapshotTypes";
 import { cn } from "../../lib/utils/cn";
 
 type Props = {
@@ -19,7 +20,12 @@ type PanelState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string; sql: string }
-  | { status: "success"; snapshots: SimulatorSnapshot[]; isSelection: boolean };
+  | {
+      status: "success";
+      snapshots: SimulatorSnapshot[];
+      diffs: StageDiff[];
+      isSelection: boolean;
+    };
 
 export default function SimulatorPanel({ query, selectedText, db }: Props) {
   const [state, setState] = useState<PanelState>({ status: "idle" });
@@ -42,6 +48,7 @@ export default function SimulatorPanel({ query, selectedText, db }: Props) {
     setState({
       status: "success",
       snapshots: result.snapshots,
+      diffs: result.diffs,
       isSelection,
     });
   }
@@ -81,6 +88,7 @@ export default function SimulatorPanel({ query, selectedText, db }: Props) {
         {state.status === "success" && (
           <SuccessState
             snapshots={state.snapshots}
+            diffs={state.diffs}
             isSelection={state.isSelection}
           />
         )}
@@ -101,7 +109,7 @@ function IdleState() {
         through each logical execution stage.
       </p>
       <p className="text-xs text-slate-600">
-        Supports SELECT · FROM · WHERE · ORDER BY · LIMIT
+        Supports SELECT · FROM · JOIN · WHERE · GROUP BY · HAVING · ORDER BY · LIMIT
       </p>
     </div>
   );
@@ -135,10 +143,11 @@ function ErrorState({ message, sql }: ErrorStateProps) {
 
 type SuccessStateProps = {
   snapshots: SimulatorSnapshot[];
+  diffs: StageDiff[];
   isSelection: boolean;
 };
 
-function SuccessState({ snapshots, isSelection }: SuccessStateProps) {
+function SuccessState({ snapshots, diffs, isSelection }: SuccessStateProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -152,7 +161,8 @@ function SuccessState({ snapshots, isSelection }: SuccessStateProps) {
           </span>
         )}
       </div>
-      <SimulatorSnapshotViewer snapshots={snapshots} />
+      <SimulatorSnapshotViewer snapshots={snapshots} diffs={diffs} />
+      <SimulatorDebugPanel snapshots={snapshots} diffs={diffs} />
     </div>
   );
 }
