@@ -54,6 +54,8 @@ export default function SqlContextPanel({
         <div className="overflow-hidden rounded-lg border border-slate-700/70 bg-slate-950/60">
           <CodeMirror
             value={originalSql}
+            height="280px"
+            minHeight="200px"
             editable={false}
             theme="dark"
             basicSetup={{ lineNumbers: false, foldGutter: false }}

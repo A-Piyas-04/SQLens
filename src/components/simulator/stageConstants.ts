@@ -10,7 +10,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { RowDiff, SimulatorSnapshot, SimulatorStageType, StageDiff } from "../../lib/simulator";
+import type {
+  RowDiff,
+  SimulatorSnapshot,
+  SimulatorStageType,
+  StageDiff,
+  TrackedRow,
+} from "../../lib/simulator";
 
 export const STAGE_ICONS: Record<SimulatorStageType, LucideIcon> = {
   FROM: Table2,
@@ -210,4 +216,15 @@ export function getRemovedRows(
   if (!prevSnapshot || !diff) return [];
   const prevById = new Set(prevSnapshot.rows.map((row) => row._rowId));
   return diff.rowDiffs.filter((row) => row.status === "removed" && prevById.has(row.rowId));
+}
+
+/** Column keys + display labels for intermediate (join result) tables. */
+export function getIntermediateResultColumns(
+  row: TrackedRow
+): Array<{ key: string; label: string }> {
+  const keys = Object.keys(row).filter((k) => k !== "_rowId");
+  return keys.map((key, index) => ({
+    key,
+    label: index === 0 && key === "id" ? "temp_id" : key,
+  }));
 }

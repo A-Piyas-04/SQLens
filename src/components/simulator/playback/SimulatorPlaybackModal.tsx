@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -20,6 +21,18 @@ type Props = {
   onClose:   () => void;
 };
 
+const SIDEBAR_WIDTH_MIN = 160;
+const SIDEBAR_WIDTH_MAX = 480;
+const SIDEBAR_WIDTH_DEFAULT = 220;
+
+function readSidebarWidth(): number {
+  if (typeof localStorage === "undefined") return SIDEBAR_WIDTH_DEFAULT;
+  const raw = localStorage.getItem("simulator:playbackSidebarWidth");
+  const n = raw ? Number.parseInt(raw, 10) : SIDEBAR_WIDTH_DEFAULT;
+  if (!Number.isFinite(n)) return SIDEBAR_WIDTH_DEFAULT;
+  return Math.min(SIDEBAR_WIDTH_MAX, Math.max(SIDEBAR_WIDTH_MIN, n));
+}
+
 /**
  * Fullscreen animated playback modal.
  *
@@ -34,6 +47,8 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
   const [showRowIds, setShowRowIds] = useState<boolean>(() => localStorage.getItem("simulator:showRowIds") === "1");
   const [showSqlMobile, setShowSqlMobile] = useState(false);
   const [showLessonMobile, setShowLessonMobile] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(readSidebarWidth);
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -104,6 +119,41 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
     localStorage.setItem("simulator:showRowIds", showRowIds ? "1" : "0");
   }, [showRowIds]);
 
+  const handleSidebarResizeStart = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = sidebarWidth;
+      setIsResizingSidebar(true);
+
+      const onMove = (ev: PointerEvent) => {
+        const next = Math.min(
+          SIDEBAR_WIDTH_MAX,
+          Math.max(SIDEBAR_WIDTH_MIN, startW + ev.clientX - startX)
+        );
+        setSidebarWidth(next);
+      };
+
+      const onUp = () => {
+        setIsResizingSidebar(false);
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        setSidebarWidth((w) => {
+          localStorage.setItem("simulator:playbackSidebarWidth", String(w));
+          return w;
+        });
+      };
+
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [sidebarWidth]
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
   const modal = (
     // Backdrop
@@ -151,20 +201,37 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
         </header>
 
         {/* Body: context + stage + lesson */}
-        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_280px]">
-          <SqlContextPanel
-            className="hidden h-full overflow-y-auto border-r border-slate-700/50 bg-slate-900/40 lg:block"
-            originalSql={originalSql}
-            activeStageType={snapshot.stageType}
-            joinStageIndex={Math.max(0, joinStageIndex)}
-            snapshots={snapshots}
-            diffs={diffs}
-            activeIndex={activeIndex}
-            navigate={pb.navigate}
-          />
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div
+            className="relative hidden shrink-0 lg:flex lg:flex-col"
+            style={{ width: sidebarWidth }}
+          >
+            <SqlContextPanel
+              className="h-full min-w-0 flex-1 overflow-y-auto border-r border-slate-700/50 bg-slate-900/40"
+              originalSql={originalSql}
+              activeStageType={snapshot.stageType}
+              joinStageIndex={Math.max(0, joinStageIndex)}
+              snapshots={snapshots}
+              diffs={diffs}
+              activeIndex={activeIndex}
+              navigate={pb.navigate}
+            />
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize SQL context panel"
+              aria-valuenow={sidebarWidth}
+              onPointerDown={handleSidebarResizeStart}
+              className={
+                isResizingSidebar
+                  ? "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize bg-sky-500/50"
+                  : "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-sky-500/30 active:bg-sky-500/50"
+              }
+            />
+          </div>
 
           {snapshot && (
-            <main className="flex flex-1 flex-col min-h-0 min-w-0">
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col">
               <div className="flex items-center gap-2 border-b border-slate-700/40 px-4 py-2 lg:hidden">
                 <button
                   onClick={() => setShowSqlMobile((v) => !v)}
@@ -192,7 +259,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
             </main>
           )}
 
-          <div className="hidden lg:block">
+          <div className="hidden w-[280px] shrink-0 lg:block">
             {snapshot && (
               <LessonPanel
                 snapshot={snapshot}

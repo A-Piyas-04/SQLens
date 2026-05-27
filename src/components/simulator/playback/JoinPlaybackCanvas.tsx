@@ -13,6 +13,7 @@ import {
 import { cn } from "../../../lib/utils/cn";
 import type { TrackedRow } from "../../../lib/simulator";
 import type { PlaybackSpeed } from "../../../hooks/useSimulatorPlayback";
+import { getIntermediateResultColumns } from "../stageConstants";
 
 type JoinPhase = "idle" | "tables" | "key-highlight" | "matching" | "result" | "done";
 
@@ -332,6 +333,11 @@ export default function JoinPlaybackCanvas({
   const joinedMatchMap = useMemo(
     () => buildMatchMap(leftRows, rightRows, joinedRows),
     [leftRows, rightRows, joinedRows]
+  );
+
+  const resultColumns = useMemo(
+    () => (joinedRows.length > 0 ? getIntermediateResultColumns(joinedRows[0]) : []),
+    [joinedRows]
   );
 
   const [phase, setPhase] = useState<JoinPhase>("idle");
@@ -714,14 +720,12 @@ export default function JoinPlaybackCanvas({
             <table className="w-full border-collapse text-xs">
               <thead className="sticky top-0 bg-slate-800/95 backdrop-blur-sm">
                 <tr>
-                  {Object.keys(joinedRows[0])
-                    .filter((k) => k !== "_rowId")
-                    .map((col) => {
+                  {resultColumns.map(({ key, label }) => {
                       const isKey =
-                        col === condition.leftKey || col === condition.rightKey;
+                        key === condition.leftKey || key === condition.rightKey;
                       return (
                         <th
-                          key={col}
+                          key={key}
                           className={cn(
                             "border-b px-3 py-2 text-left font-semibold whitespace-nowrap",
                             isKey
@@ -729,7 +733,7 @@ export default function JoinPlaybackCanvas({
                               : "border-b-slate-700/60 text-slate-300"
                           )}
                         >
-                          {col}
+                          {label}
                         </th>
                       );
                     })}
@@ -737,7 +741,6 @@ export default function JoinPlaybackCanvas({
               </thead>
               <tbody>
                 {joinedRows.map((row, i) => {
-                  const cols = Object.keys(row).filter((k) => k !== "_rowId");
                   const rightCols =
                     rightRows.length > 0
                       ? Object.keys(rightRows[0]).filter((k) => k !== "_rowId")
@@ -763,18 +766,18 @@ export default function JoinPlaybackCanvas({
                         } as CSSProperties
                       }
                     >
-                      {cols.map((col) => (
+                      {resultColumns.map(({ key }) => (
                         <td
-                          key={col}
+                          key={key}
                           className={cn(
                             "px-3 py-1.5 font-mono whitespace-nowrap",
-                            col === condition.leftKey || col === condition.rightKey
+                            key === condition.leftKey || key === condition.rightKey
                               ? "font-semibold text-sky-300"
                               : "text-slate-300",
-                            row[col] === null && "italic text-amber-400 pb-null-fade-in"
+                            row[key] === null && "italic text-amber-400 pb-null-fade-in"
                           )}
                         >
-                          {row[col] === null ? "NULL" : String(row[col])}
+                          {row[key] === null ? "NULL" : String(row[key])}
                         </td>
                       ))}
                     </tr>
