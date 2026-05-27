@@ -20,6 +20,7 @@ import type { PracticeCategoryId } from "./constants/practiceCategories";
 import { useActiveProject } from "./hooks/useActiveProject";
 import { useResizablePanel } from "./hooks/useResizablePanel";
 import { useSqlWorkspace } from "./hooks/useSqlWorkspace";
+import { clearAllLocalData } from "./lib/projects/projectStore";
 
 export default function App() {
   const editorRef = useRef<SqlEditorHandle>(null);
@@ -70,6 +71,15 @@ export default function App() {
     editorRef.current?.insertAtCursor(text);
   }
 
+  function handleClearLocalData() {
+    const confirmed = window.confirm(
+      "This will remove all local SQLens data on this browser (projects, drafts, query history, and simulator preferences). Continue?"
+    );
+    if (!confirmed) return;
+    clearAllLocalData();
+    window.location.reload();
+  }
+
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <ProjectSwitcher
@@ -79,6 +89,7 @@ export default function App() {
         onRename={renameProject}
         onDelete={deleteProject}
         onSwitch={switchProject}
+        onClearLocalData={handleClearLocalData}
       />
 
       <div className="h-px shrink-0 bg-slate-800/60" aria-hidden />

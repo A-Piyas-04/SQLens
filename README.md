@@ -33,6 +33,7 @@ A browser-based PostgreSQL playground for learning and experimenting with SQL. R
 
 - **AI SQL Generator** — Natural language → SQL via Google Gemini (Express backend); output is safety-checked and inserted into the editor for manual review and run
 - Requires `GEMINI_API_KEY` in `backend/.env` and the backend service running (see Docker below)
+- **Privacy note** — AI prompts are sent to Google Gemini; avoid entering secrets, credentials, or sensitive personal data
 
 ### SQL Execution Simulator
 
@@ -109,7 +110,10 @@ The frontend container runs `npm install` on start so new dependencies sync into
 | `backend/.env` | `GEMINI_API_KEY` | Google Gemini API key |
 | `backend/.env` | `GEMINI_MODEL` | Primary model (default `gemini-2.5-flash-lite`) |
 | `backend/.env` | `GEMINI_MODEL_FALLBACKS` | Optional comma-separated fallbacks if primary is rate-limited (defaults to `gemini-2.0-flash-lite`, `gemini-2.0-flash`, `gemini-1.5-flash`) |
-| `.env` (root) | `VITE_API_URL` | Backend URL for AI client (default `http://localhost:3001`) |
+| `backend/.env` | `ALLOWED_ORIGINS` | Comma-separated CORS allowlist (required in production), e.g. `https://sqlens.vercel.app` |
+| `backend/.env` | `AI_RATE_LIMIT_WINDOW_MS` | Rate-limit time window for AI route (default `60000`) |
+| `backend/.env` | `AI_RATE_LIMIT_MAX` | Max AI requests per IP per window (default `15`) |
+| `.env` (root) | `VITE_API_URL` | Backend URL for AI client. If empty, frontend uses same-origin `/api` |
 
 ### Production build
 
@@ -119,6 +123,45 @@ npm run preview
 ```
 
 Output: `dist/`
+
+## Deploying for real users
+
+### Frontend (Vercel or Netlify)
+
+SQLens frontend is a Vite SPA and can be deployed as static assets on either Vercel or Netlify:
+
+- Build command: `npm install && npm run build`
+- Output directory: `dist`
+
+### Backend (AI API)
+
+The AI endpoint is a separate Express backend (`backend/`) and must be deployed separately unless you convert it to provider-specific serverless functions.
+
+Required backend production env vars:
+
+- `GEMINI_API_KEY`
+- `ALLOWED_ORIGINS` (your frontend origin(s))
+
+Recommended backend production env vars:
+
+- `GEMINI_MODEL`
+- `GEMINI_MODEL_FALLBACKS`
+- `AI_RATE_LIMIT_WINDOW_MS`
+- `AI_RATE_LIMIT_MAX`
+
+### Frontend environment
+
+Set `VITE_API_URL` in your frontend deployment:
+
+- Example: `https://your-backend-domain.com`
+- If omitted, the app calls same-origin `/api`
+
+### Security baseline before going live
+
+- Restrict backend CORS with `ALLOWED_ORIGINS` (do not leave unrestricted in production)
+- Keep `GEMINI_API_KEY` server-side only (never expose via `VITE_*`)
+- Keep AI rate-limiting enabled (`AI_RATE_LIMIT_*`)
+- Tell users that queries/drafts/history are stored in browser local storage
 
 ### Tests
 
@@ -187,6 +230,8 @@ SQLens/
 | `sqlens-history-{projectId}` | Last 10 queries per project |
 | `simulator:playbackSidebarWidth` | Playback modal sidebar width |
 | `simulator:showRowIds` | Show row IDs in simulator UI |
+
+Use **ProjectSwitcher → Clear Local Data** to remove SQLens data from the current browser.
 
 ## Scripts
 

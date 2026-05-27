@@ -10,6 +10,9 @@ const ACTIVE_PROJECT_KEY = "sqlens-active-project";
 
 export const historyKey = (id: string) => `sqlens-history-${id}`;
 export const draftKey = (id: string) => `sqlens-draft-${id}`;
+const SIMULATOR_SIDEBAR_WIDTH_KEY = "simulator:playbackSidebarWidth";
+const SIMULATOR_SHOW_ROW_IDS_KEY = "simulator:showRowIds";
+const SIMULATOR_DEBUG_KEY = "simulator:debug";
 
 function generateId(): string {
   return `proj_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -81,6 +84,22 @@ export function getProjectDraft(id: string): string {
 
 export function setProjectDraft(id: string, sql: string): void {
   localStorage.setItem(draftKey(id), sql);
+}
+
+export function clearAllLocalData(): void {
+  const projects = getProjects();
+
+  localStorage.removeItem(PROJECTS_KEY);
+  localStorage.removeItem(ACTIVE_PROJECT_KEY);
+
+  for (const project of projects) {
+    localStorage.removeItem(historyKey(project.id));
+    localStorage.removeItem(draftKey(project.id));
+  }
+
+  localStorage.removeItem(SIMULATOR_SIDEBAR_WIDTH_KEY);
+  localStorage.removeItem(SIMULATOR_SHOW_ROW_IDS_KEY);
+  localStorage.removeItem(SIMULATOR_DEBUG_KEY);
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import {
 import { sanitizeGeneratedSql } from "../utils/sanitizeSql";
 
 const router = Router();
+const MAX_PROMPT_CHARS = 2_000;
 
 function parsePrompt(body: unknown): string {
   if (
@@ -24,6 +25,12 @@ function parsePrompt(body: unknown): string {
 
   if (!prompt) {
     throw new Error("Request body must include a non-empty string prompt.");
+  }
+
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    throw new Error(
+      `Prompt is too long. Maximum length is ${MAX_PROMPT_CHARS} characters.`
+    );
   }
 
   return prompt;

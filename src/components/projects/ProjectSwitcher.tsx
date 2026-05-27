@@ -11,6 +11,7 @@ type Props = {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onSwitch: (id: string) => void;
+  onClearLocalData: () => void;
 };
 
 export default function ProjectSwitcher({
@@ -20,6 +21,7 @@ export default function ProjectSwitcher({
   onRename,
   onDelete,
   onSwitch,
+  onClearLocalData,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -260,6 +262,21 @@ export default function ProjectSwitcher({
             >
               <Plus className="size-4 shrink-0" aria-hidden />
               New Project
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClearLocalData();
+                setIsOpen(false);
+              }}
+              className={cn(
+                "mt-1 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
+                "text-red-300/80 transition-colors hover:bg-red-950/50 hover:text-red-200"
+              )}
+            >
+              <Trash2 className="size-4 shrink-0" aria-hidden />
+              Clear Local Data
             </button>
           </div>
         </div>
