@@ -402,10 +402,7 @@ export default function JoinPlaybackCanvas({
       cursor += ms(400);
     }
 
-    schedule(() => {
-      setPersistentArrows([]);
-      setPhase("result");
-    }, cursor + ms(80));
+    schedule(() => setPhase("result"), cursor + ms(80));
     schedule(() => setPhase("done"), cursor + ms(520));
 
     return () => timers.forEach(clearTimeout);
@@ -545,7 +542,8 @@ export default function JoinPlaybackCanvas({
           </>
         )}
 
-        {phase === "matching" && persistentArrows.length > 0 && (
+        {persistentArrows.length > 0 &&
+          (phase === "matching" || phase === "result" || phase === "done") && (
           <JoinArrowOverlay
             stageRef={stageRef}
             arrows={persistentArrows}
@@ -628,7 +626,7 @@ export default function JoinPlaybackCanvas({
       )}
 
       <p className="text-[10px] text-slate-600">
-        Arrows stay visible as each tuple connects; lines clear when the result appears.
+        Arrows stay visible through the intermediate result; lines clear on the next query.
       </p>
     </div>
   );
