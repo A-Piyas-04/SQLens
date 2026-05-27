@@ -25,6 +25,8 @@ Users can currently:
 - ✅ One-click sample DB loaders (Students, E-commerce, Library, HR) with relational schemas and seed data
 - ✅ AI SQL Generator — natural language → SQL via Gemini, inserted into editor for manual review and run
 - ✅ SQL Execution Simulator — full visual simulator with JOIN, GROUP BY, HAVING, row diffing, diff annotations, JOIN canvas, and debug inspector
+- ✅ Simulator Playback Modal — fullscreen animated playback with autoplay, speed control (0.5×–4×), FLIP row animations, animated JOIN canvas, floating stage annotations, and keyboard shortcuts
+- ✅ ERD scroll button — one-click smooth scroll to the Entity Relationship Diagram from the editor toolbar
 
 ---
 
@@ -251,7 +253,9 @@ src/
 │   ├── useActiveProject.ts        # Project list + active project + db instance
 │   ├── useQueryHistory.ts         # Per-project history (localStorage)
 │   ├── useResizablePanel.ts       # Sidebar drag-resize
-│   └── useSqlWorkspace.ts         # Central workspace state hook
+│   ├── useSqlWorkspace.ts         # Central workspace state hook
+│   ├── useSimulatorPlayback.ts    # Playback state: index, play/pause, speed, autoplay interval
+│   └── useFlipAnimation.ts        # FLIP animation for ORDER BY row reordering
 ├── lib/
 │   ├── api/aiClient.ts            # generateSql() — POST to backend
 │   ├── db/
@@ -262,15 +266,20 @@ src/
 │   ├── erd/buildErdGraph.ts       # SchemaTable[] → React Flow nodes/edges
 │   ├── projects/projectStore.ts   # Project CRUD + localStorage helpers
 │   ├── simulator/
-│   │   ├── simulatorTypes.ts      # Stage types (incl. GROUP_BY, HAVING), pipeline types
-│   │   ├── snapshotTypes.ts       # TrackedRow, SimulatorSnapshot, StageDiff, RowDiff, SnapshotResult
-│   │   ├── parseSql.ts            # SQL → AST (node-sql-parser)
-│   │   ├── supportedSql.ts        # Validation gate
-│   │   ├── buildPipeline.ts       # AST → ordered stage list (8 stage types)
-│   │   ├── buildStageSql.ts       # Stage → executable SQL string (all stages incl. JOIN, GROUP BY, HAVING)
-│   │   ├── assignRowIds.ts        # JS-side stable row ID assignment across stages
-│   │   ├── diffSnapshots.ts       # Consecutive snapshot diffing + reason strings
-│   │   ├── generateSnapshots.ts   # Orchestrates parse→execute→assign IDs→diff→collect
+│   │   ├── index.ts               # Barrel export for public API
+│   │   ├── types/
+│   │   │   ├── simulatorTypes.ts  # Stage types (incl. GROUP_BY, HAVING), pipeline types
+│   │   │   └── snapshotTypes.ts   # TrackedRow, SimulatorSnapshot, StageDiff, RowDiff, SnapshotResult
+│   │   ├── sql/
+│   │   │   ├── parseSql.ts        # SQL → AST (node-sql-parser)
+│   │   │   ├── supportedSql.ts    # Validation gate
+│   │   │   └── buildStageSql.ts   # Stage → executable SQL string (all stages incl. JOIN, GROUP BY, HAVING)
+│   │   ├── pipeline/
+│   │   │   └── buildPipeline.ts   # AST → ordered stage list (8 stage types)
+│   │   ├── snapshot/
+│   │   │   ├── assignRowIds.ts    # JS-side stable row ID assignment across stages
+│   │   │   ├── diffSnapshots.ts   # Consecutive snapshot diffing + reason strings
+│   │   │   └── generateSnapshots.ts  # Orchestrates parse→execute→assign IDs→diff→collect
 │   │   ├── __fixtures__/queries.ts  # 11 fixture queries for testing
 │   │   └── __tests__/simulator.test.ts  # 32 regression tests (vitest)
 │   ├── sql/
@@ -285,18 +294,27 @@ src/
     ├── editor/SqlEditor.tsx
     ├── erd/                  # ErdViewer, ErdTableNode
     ├── features/             # QueryToolbar, QueryHistory
-    ├── layout/               # AppHeader, WorkspaceLayout, ResizableSidebar, …
+    ├── layout/               # AppHeader, WorkspaceLayout, ResizableSidebar, ErdScrollButton, …
     ├── practice/             # PracticeSidebar, PracticeRadialMenu, …
     ├── projects/ProjectSwitcher.tsx
     ├── results/ResultTable.tsx
     ├── schema/               # SchemaSidebar, SchemaTableCard
     └── simulator/
-        ├── SimulatorPanel.tsx             # Orchestrates simulate button + debug panel
+        ├── SimulatorPanel.tsx             # Orchestrates simulate button + snapshot viewer + debug panel + playback modal trigger
         ├── SimulatorStageList.tsx         # Vertical stage pipeline display (unused in success state)
         ├── SimulatorSnapshotViewer.tsx    # Stage pills + animated card + JOIN canvas wiring
         ├── SimulatorSnapshotTable.tsx     # Diff-aware table: status colours, reason badges, NULL highlighting
-        ├── SimulatorJoinCanvas.tsx        # SVG row-matching visualization for JOIN stages
-        └── SimulatorDebugPanel.tsx        # Collapsible debug inspector (SQL / Row IDs / Diff tabs)
+        ├── SimulatorJoinCanvas.tsx        # Static SVG row-matching visualization for JOIN stages (in snapshot viewer)
+        ├── SimulatorDebugPanel.tsx        # Collapsible debug inspector (SQL / Row IDs / Diff tabs)
+        └── playback/
+            ├── SimulatorPlaybackModal.tsx # Fullscreen portal modal with keyboard shortcuts
+            ├── PlaybackTimeline.tsx       # Left sidebar execution plan with stage nav
+            ├── PlaybackControls.tsx       # Transport bar: play/pause/prev/next/restart/speed/progress bar
+            ├── PlaybackStage.tsx          # Stage content dispatcher (table vs JOIN canvas)
+            ├── PlaybackTable.tsx          # Animated diff-aware table with row virtualization + FLIP
+            ├── PlaybackRow.tsx            # Individual animated <tr> with status badge + reason
+            ├── JoinPlaybackCanvas.tsx     # 4-phase animated JOIN visualization with SVG connector lines
+            └── StageAnnotation.tsx        # Floating annotation card (bottom-right overlay)
 ```
 
 ---
@@ -348,6 +366,66 @@ src/
 - `vitest` added; 32 regression tests in `__tests__/simulator.test.ts` covering `buildStageSql`, `buildPipeline`, `validateSqlSupport`, `assignRowIds`, and `diffSnapshots`.
 - `__fixtures__/queries.ts` — 11 fixture queries covering every major pipeline path.
 - `SimulatorDebugPanel.tsx` — collapsible panel with SQL, Row IDs, and Diff tabs; wired into `SimulatorPanel`.
+
+## Phase 4.10 — Simulator Playback Modal + Lib Refactor
+
+**Shipped.** Immersive fullscreen playback of simulation stages with autoplay, speed control, and animated diff visualization.
+
+### Simulator library refactored into sub-folders
+
+The flat `src/lib/simulator/` files have been reorganized:
+
+```
+src/lib/simulator/
+├── index.ts                        # Barrel export for public API
+├── types/
+│   ├── simulatorTypes.ts           # SimulatorStageType union, pipeline types
+│   └── snapshotTypes.ts            # TrackedRow, SimulatorSnapshot, StageDiff, RowDiff, SnapshotResult
+├── sql/
+│   ├── parseSql.ts                 # SQL → AST (node-sql-parser)
+│   ├── supportedSql.ts             # Validation gate
+│   └── buildStageSql.ts            # Stage → executable SQL string
+├── pipeline/
+│   └── buildPipeline.ts            # AST → ordered stage list
+├── snapshot/
+│   ├── assignRowIds.ts             # JS-side stable row ID assignment
+│   ├── diffSnapshots.ts            # Consecutive snapshot diffing + reason strings
+│   └── generateSnapshots.ts        # Orchestrates parse→execute→assign IDs→diff→collect
+├── __fixtures__/queries.ts
+└── __tests__/simulator.test.ts
+```
+
+### New hooks
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/useSimulatorPlayback.ts` | Manages playback state: active index, play/pause, speed (0.5×/1×/2×/4×), auto-advance interval via `setInterval`, `animationKey` counter for table re-animation. Debug logs enabled via `localStorage["simulator:debug"] = "1"`. |
+| `src/hooks/useFlipAnimation.ts` | FLIP (First/Last/Invert/Play) animation for smooth row reordering at the ORDER_BY stage. Registers `<tr>` refs, captures pre-render positions, applies inverted `translateY` then transitions to zero. |
+
+### New layout component
+
+| File | Purpose |
+|------|---------|
+| `src/components/layout/ErdScrollButton.tsx` | Circular 32px button with `GitFork` icon in the editor toolbar — calls `scrollIntoView({ behavior: "smooth" })` on `#erd-section`. |
+
+### Playback UI layer (`src/components/simulator/playback/`)
+
+| File | Purpose |
+|------|---------|
+| `SimulatorPlaybackModal.tsx` | Fullscreen React portal modal; scroll-locks `document.body`, traps focus on close button, handles keyboard shortcuts: Space=play/pause, ←/→=navigate, R=restart, Esc=close. Lazy-loaded from `SimulatorPanel`. |
+| `PlaybackTimeline.tsx` | 192px left sidebar showing the execution plan; each stage is a clickable button with icon (stage-specific Lucide icon), label, row count, colored active dot, and a ✓ checkmark for completed stages. Color-coded per stage type. |
+| `PlaybackControls.tsx` | Bottom transport bar: Prev/Play-Pause/Restart/Next buttons, "Stage N of M" counter, speed selector (0.5×/1×/2×/4×), animated progress drain bar (CSS `pb-progress-drain` keyframe resets on each stage). |
+| `PlaybackStage.tsx` | Main stage content area; dispatches to `PlaybackTable` for regular stages or `JoinPlaybackCanvas` for JOIN stages; collects removed rows from diff for inline display at WHERE/HAVING/LIMIT stages; hosts floating `StageAnnotation`. |
+| `PlaybackTable.tsx` | Diff-aware animated table with virtualization (>40 rows shows head-15 + ellipsis + tail-5); FLIP animation wired for ORDER_BY via `useFlipAnimation`; CSS animation duration driven by `--pb-anim-ms` custom property. |
+| `PlaybackRow.tsx` | Individual `<tr>` with `data-status` attribute for CSS targeting; staggered 55ms delay per row via `--pb-row-delay`; status badge ("filtered", "matched", "reordered", "null row") + reason text in a "change" column. |
+| `JoinPlaybackCanvas.tsx` | 4-phase animation machine (idle → tables → lines → result → done); two fixed 160px key panels + flex-1 gap for SVG; connector lines drawn sequentially via `strokeDashoffset` animation (520ms/line); solid green = matched, dashed amber = LEFT JOIN NULL rows. Parses ON condition from SQL to show join key columns. |
+| `StageAnnotation.tsx` | Floating annotation card (bottom-right of stage area, `absolute bottom-5 right-5`); shows stage label, human-readable annotation, and diff summary (e.g. "3 rows removed"); dismissible; reappears on every stage navigation. |
+
+### SimulatorPanel updates
+
+- **"Play Simulation" button** added to the success state header row.
+- `SimulatorPlaybackModal` is lazy-loaded (`React.lazy`) — zero bundle cost until first open.
+- All simulator imports updated to use new sub-folder paths.
 
 ### Updated supported query structures
 
