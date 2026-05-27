@@ -142,3 +142,51 @@ These are not code changes and must be configured in your hosting dashboards:
 4. Requests from unapproved origins are blocked by CORS.
 5. Rapid repeated AI calls return `429` when rate limit is exceeded.
 6. `Clear Local Data` removes projects/history/drafts and reloads cleanly.
+
+## 9) Option A implementation (Vercel serverless, no separate backend)
+
+To remove the need for a separately deployed backend, AI generation is now served by a Vercel function in this repository.
+
+### 9.1 New serverless AI endpoint
+
+- Added `api/generate-sql.ts`
+- Endpoint: `POST /api/generate-sql`
+- Responsibilities:
+  - Prompt validation (`prompt` required, max length 2000 chars)
+  - In-function IP rate limiting (`AI_RATE_LIMIT_WINDOW_MS`, `AI_RATE_LIMIT_MAX`)
+  - Gemini call with model fallback chain
+  - SQL safety sanitization before returning response
+
+Supporting modules added:
+
+- `api/_lib/buildSqlPrompt.ts`
+- `api/_lib/gemini.ts`
+- `api/_lib/rateLimit.ts`
+- `api/_lib/sanitizeSql.ts`
+
+### 9.2 Vercel routing safety fix
+
+- Updated `vercel.json` so `/api/*` routes are preserved and not rewritten to `index.html`.
+- This prevents SPA fallback from breaking API responses.
+
+### 9.3 Environment model after Option A
+
+No separate backend deployment is required for production.
+
+Set these in Vercel Project Environment Variables:
+
+- `GEMINI_API_KEY` (required)
+- `GEMINI_MODEL` (optional)
+- `GEMINI_MODEL_FALLBACKS` (optional)
+- `AI_RATE_LIMIT_WINDOW_MS` (optional)
+- `AI_RATE_LIMIT_MAX` (optional)
+
+`VITE_API_URL` should remain empty for same-origin serverless calls.
+
+### 9.4 API key exposure posture
+
+With Option A:
+
+- `GEMINI_API_KEY` is read only in serverless function code.
+- Frontend never receives or stores the key.
+- Client calls only `/api/generate-sql`, not Gemini directly.

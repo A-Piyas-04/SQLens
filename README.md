@@ -31,8 +31,8 @@ A browser-based PostgreSQL playground for learning and experimenting with SQL. R
 
 ### AI SQL generation (optional)
 
-- **AI SQL Generator** — Natural language → SQL via Google Gemini (Express backend); output is safety-checked and inserted into the editor for manual review and run
-- Requires `GEMINI_API_KEY` in `backend/.env` and the backend service running (see Docker below)
+- **AI SQL Generator** — Natural language → SQL via Google Gemini through Vercel serverless route `POST /api/generate-sql`
+- Requires only server-side env vars on Vercel (no separate backend deployment required)
 - **Privacy note** — AI prompts are sent to Google Gemini; avoid entering secrets, credentials, or sensitive personal data
 
 ### SQL Execution Simulator
@@ -87,7 +87,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-Query execution and persistence work without the backend. AI generation requires the backend (see Docker or run `backend` separately).
+Query execution and persistence work without any server. AI generation works when `GEMINI_API_KEY` is configured in Vercel project environment variables.
 
 ### Full stack with Docker
 
@@ -105,15 +105,14 @@ The frontend container runs `npm install` on start so new dependencies sync into
 
 ### Environment variables
 
-| File | Variable | Purpose |
+| Scope | Variable | Purpose |
 |------|----------|---------|
-| `backend/.env` | `GEMINI_API_KEY` | Google Gemini API key |
-| `backend/.env` | `GEMINI_MODEL` | Primary model (default `gemini-2.5-flash-lite`) |
-| `backend/.env` | `GEMINI_MODEL_FALLBACKS` | Optional comma-separated fallbacks if primary is rate-limited (defaults to `gemini-2.0-flash-lite`, `gemini-2.0-flash`, `gemini-1.5-flash`) |
-| `backend/.env` | `ALLOWED_ORIGINS` | Comma-separated CORS allowlist (required in production), e.g. `https://sqlens.vercel.app` |
-| `backend/.env` | `AI_RATE_LIMIT_WINDOW_MS` | Rate-limit time window for AI route (default `60000`) |
-| `backend/.env` | `AI_RATE_LIMIT_MAX` | Max AI requests per IP per window (default `15`) |
-| `.env` (root) | `VITE_API_URL` | Backend URL for AI client. If empty, frontend uses same-origin `/api` |
+| Vercel server env | `GEMINI_API_KEY` | Google Gemini API key (server-only; never expose in client) |
+| Vercel server env | `GEMINI_MODEL` | Primary model (default `gemini-2.5-flash-lite`) |
+| Vercel server env | `GEMINI_MODEL_FALLBACKS` | Optional comma-separated fallback models |
+| Vercel server env | `AI_RATE_LIMIT_WINDOW_MS` | AI route time window in milliseconds (default `60000`) |
+| Vercel server env | `AI_RATE_LIMIT_MAX` | AI route max requests per IP in window (default `15`) |
+| Frontend `.env` (optional) | `VITE_API_URL` | External API base URL override. Keep empty for same-origin `/api` on Vercel |
 
 ### Production build
 
@@ -133,16 +132,17 @@ SQLens frontend is a Vite SPA and can be deployed as static assets on either Ver
 - Build command: `npm install && npm run build`
 - Output directory: `dist`
 
-### Backend (AI API)
+### AI API (no separate backend deployment)
 
-The AI endpoint is a separate Express backend (`backend/`) and must be deployed separately unless you convert it to provider-specific serverless functions.
+The AI endpoint is implemented as a Vercel serverless function:
 
-Required backend production env vars:
+- `api/generate-sql.ts`
+
+Required Vercel env vars:
 
 - `GEMINI_API_KEY`
-- `ALLOWED_ORIGINS` (your frontend origin(s))
 
-Recommended backend production env vars:
+Recommended Vercel env vars:
 
 - `GEMINI_MODEL`
 - `GEMINI_MODEL_FALLBACKS`
@@ -151,14 +151,12 @@ Recommended backend production env vars:
 
 ### Frontend environment
 
-Set `VITE_API_URL` in your frontend deployment:
+Set `VITE_API_URL` only if you intentionally use an external API host.
 
-- Example: `https://your-backend-domain.com`
-- If omitted, the app calls same-origin `/api`
+For this Vercel serverless setup, keep it empty so the frontend calls same-origin `/api`.
 
 ### Security baseline before going live
 
-- Restrict backend CORS with `ALLOWED_ORIGINS` (do not leave unrestricted in production)
 - Keep `GEMINI_API_KEY` server-side only (never expose via `VITE_*`)
 - Keep AI rate-limiting enabled (`AI_RATE_LIMIT_*`)
 - Tell users that queries/drafts/history are stored in browser local storage
@@ -211,7 +209,8 @@ SQLens/
 │       ├── projects/           # Project store
 │       ├── simulator/          # Parse → pipeline → snapshots → diffs
 │       └── sql/                # assertSafeSql, simplifyError
-├── backend/                    # Express + Gemini AI routes
+├── api/                        # Vercel serverless AI route (/api/generate-sql)
+├── backend/                    # Optional local Express backend (legacy/local workflows)
 ├── Docs/
 │   ├── project-state.md        # Roadmap and feature status
 │   └── gui-structure.md        # UI layout reference
