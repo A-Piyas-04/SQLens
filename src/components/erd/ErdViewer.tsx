@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { SchemaTable } from "../../lib/db/schema";
 import { buildErdGraph, type ErdTableNodeData } from "../../lib/erd/buildErdGraph";
 import type { Node } from "@xyflow/react";
+import ErdExportMenu from "./ErdExportMenu";
 import ErdTableNode from "./ErdTableNode";
 
 type ErdNode = Node<ErdTableNodeData, "erdTable">;
@@ -31,6 +32,7 @@ export default function ErdViewer({ tables }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ErdNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const rfInstanceRef = useRef<ReactFlowInstance<ErdNode, Edge> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const { nodes: newNodes, edges: newEdges } = buildErdGraph(tables);
@@ -60,7 +62,10 @@ export default function ErdViewer({ tables }: Props) {
   }
 
   return (
-    <div className="h-[540px] overflow-hidden rounded-lg border border-slate-700/60">
+    <div
+      ref={containerRef}
+      className="h-[540px] overflow-hidden rounded-lg border border-slate-700/60"
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -98,6 +103,8 @@ export default function ErdViewer({ tables }: Props) {
             borderRadius: "8px",
           }}
         />
+
+        <ErdExportMenu tables={tables} containerRef={containerRef} />
       </ReactFlow>
     </div>
   );

@@ -325,6 +325,10 @@ body {
 }
 
 /* React Flow dark theme overrides */
+.react-flow__viewport svg {
+  overflow: visible;
+}
+
 .react-flow__controls {
   --xy-controls-button-background-color: #1e293b;
   --xy-controls-button-background-color-hover: #334155;

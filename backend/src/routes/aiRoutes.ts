@@ -30,10 +30,10 @@ function parsePrompt(body: unknown): string {
 }
 
 const QUOTA_ERROR_MESSAGE =
-  "AI quota exceeded. Please wait a bit or switch to another free model/API key.";
+  "AI quota exceeded on all configured Gemini models. Please wait a bit or add another model via GEMINI_MODEL_FALLBACKS.";
 
 const MODEL_ERROR_MESSAGE =
-  "AI model is unavailable for this API key. Set GEMINI_MODEL in backend/.env (e.g. gemini-2.5-flash-lite).";
+  "No configured Gemini model is available for this API key. Set GEMINI_MODEL and optionally GEMINI_MODEL_FALLBACKS in backend/.env.";
 
 function sendAiError(
   res: Response,

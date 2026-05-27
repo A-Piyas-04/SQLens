@@ -19,6 +19,7 @@ Users can currently:
 - ✅ Concise PostgreSQL error messages (FK, syntax, missing table/column, etc.)
 - ✅ Mobile-responsive layout (stacked sidebar, responsive header and buttons)
 - ✅ Interactive ERD viewer — live schema as a React Flow graph with FK arrows, zoom, pan, fit view, minimap
+- ✅ ERD export — dropdown on canvas: PNG, SVG, PDF (visual fidelity via viewport capture), and Designed Text modal (copyable schema text for AI chat)
 - ✅ Project workspaces — isolated PGlite databases per project with independent schema, ERD, history, and editor draft
 - ✅ Selected query runner — run only selected SQL (or fall back to full editor); Ctrl+Enter shortcut
 - ✅ Practice sidebar — sample databases, query templates, SQL snippets, visualization presets
@@ -45,13 +46,30 @@ All core features shipped. Database persists via IndexedDB (PGlite). Schema extr
 | `src/lib/db/schema.ts` | Extended with `primaryKeys: string[]` per table via `information_schema` PK query |
 | `src/lib/erd/buildErdGraph.ts` | Converts `SchemaTable[]` into React Flow `Node[]` and `Edge[]` with auto grid layout |
 | `src/components/erd/ErdTableNode.tsx` | Custom React Flow node — table name header, column rows with PK/FK badges and data types |
-| `src/components/erd/ErdViewer.tsx` | ReactFlow canvas with Background, Controls, MiniMap, fitView on schema change |
+| `src/components/erd/ErdViewer.tsx` | ReactFlow canvas with Background, Controls, MiniMap, fitView on schema change; mounts `ErdExportMenu` |
+| `src/components/erd/ErdExportMenu.tsx` | Top-right Export dropdown on canvas (PDF / PNG / SVG / Designed Text) |
 | `src/App.tsx` | ERD panel added below the results table, receives `workspace.tables` |
-| `src/index.css` | Dark-theme CSS variable overrides for ReactFlow Controls and MiniMap |
+| `src/index.css` | Dark-theme CSS variable overrides for ReactFlow Controls and MiniMap; `svg { overflow: visible }` for export |
 
 Capabilities: live schema refresh, zoom/pan/fit-view, minimap, FK arrows with labels, PK/FK column badges, empty-state message.
 
 **Dependency added:** `@xyflow/react` (MIT)
+
+### Phase 1.5d — ERD Export
+
+| File | Purpose |
+|------|---------|
+| `src/lib/erd/export/downloadFile.ts` | Shared Blob → programmatic `<a download>` helper |
+| `src/lib/erd/export/captureErdViewport.ts` | PNG/SVG via `html-to-image` + `getNodesBounds` / `getViewportForBounds`; excludes controls/minimap, keeps dot background |
+| `src/lib/erd/export/exportErdPdf.ts` | PDF embeds captured PNG via `jspdf` |
+| `src/lib/erd/buildDesignedText.ts` | ASCII entity boxes, relationships, constraints → plain text for LLM paste |
+| `src/lib/erd/__tests__/buildDesignedText.test.ts` | Unit tests for designed-text output |
+| `src/components/erd/DesignedTextModal.tsx` | Fullscreen-style modal with schema text, prominent Copy button, close (×) and backdrop/Escape dismiss |
+| `src/components/erd/ErdExportMenu.tsx` | Export dropdown; Designed Text opens modal (no file download); hover tooltip on menu row |
+
+Export filenames: `erd-diagram.png`, `erd-diagram.svg`, `erd-diagram.pdf`. Visual exports use current node positions (including user drags).
+
+**Dependencies added:** `html-to-image@1.11.11` (pinned — newer versions have known export bugs), `jspdf`
 
 ### Phase 1.5b — Project Workspaces
 
@@ -124,10 +142,10 @@ User prompt (textarea in popover)
 |------|---------|
 | `backend/src/index.ts` | Express 5 app — CORS, JSON body parsing, mounts AI router |
 | `backend/src/routes/aiRoutes.ts` | `POST /generate-sql` — validates prompt, calls Gemini, returns `{ sql }`; maps quota/model/bad-prompt errors to HTTP status codes |
-| `backend/src/services/gemini.ts` | `generateWithGemini(prompt)` — singleton Gemini client; `AiQuotaExceededError`, `AiModelUnavailableError` custom errors |
+| `backend/src/services/gemini.ts` | `generateWithGemini(prompt)` — tries `GEMINI_MODEL` then fallback models on quota/404/503; `AiQuotaExceededError` only after all models fail |
 
 **Env vars required:**
-- `backend/.env`: `GEMINI_API_KEY`, optionally `GEMINI_MODEL` (default `gemini-2.5-flash-lite`)
+- `backend/.env`: `GEMINI_API_KEY`; optionally `GEMINI_MODEL` (default `gemini-2.5-flash-lite`); optionally `GEMINI_MODEL_FALLBACKS` (comma-separated, else built-in chain: `gemini-2.0-flash-lite`, `gemini-2.0-flash`, `gemini-1.5-flash`)
 - `.env` (root): `VITE_API_URL` (default `http://localhost:3001`)
 
 **Dependency added:** `node-sql-parser` (frontend); `@google/generative-ai` (backend)
@@ -220,6 +238,8 @@ User prompt (textarea in popover)
 | PGlite (`@electric-sql/pglite`) | ^0.4 | In-browser PostgreSQL |
 | CodeMirror (`@uiw/react-codemirror`) | ^4.25 | SQL editor |
 | React Flow (`@xyflow/react`) | ^12.10 | ERD visualization |
+| html-to-image | 1.11.11 | ERD viewport capture (PNG/SVG) |
+| jspdf | ^4.2 | ERD PDF export |
 | node-sql-parser | ^5.4 | SQL → AST parsing for simulator |
 | lucide-react | ^1.16 | Icons |
 | clsx | ^2.1 | Conditional class names |
@@ -263,7 +283,14 @@ src/
 │   │   ├── pglite.ts              # Legacy singleton (superseded)
 │   │   ├── query.ts               # runQuery, resetDatabase, execSqlScript
 │   │   └── schema.ts              # getSchema() from information_schema
-│   ├── erd/buildErdGraph.ts       # SchemaTable[] → React Flow nodes/edges
+│   ├── erd/
+│   │   ├── buildErdGraph.ts       # SchemaTable[] → React Flow nodes/edges
+│   │   ├── buildDesignedText.ts   # Schema → ASCII text export for AI chat
+│   │   ├── __tests__/buildDesignedText.test.ts
+│   │   └── export/
+│   │       ├── downloadFile.ts
+│   │       ├── captureErdViewport.ts
+│   │       └── exportErdPdf.ts
 │   ├── projects/projectStore.ts   # Project CRUD + localStorage helpers
 │   ├── simulator/
 │   │   ├── index.ts               # Barrel export for public API
@@ -281,7 +308,7 @@ src/
 │   │   │   ├── diffSnapshots.ts   # Consecutive snapshot diffing + reason strings
 │   │   │   └── generateSnapshots.ts  # Orchestrates parse→execute→assign IDs→diff→collect
 │   │   ├── __fixtures__/queries.ts  # 11 fixture queries for testing
-│   │   └── __tests__/simulator.test.ts  # 32 regression tests (vitest)
+│   │   └── __tests__/simulator.test.ts  # 32 simulator regression tests (vitest)
 │   ├── sql/
 │   │   ├── assertSafeSql.ts       # Blocks destructive AI-generated SQL
 │   │   └── simplifyError.ts       # User-friendly PG error messages
@@ -292,7 +319,7 @@ src/
     ├── ai/AiSqlGeneratorPopover.tsx
     ├── common/               # Button, Panel, StatusMessage, AnimatedReveal
     ├── editor/SqlEditor.tsx
-    ├── erd/                  # ErdViewer, ErdTableNode
+    ├── erd/                  # ErdViewer, ErdTableNode, ErdExportMenu
     ├── features/             # QueryToolbar, QueryHistory
     ├── layout/               # AppHeader, WorkspaceLayout, ResizableSidebar, ErdScrollButton, …
     ├── practice/             # PracticeSidebar, PracticeRadialMenu, …
@@ -300,6 +327,7 @@ src/
     ├── results/ResultTable.tsx
     ├── schema/               # SchemaSidebar, SchemaTableCard
     └── simulator/
+        ├── StageStepList.tsx              # Horizontal/vertical stage pills (snapshot viewer + playback sidebar)
         ├── SimulatorPanel.tsx             # Orchestrates simulate button + snapshot viewer + debug panel + playback modal trigger
         ├── SimulatorStageList.tsx         # Vertical stage pipeline display (unused in success state)
         ├── SimulatorSnapshotViewer.tsx    # Stage pills + animated card + JOIN canvas wiring
@@ -308,13 +336,16 @@ src/
         ├── SimulatorDebugPanel.tsx        # Collapsible debug inspector (SQL / Row IDs / Diff tabs)
         └── playback/
             ├── SimulatorPlaybackModal.tsx # Fullscreen portal modal with keyboard shortcuts
-            ├── PlaybackTimeline.tsx       # Left sidebar execution plan with stage nav
-            ├── PlaybackControls.tsx       # Transport bar: play/pause/prev/next/restart/speed/progress bar
-            ├── PlaybackStage.tsx          # Stage content dispatcher (table vs JOIN canvas)
-            ├── PlaybackTable.tsx          # Animated diff-aware table with row virtualization + FLIP
-            ├── PlaybackRow.tsx            # Individual animated <tr> with status badge + reason
-            ├── JoinPlaybackCanvas.tsx     # 4-phase animated JOIN visualization with SVG connector lines
-            └── StageAnnotation.tsx        # Floating annotation card (bottom-right overlay)
+            ├── SqlContextPanel.tsx          # Resizable sidebar: original SQL + StageStepList nav
+            ├── LessonPanel.tsx              # Stage lesson/annotation panel (replaces StageAnnotation)
+            ├── StageEntryBanner.tsx         # Stage transition banner in playback
+            ├── PlaybackControls.tsx         # Transport bar: play/pause/prev/next/restart/speed/progress bar
+            ├── PlaybackStage.tsx            # Stage content dispatcher (table vs JOIN canvas)
+            ├── PlaybackTable.tsx            # Animated diff-aware table with row virtualization + FLIP
+            ├── PlaybackRow.tsx              # Individual animated <tr> with status badge + reason
+            ├── JoinPlaybackCanvas.tsx       # 4-phase animated JOIN visualization with SVG connector lines
+            ├── PlaybackTimeline.tsx         # @deprecated — merged into SqlContextPanel
+            └── StageAnnotation.tsx          # @deprecated — replaced by LessonPanel
 ```
 
 ---
@@ -363,7 +394,7 @@ src/
 
 ## Phase 4.0 — Test Harness + Debug Mode
 
-- `vitest` added; 32 regression tests in `__tests__/simulator.test.ts` covering `buildStageSql`, `buildPipeline`, `validateSqlSupport`, `assignRowIds`, and `diffSnapshots`.
+- `vitest` added; **34 tests** across `simulator.test.ts` (32) and `buildDesignedText.test.ts` (2).
 - `__fixtures__/queries.ts` — 11 fixture queries covering every major pipeline path.
 - `SimulatorDebugPanel.tsx` — collapsible panel with SQL, Row IDs, and Diff tabs; wired into `SimulatorPanel`.
 
@@ -412,14 +443,16 @@ src/lib/simulator/
 
 | File | Purpose |
 |------|---------|
-| `SimulatorPlaybackModal.tsx` | Fullscreen React portal modal; scroll-locks `document.body`, traps focus on close button, handles keyboard shortcuts: Space=play/pause, ←/→=navigate, R=restart, Esc=close. Lazy-loaded from `SimulatorPanel`. |
-| `PlaybackTimeline.tsx` | 192px left sidebar showing the execution plan; each stage is a clickable button with icon (stage-specific Lucide icon), label, row count, colored active dot, and a ✓ checkmark for completed stages. Color-coded per stage type. |
+| `SimulatorPlaybackModal.tsx` | Fullscreen React portal modal; resizable `SqlContextPanel` sidebar (width persisted in `localStorage`); mobile toggles for SQL/lesson panels; keyboard shortcuts: Space=play/pause, ←/→=navigate, R=restart, Esc=close. Lazy-loaded from `SimulatorPanel`. |
+| `SqlContextPanel.tsx` | Left sidebar: full query SQL context + `StageStepList` stage navigation |
+| `LessonPanel.tsx` | Stage annotation and diff summary for the active playback step |
+| `StageStepList.tsx` | Shared stage pill nav (row counts, diff badges) — used in snapshot viewer and playback |
 | `PlaybackControls.tsx` | Bottom transport bar: Prev/Play-Pause/Restart/Next buttons, "Stage N of M" counter, speed selector (0.5×/1×/2×/4×), animated progress drain bar (CSS `pb-progress-drain` keyframe resets on each stage). |
 | `PlaybackStage.tsx` | Main stage content area; dispatches to `PlaybackTable` for regular stages or `JoinPlaybackCanvas` for JOIN stages; collects removed rows from diff for inline display at WHERE/HAVING/LIMIT stages; hosts floating `StageAnnotation`. |
 | `PlaybackTable.tsx` | Diff-aware animated table with virtualization (>40 rows shows head-15 + ellipsis + tail-5); FLIP animation wired for ORDER_BY via `useFlipAnimation`; CSS animation duration driven by `--pb-anim-ms` custom property. |
 | `PlaybackRow.tsx` | Individual `<tr>` with `data-status` attribute for CSS targeting; staggered 55ms delay per row via `--pb-row-delay`; status badge ("filtered", "matched", "reordered", "null row") + reason text in a "change" column. |
 | `JoinPlaybackCanvas.tsx` | 4-phase animation machine (idle → tables → lines → result → done); two fixed 160px key panels + flex-1 gap for SVG; connector lines drawn sequentially via `strokeDashoffset` animation (520ms/line); solid green = matched, dashed amber = LEFT JOIN NULL rows. Parses ON condition from SQL to show join key columns. |
-| `StageAnnotation.tsx` | Floating annotation card (bottom-right of stage area, `absolute bottom-5 right-5`); shows stage label, human-readable annotation, and diff summary (e.g. "3 rows removed"); dismissible; reappears on every stage navigation. |
+| `StageEntryBanner.tsx` | Brief stage-entry banner during playback transitions |
 
 ### SimulatorPanel updates
 
