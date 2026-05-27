@@ -1,9 +1,10 @@
 /**
- * JoinPlaybackCanvas — row-by-row matching narrative.
+ * Join playback — one bridge flow per match (multi-join aware).
  */
 
 import {
   type CSSProperties,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -15,242 +16,108 @@ import { cn } from "../../../lib/utils/cn";
 import type { TrackedRow } from "../../../lib/simulator";
 import type { PlaybackSpeed } from "../../../hooks/useSimulatorPlayback";
 import { getIntermediateResultColumns } from "../stageConstants";
+import JoinMatchBridge from "./join/JoinMatchBridge";
+import {
+  buildJoinMatchSteps,
+  countJoinLayers,
+  resolvePlaybackJoinKeys,
+  type ActiveBridgeLink,
+  type JoinMatchStep,
+  type MatchPair,
+} from "./join/joinPlaybackModel";
 
-type JoinPhase = "idle" | "tables" | "key-highlight" | "matching" | "result" | "done";
+const MAX_ANIMATED_STEPS = 6;
 
-type MatchInfo = {
-  leftId: string;
-  rightId: string | null;
-  isNullRow: boolean;
-};
+type JoinPhase = "idle" | "tables" | "keys" | "matching" | "result" | "done";
 
-type LineCoords = {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  isNull: boolean;
-  length: number;
-  key: string;
-};
+const MAX_ROWS = 14;
 
-type JoinCondition = {
-  leftTable: string | null;
-  leftKey: string | null;
-  rightTable: string | null;
-  rightKey: string | null;
-  display: string;
-};
+type RowAnchor = { y: number; xEdge: number };
 
-function parseJoinCondition(sql: string): JoinCondition {
-  const empty: JoinCondition = {
-    leftTable: null,
-    leftKey: null,
-    rightTable: null,
-    rightKey: null,
-    display: "",
-  };
-
-  const onRe =
-    /\bON\b\s+(.+?)(?=\s+(?:(?:LEFT|RIGHT|INNER|FULL|CROSS)\s+)?JOIN\b|\s+WHERE\b|\s+GROUP\s+BY\b|\s+ORDER\s+BY\b|\s+LIMIT\b|;?\s*$)/gi;
-
-  let lastMatch: RegExpExecArray | null = null;
-  let m: RegExpExecArray | null;
-  while ((m = onRe.exec(sql)) !== null) lastMatch = m;
-
-  if (!lastMatch) return empty;
-
-  const clean = lastMatch[1].trim().replace(/["`]/g, "").replace(/\s+/g, " ");
-  const parts = clean.match(/(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)/i);
-  if (!parts) return { ...empty, display: clean };
-
-  const aliasMap = new Map<string, string>();
-  const fromRe = /\b(?:FROM|JOIN)\s+"?(\w+)"?\s+(?:AS\s+)?"?(\w+)"?/gi;
-  let tm: RegExpExecArray | null;
-  while ((tm = fromRe.exec(sql)) !== null) {
-    aliasMap.set(tm[2].toLowerCase(), tm[1]);
-  }
-  const resolve = (a: string) => aliasMap.get(a.toLowerCase()) ?? a;
-
-  return {
-    leftTable: resolve(parts[1]),
-    leftKey: parts[2],
-    rightTable: resolve(parts[3]),
-    rightKey: parts[4],
-    display: `${resolve(parts[1])}.${parts[2]} = ${resolve(parts[3])}.${parts[4]}`,
-  };
-}
-
-function buildMatchMap(
-  leftRows: TrackedRow[],
-  rightRows: TrackedRow[],
-  joinedRows: TrackedRow[]
-): MatchInfo[] {
-  if (joinedRows.length === 0) return [];
-
-  const leftCols =
-    leftRows.length > 0
-      ? Object.keys(leftRows[0]).filter((k) => k !== "_rowId")
-      : [];
-  const rightCols =
-    rightRows.length > 0
-      ? Object.keys(rightRows[0]).filter((k) => k !== "_rowId")
-      : [];
-
-  return joinedRows.map((joined) => {
-    const isNullRow =
-      rightCols.length > 0 && rightCols.every((c) => joined[c] === null);
-
-    const leftRow =
-      leftCols.length > 0
-        ? leftRows.find((l) =>
-            leftCols.every((lc) => lc in joined && String(l[lc]) === String(joined[lc]))
-          )
-        : undefined;
-
-    const rightRow =
-      !isNullRow && rightCols.length > 0
-        ? rightRows.find((r) =>
-            rightCols.every((rc) => rc in joined && String(r[rc]) === String(joined[rc]))
-          )
-        : undefined;
-
-    return {
-      leftId: leftRow?._rowId ?? joined._rowId,
-      rightId: rightRow?._rowId ?? null,
-      isNullRow,
-    };
-  });
-}
-
-type MatchPair =
-  | { rightId: string }
-  | { null: true };
-
-type LeftRowMatchStep = {
-  leftId: string;
-  leftIndex: number;
-  pairs: MatchPair[];
-};
-
-/** One step per left row; pairs include every matching right row (one-to-many). */
-function buildLeftRowMatchSteps(
-  leftRows: TrackedRow[],
-  rightRows: TrackedRow[],
-  leftKey: string | null,
-  rightKey: string | null,
-  isLeftJoin: boolean
-): LeftRowMatchStep[] {
-  if (!leftKey || !rightKey) {
-    return leftRows.map((left, leftIndex) => ({
-      leftId: left._rowId,
-      leftIndex,
-      pairs: isLeftJoin ? [{ null: true }] : [],
-    }));
-  }
-
-  return leftRows.map((left, leftIndex) => {
-    const keyVal = left[leftKey];
-    const matchingRights = rightRows.filter(
-      (r) => String(r[rightKey]) === String(keyVal)
-    );
-
-    if (matchingRights.length > 0) {
-      return {
-        leftId: left._rowId,
-        leftIndex,
-        pairs: matchingRights.map((r) => ({ rightId: r._rowId })),
-      };
-    }
-
-    if (isLeftJoin) {
-      return { leftId: left._rowId, leftIndex, pairs: [{ null: true }] };
-    }
-
-    return { leftId: left._rowId, leftIndex, pairs: [] };
-  });
-}
-
-function lineKeyForPair(leftIndex: number, pair: MatchPair): string {
-  if ("null" in pair) return `line-L${leftIndex}-null`;
-  return `line-L${leftIndex}-R${pair.rightId}`;
-}
-
-function allLineKeysForStep(step: LeftRowMatchStep): string[] {
-  return step.pairs.map((pair) => lineKeyForPair(step.leftIndex, pair));
-}
-
-const MAX_KEY_ROWS = 14;
-const MATCH_BATCH = 8;
-
-type KeyPanelProps = {
+type KeyTableProps = {
   side: "left" | "right";
-  label: string;
+  title: string;
+  subtitle: string;
   rows: TrackedRow[];
   joinKey: string | null;
   rowRefs: React.MutableRefObject<Map<string, HTMLTableRowElement>>;
   visible: boolean;
-  highlightedIds: Set<string>;
-  matchedIds: Set<string>;
-  keyPulse: boolean;
-  nullRowIds: Set<string>;
+  activeRowId: string | null;
+  matchedRowIds: Set<string>;
+  pendingRowIds: Set<string>;
+  pulseHeader: boolean;
+  matchCountByRowId: Map<string, number>;
 };
 
-function KeyPanel({
+function KeyTable({
   side,
-  label,
+  title,
+  subtitle,
   rows,
   joinKey,
   rowRefs,
   visible,
-  highlightedIds,
-  matchedIds,
-  keyPulse,
-  nullRowIds,
-}: KeyPanelProps) {
-  const display = rows.slice(0, MAX_KEY_ROWS);
+  activeRowId,
+  matchedRowIds,
+  pendingRowIds,
+  pulseHeader,
+  matchCountByRowId,
+}: KeyTableProps) {
+  const display = rows.slice(0, MAX_ROWS);
   const overflow = rows.length - display.length;
 
   return (
     <div
-      className={cn(side === "left" ? "pb-join-left-row" : "pb-join-right-row")}
+      className={cn(
+        "min-w-0",
+        side === "left" ? "pb-join-left-row" : "pb-join-right-row"
+      )}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateX(0)" : side === "left" ? "translateX(-40px)" : "translateX(40px)",
-        transition: "opacity 400ms ease, transform 400ms cubic-bezier(0.22,1,0.36,1)",
+        transform: visible
+          ? "translateX(0)"
+          : side === "left"
+            ? "translateX(-28px)"
+            : "translateX(28px)",
+        transition: "opacity 380ms ease, transform 380ms cubic-bezier(0.22,1,0.36,1)",
       }}
     >
-      <div className="mb-1.5 flex items-baseline gap-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-          {side === "left" ? "Left" : "Right"} table
-        </span>
-        <span className="text-[10px] text-slate-600">— {label}</span>
-        <span className="ml-1 text-[10px] text-slate-700">{rows.length} rows</span>
+      <div className="mb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          {title}
+        </p>
+        <p className="text-[10px] text-slate-600">{subtitle}</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-700/50">
-        <table className="border-collapse text-xs">
+      <div
+        className={cn(
+          "overflow-hidden rounded-lg border",
+          activeRowId && side === "left"
+            ? "border-emerald-500/40 shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
+            : "border-slate-700/50"
+        )}
+      >
+        <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-800/80">
+            <tr className="bg-slate-800/90">
               <th
                 className={cn(
-                  "border-b border-b-sky-500/40 bg-sky-500/10 px-4 py-2 text-left font-semibold text-sky-300 whitespace-nowrap",
-                  keyPulse && "pb-key-pulse"
+                  "border-b border-b-sky-500/40 bg-sky-500/10 px-3 py-2 text-left font-semibold text-sky-300",
+                  pulseHeader && "pb-key-pulse"
                 )}
               >
-                {joinKey ?? "—"}
-                <span className="ml-1.5 rounded bg-sky-500/20 px-1 py-px text-[9px] font-normal text-sky-400/80">
-                  key
-                </span>
+                {joinKey ?? "key"}
               </th>
             </tr>
           </thead>
           <tbody>
             {display.map((row) => {
-              const highlighted = highlightedIds.has(row._rowId);
-              const matched = matchedIds.has(row._rowId);
-              const isNull = nullRowIds.has(row._rowId);
-              const val = joinKey !== null ? row[joinKey] : null;
+              const active = activeRowId === row._rowId;
+              const matched = matchedRowIds.has(row._rowId);
+              const pending = pendingRowIds.has(row._rowId);
+              const count = matchCountByRowId.get(row._rowId) ?? 0;
+              const val = joinKey ? row[joinKey] : null;
+
               return (
                 <tr
                   key={row._rowId}
@@ -259,25 +126,36 @@ function KeyPanel({
                     else rowRefs.current.delete(row._rowId);
                   }}
                   className={cn(
-                    "border-b border-slate-800/40 transition-all duration-150",
-                    highlighted && "scale-[1.02] border-l-2 border-l-emerald-400 bg-emerald-500/30",
-                    !highlighted && matched && "bg-emerald-500/8",
-                    !highlighted && !matched && "opacity-35",
-                    isNull && highlighted && "border-l-2 border-dashed border-l-amber-400"
+                    "border-b border-slate-800/50 transition-all duration-200",
+                    active && "bg-emerald-500/25 ring-1 ring-inset ring-emerald-400/50",
+                    !active && matched && "bg-emerald-500/10",
+                    !active && !matched && pending && "opacity-50",
+                    !active && !matched && !pending && "opacity-30"
                   )}
                 >
                   <td
                     className={cn(
-                      "relative px-4 py-1.5 font-mono whitespace-nowrap",
-                      matched || highlighted ? "font-semibold text-sky-200" : "text-slate-500",
+                      "relative px-3 py-2 font-mono",
+                      active || matched ? "font-semibold text-sky-100" : "text-slate-500",
                       val === null && "italic text-amber-400"
                     )}
                   >
                     {val === null ? "NULL" : val !== undefined ? String(val) : "—"}
-                    {isNull && highlighted && side === "left" && (
-                      <span className="absolute -right-1 top-1/2 ml-2 -translate-y-1/2 rounded border border-amber-500/40 bg-amber-500/15 px-1 text-[9px] text-amber-300">
-                        NULL
+                    {count > 1 && matched && (
+                      <span className="ml-2 rounded-full bg-emerald-500/20 px-1.5 text-[9px] text-emerald-300">
+                        ×{count}
                       </span>
+                    )}
+                    {active && side === "left" && (
+                      <span
+                        className={cn(
+                          "absolute top-1/2 -translate-y-1/2 size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]",
+                          side === "left" ? "-right-3" : "-left-3"
+                        )}
+                      />
+                    )}
+                    {active && side === "right" && (
+                      <span className="absolute -left-3 top-1/2 size-2 -translate-y-1/2 rounded-full bg-teal-400 shadow-[0_0_8px_#2dd4bf]" />
                     )}
                   </td>
                 </tr>
@@ -285,8 +163,8 @@ function KeyPanel({
             })}
             {overflow > 0 && (
               <tr>
-                <td className="px-4 py-1.5 text-center text-[10px] italic text-slate-700">
-                  ┄ {overflow} more ┄
+                <td className="px-3 py-2 text-center text-[10px] italic text-slate-600">
+                  +{overflow} more rows
                 </td>
               </tr>
             )}
@@ -303,6 +181,8 @@ type Props = {
   joinedRows: TrackedRow[];
   joinType: string;
   joinSql: string;
+  joinIndex?: number;
+  joinRightTable?: string | null;
   animationKey: number;
   speed: PlaybackSpeed;
 };
@@ -313,27 +193,39 @@ export default function JoinPlaybackCanvas({
   joinedRows,
   joinType,
   joinSql,
+  joinIndex = 0,
+  joinRightTable,
   animationKey,
   speed,
 }: Props) {
-  const condition = parseJoinCondition(joinSql);
+  const bridgeUid = useId().replace(/:/g, "");
   const isLeftJoin = joinType.toUpperCase().includes("LEFT");
+  const joinLayerTotal = useMemo(() => countJoinLayers(joinSql), [joinSql]);
 
-  const leftSteps = useMemo(
+  const panelKeys = useMemo(
     () =>
-      buildLeftRowMatchSteps(
+      resolvePlaybackJoinKeys(
+        joinSql,
+        joinIndex,
+        joinLayerTotal,
+        joinRightTable ?? null,
         leftRows,
-        rightRows,
-        condition.leftKey,
-        condition.rightKey,
-        isLeftJoin
+        rightRows
       ),
-    [leftRows, rightRows, condition.leftKey, condition.rightKey, isLeftJoin]
+    [joinSql, joinIndex, joinLayerTotal, joinRightTable, leftRows, rightRows]
   );
 
-  const joinedMatchMap = useMemo(
-    () => buildMatchMap(leftRows, rightRows, joinedRows),
-    [leftRows, rightRows, joinedRows]
+  const matchSteps = useMemo(
+    () =>
+      buildJoinMatchSteps(
+        leftRows,
+        rightRows,
+        joinedRows,
+        panelKeys.leftKey,
+        panelKeys.rightKey,
+        isLeftJoin
+      ),
+    [leftRows, rightRows, joinedRows, panelKeys.leftKey, panelKeys.rightKey, isLeftJoin]
   );
 
   const resultColumns = useMemo(
@@ -341,405 +233,302 @@ export default function JoinPlaybackCanvas({
     [joinedRows]
   );
 
-  const [phase, setPhase] = useState<JoinPhase>("idle");
-  const [currentLeftIndex, setCurrentLeftIndex] = useState(-1);
-  const [drawnLineKeys, setDrawnLineKeys] = useState<Set<string>>(new Set());
-  const [fastForward, setFastForward] = useState(false);
-  const [scanY, setScanY] = useState<number | null>(null);
-  const [layoutNonce, setLayoutNonce] = useState(0);
-  const markerSeed = useId();
-  const matchMarkerId = `pb-arr-m-${markerSeed}`;
-  const nullMarkerId = `pb-arr-n-${markerSeed}`;
+  const matchCountByRowId = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const step of matchSteps) {
+      if (step.pairs.length > 0) {
+        m.set(step.leftId, step.pairs.length);
+      }
+    }
+    return m;
+  }, [matchSteps]);
 
-  const leftWrapperEl = useRef<HTMLDivElement | null>(null);
-  const rightWrapperEl = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const matchZoneRef = useRef<HTMLDivElement>(null);
+  const [phase, setPhase] = useState<JoinPhase>("idle");
+  const [stepIndex, setStepIndex] = useState(-1);
+  const [pairIndex, setPairIndex] = useState(0);
+  const [bridgeAnimating, setBridgeAnimating] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState(0);
+  const [summaryFlash, setSummaryFlash] = useState(false);
+  const [leftAnchors, setLeftAnchors] = useState<Map<string, RowAnchor>>(new Map());
+  const [rightAnchors, setRightAnchors] = useState<Map<string, RowAnchor>>(new Map());
+
+  const stageRef = useRef<HTMLDivElement>(null);
   const leftRowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const rightRowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
-  const [lines, setLines] = useState<LineCoords[]>([]);
 
-  const ms = (base: number) => Math.round(base / speed);
-  const rowStepMs = ms(150 + 250 + 300 + 80);
-  const tablesMs = ms(400);
-  const keyPauseMs = ms(400);
+  const ms = (n: number) => Math.round(n / speed);
+  const tablesMs = ms(380);
+  const keysMs = ms(320);
+  const connectMs = ms(520);
+  const holdMs = ms(180);
+  const betweenPairsMs = ms(120);
 
-  useEffect(() => {
-    setPhase("idle");
-    setCurrentLeftIndex(-1);
-    setDrawnLineKeys(new Set());
-    setFastForward(false);
-    setScanY(null);
-    setLines([]);
+  const animSteps = useMemo(
+    () => matchSteps.filter((s) => s.pairs.length > 0),
+    [matchSteps]
+  );
+  const stepsToAnimate = useMemo(
+    () => animSteps.slice(0, MAX_ANIMATED_STEPS),
+    [animSteps]
+  );
+  const skippedStepCount = Math.max(0, animSteps.length - stepsToAnimate.length);
 
-    const ids: ReturnType<typeof setTimeout>[] = [];
-    const schedule = (fn: () => void, delay: number) => {
-      ids.push(setTimeout(fn, delay));
+  const currentStep: JoinMatchStep | undefined =
+    stepIndex >= 0 ? matchSteps[stepIndex] : undefined;
+  const currentPair: MatchPair | undefined = currentStep?.pairs[pairIndex];
+
+  const activeLink: ActiveBridgeLink | null = useMemo(() => {
+    if (!currentStep || !currentPair || phase !== "matching") return null;
+    return {
+      leftId: currentStep.leftId,
+      rightId: "rightId" in currentPair ? currentPair.rightId : null,
+      isNull: "null" in currentPair,
+      pairIndex,
+      pairCount: currentStep.pairs.length,
     };
+  }, [currentStep, currentPair, phase, pairIndex]);
 
-    schedule(() => setPhase("tables"), 80);
-    schedule(() => setPhase("key-highlight"), 80 + tablesMs);
-    schedule(() => setPhase("matching"), 80 + tablesMs + keyPauseMs);
+  const measureAnchors = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
 
-    const matchStart = 80 + tablesMs + keyPauseMs;
-    const n = leftSteps.length;
-    const batchEnd = Math.min(MATCH_BATCH, n);
-
-    for (let i = 0; i < batchEnd; i++) {
-      schedule(() => setCurrentLeftIndex(i), matchStart + i * rowStepMs);
-    }
-
-    if (n > MATCH_BATCH) {
-      schedule(() => {
-        setFastForward(true);
-        setCurrentLeftIndex(n - 1);
-        const keys = new Set<string>();
-        for (let j = MATCH_BATCH; j < n; j++) {
-          for (const k of allLineKeysForStep(leftSteps[j])) keys.add(k);
-        }
-        setDrawnLineKeys(keys);
-      }, matchStart + batchEnd * rowStepMs);
-    }
-
-    const matchDuration =
-      n > MATCH_BATCH
-        ? matchStart + batchEnd * rowStepMs + ms(300)
-        : matchStart + Math.max(n, 1) * rowStepMs;
-
-    schedule(() => setPhase("result"), matchDuration + 100);
-    schedule(() => setPhase("done"), matchDuration + ms(450) + 200);
-
-    return () => ids.forEach(clearTimeout);
-  }, [animationKey, speed, leftSteps, rowStepMs, tablesMs, keyPauseMs]);
-
-  useLayoutEffect(() => {
-    if (phase !== "matching" && phase !== "result" && phase !== "done") return;
-
-    const raf = requestAnimationFrame(() => {
-      const container = containerRef.current;
-      const leftWrapper = leftWrapperEl.current;
-      const rightWrapper = rightWrapperEl.current;
-      if (!container || !leftWrapper || !rightWrapper) return;
-
-      const cr = container.getBoundingClientRect();
-      const x1Base = leftWrapper.getBoundingClientRect().right - cr.left + 6;
-      const x2Base = rightWrapper.getBoundingClientRect().left - cr.left - 6;
-      const zoneWidth = (rightWrapper.getBoundingClientRect().left - leftWrapper.getBoundingClientRect().right) || 60;
-
-      const computed: LineCoords[] = [];
-
-      leftSteps.forEach((step) => {
-        if (phase === "matching" && !fastForward && step.leftIndex > currentLeftIndex) {
-          return;
-        }
-
-        const lEl = leftRowRefs.current.get(step.leftId);
-        if (!lEl) return;
-        const y1 = lEl.getBoundingClientRect().top + lEl.getBoundingClientRect().height / 2 - cr.top;
-
-        step.pairs.forEach((pair) => {
-          const lineKey = lineKeyForPair(step.leftIndex, pair);
-
-          if (
-            phase === "matching" &&
-            !fastForward &&
-            step.leftIndex === currentLeftIndex &&
-            !drawnLineKeys.has(lineKey)
-          ) {
-            return;
-          }
-          if (
-            phase === "matching" &&
-            !fastForward &&
-            step.leftIndex > currentLeftIndex
-          ) {
-            return;
-          }
-
-          if ("null" in pair) {
-            computed.push({
-              x1: x1Base,
-              y1,
-              x2: x1Base + zoneWidth * 0.4,
-              y2: y1,
-              isNull: true,
-              length: zoneWidth * 0.4,
-              key: lineKey,
-            });
-            return;
-          }
-
-          const rEl = rightRowRefs.current.get(pair.rightId);
-          if (!rEl) return;
-          const y2 = rEl.getBoundingClientRect().top + rEl.getBoundingClientRect().height / 2 - cr.top;
-          const length = Math.max(1, Math.hypot(x2Base - x1Base, y2 - y1));
-          computed.push({
-            x1: x1Base,
-            y1,
-            x2: x2Base,
-            y2,
-            isNull: false,
-            length,
-            key: lineKey,
-          });
+    const measureSide = (
+      refs: Map<string, HTMLTableRowElement>,
+      side: "left" | "right"
+    ) => {
+      const out = new Map<string, RowAnchor>();
+      refs.forEach((el, id) => {
+        const r = el.getBoundingClientRect();
+        out.set(id, {
+          y: r.top + r.height / 2,
+          xEdge: side === "left" ? r.right : r.left,
         });
       });
+      return out;
+    };
 
-      setLines(computed);
+    setLeftAnchors(measureSide(leftRowRefs.current, "left"));
+    setRightAnchors(measureSide(rightRowRefs.current, "right"));
+  }, []);
 
-      if (phase === "matching" && currentLeftIndex >= 0 && !fastForward) {
-        const step = leftSteps[currentLeftIndex];
-        const lEl = step ? leftRowRefs.current.get(step.leftId) : null;
-        if (lEl) {
-          setScanY(lEl.getBoundingClientRect().top + lEl.getBoundingClientRect().height / 2 - cr.top);
-        }
-      }
-    });
-
+  useLayoutEffect(() => {
+    if (phase === "idle") return;
+    const raf = requestAnimationFrame(measureAnchors);
     return () => cancelAnimationFrame(raf);
-  }, [phase, currentLeftIndex, drawnLineKeys, fastForward, leftSteps, animationKey, layoutNonce]);
-
-  useEffect(() => {
-    if (phase !== "matching" || currentLeftIndex < 0 || fastForward) return;
-    const step = leftSteps[currentLeftIndex];
-    if (!step) return;
-    const keys = allLineKeysForStep(step);
-    const timer = setTimeout(() => {
-      setDrawnLineKeys((prev) => new Set([...prev, ...keys]));
-    }, ms(250 + 300));
-    return () => clearTimeout(timer);
-  }, [phase, currentLeftIndex, fastForward, speed, leftSteps]);
-
-  const tablesVisible = phase !== "idle";
-  const keyPulse = phase === "key-highlight";
-  const panelsDimmed = phase === "result" || phase === "done";
-  const resultVisible = phase === "result" || phase === "done";
-  const isDone = phase === "done";
-
-  const currentStep =
-    phase === "matching" && currentLeftIndex >= 0 && !fastForward
-      ? leftSteps[currentLeftIndex]
-      : undefined;
-
-  const highlightedLeftId = currentStep?.leftId ?? null;
-
-  const highlightedRightIds = useMemo(() => {
-    if (!currentStep) return new Set<string>();
-    const ids = new Set<string>();
-    for (const pair of currentStep.pairs) {
-      if ("rightId" in pair) ids.add(pair.rightId);
-    }
-    return ids;
-  }, [currentStep]);
-
-  const completedLeftCount =
-    phase === "matching" && !fastForward
-      ? currentLeftIndex + 1
-      : leftSteps.length;
-
-  const matchedLeftIds = new Set(
-    leftSteps.slice(0, completedLeftCount).filter((s) => s.pairs.some((p) => "rightId" in p)).map((s) => s.leftId)
-  );
-  const matchedRightIds = new Set(
-    leftSteps
-      .slice(0, completedLeftCount)
-      .flatMap((s) => s.pairs)
-      .filter((p): p is { rightId: string } => "rightId" in p)
-      .map((p) => p.rightId)
-  );
-  const nullLeftIds = new Set(
-    leftSteps
-      .slice(0, completedLeftCount)
-      .filter((s) => s.pairs.some((p) => "null" in p))
-      .map((s) => s.leftId)
-  );
-
-  const leftLabel = condition.leftTable ?? "left";
-  const rightLabel = condition.rightTable ?? "right";
-  const remainingLeftRows =
-    leftSteps.length > MATCH_BATCH ? leftSteps.length - MATCH_BATCH : 0;
+  }, [phase, stepIndex, pairIndex, bridgeAnimating, measureAnchors, animationKey]);
 
   useEffect(() => {
     if (phase === "idle") return;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const ro = new ResizeObserver(() => measureAnchors());
+    ro.observe(stage);
+    return () => ro.disconnect();
+  }, [phase, measureAnchors]);
 
-    const container = containerRef.current;
-    if (!container) return;
+  useEffect(() => {
+    setPhase("idle");
+    setStepIndex(-1);
+    setPairIndex(0);
+    setBridgeAnimating(false);
+    setCompletedSteps(0);
+    setSummaryFlash(false);
+    setLeftAnchors(new Map());
+    setRightAnchors(new Map());
 
-    const onResize = () => {
-      requestAnimationFrame(() => setLayoutNonce((n) => n + 1));
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const schedule = (fn: () => void, delay: number) => {
+      timers.push(setTimeout(fn, delay));
     };
 
-    const observer = new ResizeObserver(onResize);
-    observer.observe(container);
-    window.addEventListener("resize", onResize);
+    let t = 60;
+    schedule(() => setPhase("tables"), t);
+    t += tablesMs;
+    schedule(() => setPhase("keys"), t);
+    t += keysMs;
+    schedule(() => setPhase("matching"), t);
 
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", onResize);
-    };
-  }, [phase]);
+    const matchingStart = t;
+    let cursor = matchingStart;
+
+    for (let si = 0; si < stepsToAnimate.length; si++) {
+      const step = stepsToAnimate[si];
+
+      for (let pi = 0; pi < step.pairs.length; pi++) {
+        schedule(() => {
+          setStepIndex(si);
+          setPairIndex(pi);
+          setBridgeAnimating(true);
+        }, cursor);
+        cursor += connectMs;
+        schedule(() => setBridgeAnimating(false), cursor);
+        cursor += holdMs;
+        if (pi < step.pairs.length - 1) cursor += betweenPairsMs;
+      }
+      schedule(() => setCompletedSteps(si + 1), cursor);
+      cursor += betweenPairsMs;
+    }
+
+    if (skippedStepCount > 0) {
+      schedule(() => setSummaryFlash(true), cursor);
+      cursor += ms(700);
+    }
+
+    if (stepsToAnimate.length === 0) {
+      cursor += ms(400);
+    }
+
+    schedule(() => setPhase("result"), cursor + ms(80));
+    schedule(() => setPhase("done"), cursor + ms(520));
+
+    return () => timers.forEach(clearTimeout);
+  }, [
+    animationKey,
+    speed,
+    stepsToAnimate,
+    skippedStepCount,
+    tablesMs,
+    keysMs,
+    connectMs,
+    holdMs,
+    betweenPairsMs,
+  ]);
+
+  const tablesVisible = phase !== "idle";
+  const keysPulse = phase === "keys";
+  const resultVisible = phase === "result" || phase === "done";
+  const panelsDimmed = resultVisible;
+
+  const activeLeftId = phase === "matching" ? currentStep?.leftId ?? null : null;
+  const activeRightId =
+    phase === "matching" && currentPair && "rightId" in currentPair
+      ? currentPair.rightId
+      : null;
+
+  const matchedLeftIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (let i = 0; i < completedSteps && i < stepsToAnimate.length; i++) {
+      ids.add(stepsToAnimate[i].leftId);
+    }
+    return ids;
+  }, [completedSteps, stepsToAnimate]);
+
+  const matchedRightIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (let i = 0; i < completedSteps && i < stepsToAnimate.length; i++) {
+      for (const p of stepsToAnimate[i].pairs) {
+        if ("rightId" in p) ids.add(p.rightId);
+      }
+    }
+    if (phase === "matching" && currentStep) {
+      for (let pi = 0; pi <= pairIndex; pi++) {
+        const p = currentStep.pairs[pi];
+        if (p && "rightId" in p) ids.add(p.rightId);
+      }
+    }
+    return ids;
+  }, [completedSteps, stepsToAnimate, phase, currentStep, pairIndex]);
+
+  const pendingLeftIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (let i = completedSteps; i < animSteps.length; i++) {
+      ids.add(animSteps[i].leftId);
+    }
+    return ids;
+  }, [completedSteps, animSteps]);
+
+  const leftTitle =
+    joinIndex > 0 ? `Working set (after join ${joinIndex})` : "Working set";
+  const rightTitle = panelKeys.rightTableName
+    ? `New table — ${panelKeys.rightTableName}`
+    : "New table";
 
   return (
-    <div
-      className="flex flex-col gap-5"
-      style={{ "--pb-scan-ms": `${ms(250)}ms` } as CSSProperties}
-    >
-      <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2.5">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2.5">
         <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 text-[11px] font-semibold text-purple-300">
           {joinType}
         </span>
-        {condition.display ? (
-          <span className="flex items-center gap-1.5 font-mono text-[11px] text-slate-300">
-            <span className="text-slate-500">ON</span>
-            <span className="font-semibold text-sky-300">{condition.display}</span>
+        {joinLayerTotal > 1 && (
+          <span className="rounded-md border border-slate-600/50 bg-slate-800/80 px-2 py-1 text-[10px] text-slate-400">
+            Layer {panelKeys.joinLayer} of {panelKeys.joinLayerTotal}
           </span>
-        ) : (
-          <span className="font-mono text-[11px] text-slate-500">ON condition</span>
         )}
+        {panelKeys.display ? (
+          <span className="font-mono text-[11px] text-slate-300">
+            <span className="text-slate-500">ON </span>
+            <span className="text-sky-300">{panelKeys.display}</span>
+          </span>
+        ) : null}
       </div>
 
       <div
-        ref={containerRef}
-        className="relative flex items-start gap-6 min-h-[60px]"
-        style={{ opacity: panelsDimmed ? 0.45 : 1, transition: "opacity 450ms ease" }}
+        ref={stageRef}
+        className={cn(
+          "relative grid grid-cols-[minmax(0,1fr)_minmax(88px,140px)_minmax(0,1fr)] items-start gap-2 sm:gap-3",
+          panelsDimmed && "opacity-45"
+        )}
+        style={{ transition: "opacity 400ms ease" }}
       >
-        <div ref={(el) => { leftWrapperEl.current = el; }} className="w-40 shrink-0">
-          {phase === "idle" ? (
-            <div className="space-y-1.5">
-              <div className="h-3 w-24 animate-pulse rounded bg-slate-800/60" />
-              <div className="h-28 w-full animate-pulse rounded-lg bg-slate-800/40" />
-            </div>
-          ) : (
-            <KeyPanel
+        {phase === "idle" ? (
+          <>
+            <div className="h-32 animate-pulse rounded-lg bg-slate-800/40" />
+            <div className="h-32 animate-pulse rounded-lg bg-slate-800/25" />
+            <div className="h-32 animate-pulse rounded-lg bg-slate-800/40" />
+          </>
+        ) : (
+          <>
+            <KeyTable
               side="left"
-              label={leftLabel}
+              title={leftTitle}
+              subtitle={`${leftRows.length} rows`}
               rows={leftRows}
-              joinKey={condition.leftKey}
+              joinKey={panelKeys.leftKey}
               rowRefs={leftRowRefs}
               visible={tablesVisible}
-              highlightedIds={
-                highlightedLeftId ? new Set([highlightedLeftId]) : new Set()
-              }
-              matchedIds={matchedLeftIds}
-              keyPulse={keyPulse}
-              nullRowIds={nullLeftIds}
+              activeRowId={activeLeftId}
+              matchedRowIds={matchedLeftIds}
+              pendingRowIds={pendingLeftIds}
+              pulseHeader={keysPulse}
+              matchCountByRowId={matchCountByRowId}
             />
-          )}
-        </div>
 
-        <div ref={matchZoneRef} className="relative flex-1 min-w-[60px] min-h-[60px]">
-          {phase === "matching" && scanY !== null && !fastForward && (
-            <div
-              className="pointer-events-none absolute left-0 right-0 h-0.5 overflow-visible"
-              style={{ top: scanY }}
-            >
-              <div
-                className="pb-scan-beam h-0.5 w-full bg-gradient-to-r from-emerald-400/80 to-transparent"
-                style={{ transformOrigin: "left center" }}
-              />
-            </div>
-          )}
-        </div>
-
-        <div ref={(el) => { rightWrapperEl.current = el; }} className="w-40 shrink-0">
-          {rightRows.length === 0 ? (
-            <div className="rounded-lg border border-slate-700/30 bg-slate-800/20 px-3 py-4 text-center text-[11px] italic text-slate-600">
-              right table data
-              <br />
-              not available
-            </div>
-          ) : phase === "idle" ? (
-            <div className="space-y-1.5">
-              <div className="h-3 w-24 animate-pulse rounded bg-slate-800/60" />
-              <div className="h-28 w-full animate-pulse rounded-lg bg-slate-800/40" />
-            </div>
-          ) : (
-            <KeyPanel
-              side="right"
-              label={rightLabel}
-              rows={rightRows}
-              joinKey={condition.rightKey}
-              rowRefs={rightRowRefs}
-              visible={tablesVisible}
-              highlightedIds={highlightedRightIds}
-              matchedIds={matchedRightIds}
-              keyPulse={keyPulse}
-              nullRowIds={new Set()}
+            <JoinMatchBridge
+              link={activeLink}
+              leftAnchors={leftAnchors}
+              rightAnchors={rightAnchors}
+              animating={bridgeAnimating}
+              bridgeUid={bridgeUid}
             />
-          )}
-        </div>
 
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-          aria-hidden
-        >
-          <defs>
-            <marker
-              id={matchMarkerId}
-              markerWidth="8"
-              markerHeight="8"
-              refX="6"
-              refY="4"
-              markerUnits="userSpaceOnUse"
-              orient="auto-start-reverse"
-            >
-              <path d="M0,0 L0,6 L6,3 z" fill="#10b981" fillOpacity="0.75" />
-            </marker>
-            <marker
-              id={nullMarkerId}
-              markerWidth="8"
-              markerHeight="8"
-              refX="6"
-              refY="4"
-              markerUnits="userSpaceOnUse"
-              orient="auto-start-reverse"
-            >
-              <path d="M0,0 L0,6 L6,3 z" fill="#f59e0b" fillOpacity="0.5" />
-            </marker>
-          </defs>
-
-          {lines.map((line) =>
-            isDone || fastForward ? (
-              <line
-                key={line.key}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-                stroke={line.isNull ? "#f59e0b" : "#10b981"}
-                strokeWidth={1.5}
-                strokeOpacity={line.isNull ? 0.45 : 0.72}
-                vectorEffect="non-scaling-stroke"
-                strokeDasharray={line.isNull ? "4 3" : undefined}
-                markerEnd={line.isNull ? `url(#${nullMarkerId})` : `url(#${matchMarkerId})`}
-              />
+            {rightRows.length === 0 ? (
+              <div className="rounded-lg border border-slate-700/30 bg-slate-800/20 px-3 py-8 text-center text-[11px] italic text-slate-600">
+                Right table unavailable
+              </div>
             ) : (
-              <line
-                key={line.key}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-                stroke={line.isNull ? "#f59e0b" : "#10b981"}
-                strokeWidth={1.5}
-                strokeOpacity={line.isNull ? 0.45 : 0.72}
-                vectorEffect="non-scaling-stroke"
-                strokeDasharray={line.isNull ? "4 3" : `${line.length} ${line.length}`}
-                strokeDashoffset={line.isNull ? undefined : `${line.length}`}
-                markerEnd={line.isNull ? `url(#${nullMarkerId})` : `url(#${matchMarkerId})`}
-                style={{
-                  animation: "pb-line-draw 300ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
-                  "--line-length": line.length,
-                } as CSSProperties}
+              <KeyTable
+                side="right"
+                title={rightTitle}
+                subtitle={`${rightRows.length} rows`}
+                rows={rightRows}
+                joinKey={panelKeys.rightKey}
+                rowRefs={rightRowRefs}
+                visible={tablesVisible}
+                activeRowId={activeRightId}
+                matchedRowIds={matchedRightIds}
+                pendingRowIds={new Set()}
+                pulseHeader={keysPulse}
+                matchCountByRowId={new Map()}
               />
-            )
-          )}
-        </svg>
+            )}
+          </>
+        )}
       </div>
 
-      {fastForward && remainingLeftRows > 0 && phase === "matching" && (
+      {summaryFlash && skippedStepCount > 0 && (
         <p className="text-center text-[10px] italic text-slate-500">
-          … and {remainingLeftRows} more left row{remainingLeftRows !== 1 ? "s" : ""}
+          +{skippedStepCount} more matched row{skippedStepCount !== 1 ? "s" : ""} in the
+          result below
         </p>
       )}
 
@@ -747,136 +536,69 @@ export default function JoinPlaybackCanvas({
         <div
           style={{
             opacity: resultVisible ? 1 : 0,
-            transform: resultVisible ? "translateY(0)" : "translateY(40px)",
-            transition: "opacity 450ms ease, transform 450ms cubic-bezier(0.22,1,0.36,1)",
+            transform: resultVisible ? "translateY(0)" : "translateY(28px)",
+            transition: "opacity 420ms ease, transform 420ms cubic-bezier(0.22,1,0.36,1)",
           }}
         >
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px flex-1 bg-slate-700/40" />
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              intermediate result — {joinedRows.length} row{joinedRows.length !== 1 ? "s" : ""}
+              Intermediate result — {joinedRows.length} rows
             </span>
             <div className="h-px flex-1 bg-slate-700/40" />
           </div>
 
-          <div className="overflow-auto rounded-lg border border-slate-700/50 max-h-[300px]">
+          <div className="max-h-[300px] overflow-auto rounded-lg border border-slate-700/50">
             <table className="w-full border-collapse text-xs">
               <thead className="sticky top-0 bg-slate-800/95 backdrop-blur-sm">
                 <tr>
-                  {resultColumns.map(({ key, label }) => {
-                      const isKey =
-                        key === condition.leftKey || key === condition.rightKey;
-                      return (
-                        <th
-                          key={key}
-                          className={cn(
-                            "border-b px-3 py-2 text-left font-semibold whitespace-nowrap",
-                            isKey
-                              ? "border-b-sky-500/40 bg-sky-500/8 text-sky-300"
-                              : "border-b-slate-700/60 text-slate-300"
-                          )}
-                        >
-                          {label}
-                        </th>
-                      );
-                    })}
+                  {resultColumns.map(({ key, label }) => (
+                    <th
+                      key={key}
+                      className={cn(
+                        "border-b px-3 py-2 text-left font-semibold whitespace-nowrap",
+                        key === panelKeys.leftKey || key === panelKeys.rightKey
+                          ? "border-b-sky-500/40 bg-sky-500/8 text-sky-300"
+                          : "border-b-slate-700/60 text-slate-300"
+                      )}
+                    >
+                      {label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {joinedRows.map((row, i) => {
-                  const rightCols =
-                    rightRows.length > 0
-                      ? Object.keys(rightRows[0]).filter((k) => k !== "_rowId")
-                      : [];
-                  const isNullRow =
-                    rightCols.length > 0 && rightCols.every((c) => row[c] === null);
-                  const match = joinedMatchMap[i];
-                  const flashColor = match?.isNullRow ? "amber" : "emerald";
-
-                  return (
-                    <tr
-                      key={row._rowId}
-                      className={cn(
-                        "pb-join-result-row border-b border-slate-800/40",
-                        isNullRow && "border-l-2 border-l-amber-400 bg-amber-500/5",
-                        resultVisible && flashColor === "emerald" && "pb-result-flash-emerald",
-                        resultVisible && flashColor === "amber" && "pb-result-flash-amber"
-                      )}
-                      style={
-                        {
-                          animationDelay: `${i * 50}ms`,
-                          "--pb-row-index": i,
-                        } as CSSProperties
-                      }
-                    >
-                      {resultColumns.map(({ key }) => (
-                        <td
-                          key={key}
-                          className={cn(
-                            "px-3 py-1.5 font-mono whitespace-nowrap",
-                            key === condition.leftKey || key === condition.rightKey
-                              ? "font-semibold text-sky-300"
-                              : "text-slate-300",
-                            row[key] === null && "italic text-amber-400 pb-null-fade-in"
-                          )}
-                        >
-                          {row[key] === null ? "NULL" : String(row[key])}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
+                {joinedRows.map((row, i) => (
+                  <tr
+                    key={row._rowId}
+                    className="pb-join-result-row border-b border-slate-800/40"
+                    style={{ animationDelay: `${i * 45}ms` } as CSSProperties}
+                  >
+                    {resultColumns.map(({ key }) => (
+                      <td
+                        key={key}
+                        className={cn(
+                          "px-3 py-1.5 font-mono whitespace-nowrap",
+                          key === panelKeys.leftKey || key === panelKeys.rightKey
+                            ? "font-semibold text-sky-300"
+                            : "text-slate-300",
+                          row[key] === null && "italic text-amber-400"
+                        )}
+                      >
+                        {row[key] === null ? "NULL" : String(row[key])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      <div className="flex items-center gap-5 text-[10px] text-slate-500">
-        <span className="flex items-center gap-1.5">
-          <svg width="22" height="8" className="overflow-visible" aria-hidden>
-            <defs>
-              <marker id="pb-leg-m" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-                <path d="M0,0 L0,5 L5,2.5 z" fill="#10b981" fillOpacity="0.75" />
-              </marker>
-            </defs>
-            <line
-              x1="0"
-              y1="4"
-              x2="17"
-              y2="4"
-              stroke="#10b981"
-              strokeWidth="1.5"
-              strokeOpacity="0.72"
-              markerEnd="url(#pb-leg-m)"
-            />
-          </svg>
-          matched
-        </span>
-        {isLeftJoin && (
-          <span className="flex items-center gap-1.5">
-            <svg width="22" height="8" className="overflow-visible" aria-hidden>
-              <defs>
-                <marker id="pb-leg-n" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-                  <path d="M0,0 L0,5 L5,2.5 z" fill="#f59e0b" fillOpacity="0.5" />
-                </marker>
-              </defs>
-              <line
-                x1="0"
-                y1="4"
-                x2="17"
-                y2="4"
-                stroke="#f59e0b"
-                strokeWidth="1.5"
-                strokeOpacity="0.45"
-                strokeDasharray="4 3"
-                markerEnd="url(#pb-leg-n)"
-              />
-            </svg>
-            unmatched → NULL row
-          </span>
-        )}
-      </div>
+      <p className="text-[10px] text-slate-600">
+        Each match flows across the bridge one at a time — no overlapping lines.
+      </p>
     </div>
   );
 }

@@ -74,6 +74,16 @@ function getBaseTableName(select: Select): string {
   return "table";
 }
 
+function getJoinRightTableName(select: Select, joinIndex: number): string | undefined {
+  const froms = Array.isArray(select.from) ? select.from : [];
+  const joinItems = froms.filter((item) => "join" in item);
+  const jItem = joinItems[joinIndex];
+  if (jItem && "table" in jItem && jItem.table) {
+    return String(jItem.table);
+  }
+  return undefined;
+}
+
 /** Returns the normalised join type string for the join at `joinIndex`. */
 function getJoinType(select: Select, joinIndex = 0): string {
   const froms = Array.isArray(select.from) ? select.from : [];
@@ -172,7 +182,10 @@ export async function generateSnapshots({
     // For JOIN stages, fetch the right-hand table rows for the animation canvas.
     // joinIndex selects which join item's table to fetch (not always the first one).
     if (stage.type === "JOIN") {
-      const rightSql = buildRightTableSql(select, stage.joinIndex ?? 0);
+      const jIdx = stage.joinIndex ?? 0;
+      partialSnapshot.joinIndex = jIdx;
+      partialSnapshot.joinRightTable = getJoinRightTableName(select, jIdx);
+      const rightSql = buildRightTableSql(select, jIdx);
       if (rightSql) {
         const rightResult = await runQuery(db, rightSql);
         if (rightResult.success) {

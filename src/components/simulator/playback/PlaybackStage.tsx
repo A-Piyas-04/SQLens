@@ -161,6 +161,8 @@ const PlaybackStage = memo(function PlaybackStage({
             joinedRows={snapshot.rows}
             joinType={extractJoinType(snapshot.annotation, snapshot.label)}
             joinSql={snapshot.sql}
+            joinIndex={snapshot.joinIndex ?? 0}
+            joinRightTable={snapshot.joinRightTable ?? null}
             animationKey={animationKey}
             speed={speed}
           />

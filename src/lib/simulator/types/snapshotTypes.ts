@@ -16,6 +16,10 @@ export type SimulatorSnapshot = {
    * stages. Used by SimulatorJoinCanvas to draw row-match lines.
    */
   rightTableRows?: TrackedRow[];
+  /** 0-based index of this JOIN in multi-join queries. */
+  joinIndex?: number;
+  /** Table name of the right-hand side being joined at this stage. */
+  joinRightTable?: string;
 };
 
 // ── Diff types ──────────────────────────────────────────────────────────────
