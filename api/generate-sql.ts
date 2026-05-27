@@ -1,3 +1,5 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+
 import { buildSqlGenerationPrompt } from "./_lib/buildSqlPrompt";
 import {
   AiModelUnavailableError,
@@ -38,20 +40,23 @@ function parsePrompt(body: unknown): string {
   return prompt;
 }
 
+function json(res: VercelResponse, status: number, payload: Record<string, unknown>) {
+  res.status(status).setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(payload));
+}
+
 function sendError(
-  res: {
-    status: (code: number) => { json: (payload: { error: string }) => void };
-  },
+  res: VercelResponse,
   error: unknown,
   fallback: string
 ): void {
   if (error instanceof AiQuotaExceededError) {
-    res.status(429).json({ error: QUOTA_ERROR_MESSAGE });
+    json(res, 429, { error: QUOTA_ERROR_MESSAGE });
     return;
   }
 
   if (error instanceof AiModelUnavailableError) {
-    res.status(503).json({ error: MODEL_ERROR_MESSAGE });
+    json(res, 503, { error: MODEL_ERROR_MESSAGE });
     return;
   }
 
@@ -63,41 +68,30 @@ function sendError(
     message.includes("disallowed destructive") ||
     message.includes("Prompt is too long")
   ) {
-    res.status(400).json({ error: message });
+    json(res, 400, { error: message });
     return;
   }
 
   if (message.includes("GEMINI_API_KEY")) {
-    res.status(500).json({ error: "Server is missing AI configuration." });
+    json(res, 500, { error: "Server is missing AI configuration." });
     return;
   }
 
-  res.status(500).json({ error: fallback });
+  json(res, 500, { error: fallback });
 }
 
-export default async function handler(
-  req: {
-    method?: string;
-    body?: unknown;
-    headers?: Record<string, string | string[] | undefined>;
-    socket?: { remoteAddress?: string };
-  },
-  res: {
-    setHeader: (name: string, value: string) => void;
-    status: (code: number) => { json: (payload: unknown) => void };
-  }
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
+    json(res, 405, { error: "Method not allowed" });
     return;
   }
 
   const rateLimit = enforceAiRateLimit(req);
   if (!rateLimit.ok) {
     res.setHeader("Retry-After", String(rateLimit.retryAfterSeconds));
-    res.status(429).json({
+    json(res, 429, {
       error: "Too many AI requests from this IP. Please wait and try again.",
     });
     return;
@@ -107,8 +101,9 @@ export default async function handler(
     const userPrompt = parsePrompt(req.body);
     const raw = await generateWithGemini(buildSqlGenerationPrompt(userPrompt));
     const sql = sanitizeGeneratedSql(raw);
-    res.status(200).json({ sql });
+    json(res, 200, { sql });
   } catch (error) {
+    console.error("[api/generate-sql]", error);
     sendError(res, error, "Failed to generate SQL. Please try again.");
   }
 }

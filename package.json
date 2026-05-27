@@ -24,6 +24,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
+    "@vercel/node": "^5.3.0",
     "@codemirror/lang-sql": "^6.10.0",
     "@electric-sql/pglite": "^0.4.5",
     "@uiw/react-codemirror": "^4.25.10",

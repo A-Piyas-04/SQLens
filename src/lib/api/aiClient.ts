@@ -30,7 +30,16 @@ export async function generateSql(prompt: string): Promise<string> {
     body: JSON.stringify({ prompt }),
   });
 
-  const data = (await response.json()) as GenerateResponse & ErrorResponse;
+  const raw = await response.text();
+  let data: GenerateResponse & ErrorResponse;
+  try {
+    data = JSON.parse(raw) as GenerateResponse & ErrorResponse;
+  } catch {
+    const snippet = raw.trim().slice(0, 120);
+    throw new Error(
+      snippet || `Request failed (${response.status})`
+    );
+  }
 
   if (!response.ok) {
     throw new Error(data.error ?? `Request failed (${response.status})`);
