@@ -17,6 +17,32 @@ const QUOTA_ERROR_MESSAGE =
 const MODEL_ERROR_MESSAGE =
   "No configured Gemini model is available for this API key. Set GEMINI_MODEL and optionally GEMINI_MODEL_FALLBACKS.";
 
+function debugLog(
+  location: string,
+  message: string,
+  data: Record<string, unknown>,
+  hypothesisId: string
+): void {
+  // #region agent log
+  fetch("http://127.0.0.1:7502/ingest/188b4fd5-bade-4808-914e-354929823f23", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "618ede",
+    },
+    body: JSON.stringify({
+      sessionId: "618ede",
+      runId: "pre-fix",
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+}
+
 function parsePrompt(body: unknown): string {
   if (
     typeof body !== "object" ||
@@ -82,6 +108,12 @@ function sendError(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Cache-Control", "no-store");
+  debugLog(
+    "api/generate-sql.ts:109",
+    "handler entry",
+    { method: req.method, hasBody: !!req.body },
+    "H1"
+  );
 
   if (req.method !== "POST") {
     json(res, 405, { error: "Method not allowed" });
@@ -89,6 +121,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const rateLimit = enforceAiRateLimit(req);
+  debugLog(
+    "api/generate-sql.ts:123",
+    "rate limit result",
+    { ok: rateLimit.ok, retryAfterSeconds: rateLimit.ok ? null : rateLimit.retryAfterSeconds },
+    "H4"
+  );
   if (!rateLimit.ok) {
     res.setHeader("Retry-After", String(rateLimit.retryAfterSeconds));
     json(res, 429, {
@@ -99,10 +137,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const userPrompt = parsePrompt(req.body);
+    debugLog(
+      "api/generate-sql.ts:136",
+      "prompt parsed",
+      { promptLength: userPrompt.length },
+      "H2"
+    );
     const raw = await generateWithGemini(buildSqlGenerationPrompt(userPrompt));
+    debugLog(
+      "api/generate-sql.ts:142",
+      "gemini raw received",
+      { rawLength: raw.length },
+      "H3"
+    );
     const sql = sanitizeGeneratedSql(raw);
     json(res, 200, { sql });
   } catch (error) {
+    const err = error as { message?: unknown; name?: unknown; stack?: unknown };
+    debugLog(
+      "api/generate-sql.ts:151",
+      "handler catch",
+      {
+        errorName: String(err?.name ?? "unknown"),
+        errorMessage: String(err?.message ?? "unknown"),
+        stackTop: typeof err?.stack === "string" ? err.stack.split("\n").slice(0, 2).join(" | ") : null,
+      },
+      "H5"
+    );
     console.error("[api/generate-sql]", error);
     sendError(res, error, "Failed to generate SQL. Please try again.");
   }

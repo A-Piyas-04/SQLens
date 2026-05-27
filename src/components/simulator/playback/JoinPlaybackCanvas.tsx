@@ -5,6 +5,7 @@
 import {
   type CSSProperties,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -345,6 +346,10 @@ export default function JoinPlaybackCanvas({
   const [drawnLineKeys, setDrawnLineKeys] = useState<Set<string>>(new Set());
   const [fastForward, setFastForward] = useState(false);
   const [scanY, setScanY] = useState<number | null>(null);
+  const [layoutNonce, setLayoutNonce] = useState(0);
+  const markerSeed = useId();
+  const matchMarkerId = `pb-arr-m-${markerSeed}`;
+  const nullMarkerId = `pb-arr-n-${markerSeed}`;
 
   const leftWrapperEl = useRef<HTMLDivElement | null>(null);
   const rightWrapperEl = useRef<HTMLDivElement | null>(null);
@@ -492,7 +497,7 @@ export default function JoinPlaybackCanvas({
     });
 
     return () => cancelAnimationFrame(raf);
-  }, [phase, currentLeftIndex, drawnLineKeys, fastForward, leftSteps, animationKey]);
+  }, [phase, currentLeftIndex, drawnLineKeys, fastForward, leftSteps, animationKey, layoutNonce]);
 
   useEffect(() => {
     if (phase !== "matching" || currentLeftIndex < 0 || fastForward) return;
@@ -553,6 +558,26 @@ export default function JoinPlaybackCanvas({
   const rightLabel = condition.rightTable ?? "right";
   const remainingLeftRows =
     leftSteps.length > MATCH_BATCH ? leftSteps.length - MATCH_BATCH : 0;
+
+  useEffect(() => {
+    if (phase === "idle") return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onResize = () => {
+      requestAnimationFrame(() => setLayoutNonce((n) => n + 1));
+    };
+
+    const observer = new ResizeObserver(onResize);
+    observer.observe(container);
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
+  }, [phase]);
 
   return (
     <div
@@ -649,10 +674,26 @@ export default function JoinPlaybackCanvas({
           aria-hidden
         >
           <defs>
-            <marker id="pb-arr-m" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <marker
+              id={matchMarkerId}
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="4"
+              markerUnits="userSpaceOnUse"
+              orient="auto-start-reverse"
+            >
               <path d="M0,0 L0,6 L6,3 z" fill="#10b981" fillOpacity="0.75" />
             </marker>
-            <marker id="pb-arr-n" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <marker
+              id={nullMarkerId}
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="4"
+              markerUnits="userSpaceOnUse"
+              orient="auto-start-reverse"
+            >
               <path d="M0,0 L0,6 L6,3 z" fill="#f59e0b" fillOpacity="0.5" />
             </marker>
           </defs>
@@ -668,8 +709,9 @@ export default function JoinPlaybackCanvas({
                 stroke={line.isNull ? "#f59e0b" : "#10b981"}
                 strokeWidth={1.5}
                 strokeOpacity={line.isNull ? 0.45 : 0.72}
+                vectorEffect="non-scaling-stroke"
                 strokeDasharray={line.isNull ? "4 3" : undefined}
-                markerEnd={line.isNull ? "url(#pb-arr-n)" : "url(#pb-arr-m)"}
+                markerEnd={line.isNull ? `url(#${nullMarkerId})` : `url(#${matchMarkerId})`}
               />
             ) : (
               <line
@@ -681,9 +723,10 @@ export default function JoinPlaybackCanvas({
                 stroke={line.isNull ? "#f59e0b" : "#10b981"}
                 strokeWidth={1.5}
                 strokeOpacity={line.isNull ? 0.45 : 0.72}
-                strokeDasharray={line.isNull ? "4 3" : `${line.length}`}
+                vectorEffect="non-scaling-stroke"
+                strokeDasharray={line.isNull ? "4 3" : `${line.length} ${line.length}`}
                 strokeDashoffset={line.isNull ? undefined : `${line.length}`}
-                markerEnd={line.isNull ? "url(#pb-arr-n)" : "url(#pb-arr-m)"}
+                markerEnd={line.isNull ? `url(#${nullMarkerId})` : `url(#${matchMarkerId})`}
                 style={{
                   animation: "pb-line-draw 300ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
                   "--line-length": line.length,

@@ -26,6 +26,32 @@ type ModelAttempt = {
   notFound: boolean;
 };
 
+function debugLog(
+  location: string,
+  message: string,
+  data: Record<string, unknown>,
+  hypothesisId: string
+): void {
+  // #region agent log
+  fetch("http://127.0.0.1:7502/ingest/188b4fd5-bade-4808-914e-354929823f23", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "618ede",
+    },
+    body: JSON.stringify({
+      sessionId: "618ede",
+      runId: "pre-fix",
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+}
+
 function parseCommaSeparatedModels(raw: string | undefined): string[] {
   if (!raw?.trim()) return [];
   return raw
@@ -78,6 +104,12 @@ function isRetryableWithFallback(error: unknown): boolean {
 
 function assertApiKey(): string {
   const key = process.env.GEMINI_API_KEY?.trim();
+  debugLog(
+    "api/_lib/gemini.ts:106",
+    "api key presence checked",
+    { hasKey: !!key },
+    "H1"
+  );
   if (!key) {
     throw new Error("Missing GEMINI_API_KEY.");
   }
@@ -104,6 +136,12 @@ async function generateWithModel(
   model: string,
   prompt: string
 ): Promise<string> {
+  debugLog(
+    "api/_lib/gemini.ts:136",
+    "calling gemini model",
+    { model },
+    "H3"
+  );
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
   )}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -119,6 +157,19 @@ async function generateWithModel(
   });
 
   const body = await response.json().catch(() => ({}));
+  debugLog(
+    "api/_lib/gemini.ts:155",
+    "gemini http response",
+    {
+      model,
+      status: response.status,
+      ok: response.ok,
+      hasApiErrorMessage:
+        typeof (body as { error?: { message?: unknown } })?.error?.message ===
+        "string",
+    },
+    "H3"
+  );
   if (!response.ok) {
     const maybeMessage =
       (body as { error?: { message?: string } })?.error?.message ||
@@ -132,6 +183,12 @@ async function generateWithModel(
 export async function generateWithGemini(prompt: string): Promise<string> {
   const apiKey = assertApiKey();
   const models = resolveModelChain();
+  debugLog(
+    "api/_lib/gemini.ts:183",
+    "model chain resolved",
+    { modelCount: models.length, firstModel: models[0] ?? null, promptLength: prompt.length },
+    "H2"
+  );
   const attempts: ModelAttempt[] = [];
 
   for (let index = 0; index < models.length; index += 1) {
