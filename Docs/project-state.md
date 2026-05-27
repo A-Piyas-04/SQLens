@@ -11,7 +11,7 @@ Users can currently:
 - ✅ Run real PostgreSQL queries in the browser (PGlite — no backend required)
 - ✅ Create tables, insert data, perform joins
 - ✅ Persist database state after page refresh (IndexedDB via PGlite)
-- ✅ View rich schema sidebar (columns, types, NULL/default constraints, foreign keys)
+- ✅ View rich schema sidebar (columns, types, NULL/default, PK/FK/UNIQUE badges, CHECK constraints, foreign keys)
 - ✅ View query history per project
 - ✅ Reset database to empty state
 - ✅ Results table with sticky headers, NULL styling, copy JSON, export JSON
@@ -43,7 +43,7 @@ All core features shipped. Database persists via IndexedDB (PGlite). Schema extr
 
 | File | Purpose |
 |------|---------|
-| `src/lib/db/schema.ts` | Extended with `primaryKeys: string[]` per table via `information_schema` PK query |
+| `src/lib/db/schema.ts` | `information_schema` introspection: columns, PK, FK, UNIQUE (composite), CHECK (user-defined; filters system NOT NULL checks) |
 | `src/lib/erd/buildErdGraph.ts` | Converts `SchemaTable[]` into React Flow `Node[]` and `Edge[]` with auto grid layout |
 | `src/components/erd/ErdTableNode.tsx` | Custom React Flow node — table name header, column rows with PK/FK badges and data types |
 | `src/components/erd/ErdViewer.tsx` | ReactFlow canvas with Background, Controls, MiniMap, fitView on schema change; mounts `ErdExportMenu` |

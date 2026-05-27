@@ -8,6 +8,20 @@ const fixture: SchemaTable[] = [
     table_name: "users",
     primaryKeys: ["id"],
     foreignKeys: [],
+    uniqueConstraints: [
+      {
+        table_name: "users",
+        constraint_name: "users_email_key",
+        column_names: ["email"],
+      },
+    ],
+    checkConstraints: [
+      {
+        table_name: "users",
+        constraint_name: "users_age_positive",
+        check_clause: "(age > 0)",
+      },
+    ],
     columns: [
       {
         table_name: "users",
@@ -36,6 +50,8 @@ const fixture: SchemaTable[] = [
         foreign_column_name: "id",
       },
     ],
+    uniqueConstraints: [],
+    checkConstraints: [],
     columns: [
       {
         table_name: "orders",
@@ -65,6 +81,11 @@ describe("buildDesignedText", () => {
     expect(text).toContain("[FK → users.id]");
     expect(text).toContain("orders.user_id ──FK──> users.id");
     expect(text).toContain("PRIMARY KEY (id)");
+    expect(text).toContain("[UNIQUE]");
+    expect(text).toContain("UNIQUE (email)");
+    expect(text).toContain("CHECK — users_age_positive");
+    expect(text).toContain("(age > 0)");
+    expect(text).not.toContain("not introspected");
   });
 
   it("returns empty-schema message when no tables", () => {

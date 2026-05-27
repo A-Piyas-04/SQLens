@@ -1,6 +1,7 @@
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 
 import type { ErdTableNodeData } from "../../lib/erd/buildErdGraph";
+import { getColumnUniqueConstraints } from "../../lib/db/schema";
 import { cn } from "../../lib/utils/cn";
 
 type ErdTableNodeType = Node<ErdTableNodeData, "erdTable">;
@@ -35,7 +36,6 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
         style={{ background: "#60a5fa", border: "none", width: 8, height: 8 }}
       />
 
-      {/* Table header */}
       <div className="flex items-center gap-2 border-b border-slate-700/80 bg-blue-950/50 px-3 py-2.5">
         <div className="size-2 shrink-0 rounded-full bg-blue-400/70" aria-hidden />
         <span className="truncate text-sm font-semibold text-blue-300">
@@ -43,11 +43,12 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
         </span>
       </div>
 
-      {/* Column rows */}
       <div className="divide-y divide-slate-800/60">
         {table.columns.map((col) => {
           const isPk = pkSet.has(col.column_name);
           const isFk = fkSet.has(col.column_name);
+          const uniques = getColumnUniqueConstraints(table, col.column_name);
+          const hasUq = uniques.length > 0;
 
           return (
             <div
@@ -55,7 +56,8 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
               className={cn(
                 "flex items-center justify-between gap-3 px-3 py-1.5 text-xs",
                 isPk && "bg-amber-950/20",
-                isFk && !isPk && "bg-emerald-950/20"
+                isFk && !isPk && "bg-emerald-950/20",
+                hasUq && !isPk && !isFk && "bg-violet-950/20"
               )}
             >
               <div className="flex min-w-0 items-center gap-1.5">
@@ -69,6 +71,18 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
                     FK
                   </span>
                 )}
+                {hasUq && (
+                  <span
+                    className="shrink-0 rounded bg-violet-700/80 px-1 py-px font-mono text-[9px] font-bold leading-tight text-violet-200"
+                    title={
+                      uniques[0].column_names.length > 1
+                        ? `UNIQUE (${uniques[0].column_names.join(", ")})`
+                        : "UNIQUE"
+                    }
+                  >
+                    UQ
+                  </span>
+                )}
                 <span
                   className={cn(
                     "truncate font-mono",
@@ -76,7 +90,9 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
                       ? "text-amber-100"
                       : isFk
                         ? "text-emerald-100"
-                        : "text-slate-200"
+                        : hasUq
+                          ? "text-violet-100"
+                          : "text-slate-200"
                   )}
                 >
                   {col.column_name}
@@ -87,6 +103,23 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
           );
         })}
       </div>
+
+      {table.checkConstraints.length > 0 ? (
+        <div className="border-t border-slate-800/60 bg-slate-950/50 px-3 py-2">
+          <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+            CHECK
+          </p>
+          {table.checkConstraints.map((check) => (
+            <p
+              key={check.constraint_name}
+              className="truncate font-mono text-[9px] leading-tight text-slate-400"
+              title={`${check.constraint_name}: ${check.check_clause}`}
+            >
+              {check.check_clause}
+            </p>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

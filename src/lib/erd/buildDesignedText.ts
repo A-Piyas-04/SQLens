@@ -1,4 +1,5 @@
-import type { ForeignKeyRelation, SchemaTable } from "../db/schema";
+import type { ForeignKeyRelation, SchemaTable, UniqueConstraint } from "../db/schema";
+import { getColumnUniqueConstraints } from "../db/schema";
 
 const BOX_PAD = 2;
 
@@ -18,16 +19,27 @@ function dedupeForeignKeys(tables: SchemaTable[]): ForeignKeyRelation[] {
   return result;
 }
 
+function formatUniqueLabel(unique: UniqueConstraint): string {
+  if (unique.column_names.length === 1) {
+    return "[UNIQUE]";
+  }
+  return `[UNIQUE (${unique.column_names.join(", ")})]`;
+}
+
 function formatColumnLine(
   table: SchemaTable,
   col: SchemaTable["columns"][number]
 ): string {
   const isPk = table.primaryKeys.includes(col.column_name);
   const fk = table.foreignKeys.find((f) => f.column_name === col.column_name);
+  const uniques = getColumnUniqueConstraints(table, col.column_name);
 
   const badges: string[] = [];
   if (isPk) badges.push("[PK]");
   if (fk) badges.push(`[FK → ${fk.foreign_table_name}.${fk.foreign_column_name}]`);
+  for (const unique of uniques) {
+    badges.push(formatUniqueLabel(unique));
+  }
 
   const nullability = col.is_nullable === "NO" ? "NOT NULL" : "NULL";
   const defaultPart = col.column_default ? ` DEFAULT ${col.column_default}` : "";
@@ -58,6 +70,48 @@ function buildEntityBox(table: SchemaTable): string[] {
   return [top, ...body, bottom];
 }
 
+function buildConstraintsSection(tables: SchemaTable[]): string[] {
+  const lines: string[] = ["── Constraints ──"];
+
+  for (const table of tables) {
+    const pkList =
+      table.primaryKeys.length > 0
+        ? table.primaryKeys.join(", ")
+        : "(none detected)";
+    lines.push(`${table.table_name}: PRIMARY KEY (${pkList})`);
+
+    for (const unique of table.uniqueConstraints) {
+      lines.push(
+        `${table.table_name}: UNIQUE (${unique.column_names.join(", ")}) — ${unique.constraint_name}`
+      );
+    }
+
+    for (const check of table.checkConstraints) {
+      lines.push(
+        `${table.table_name}: CHECK — ${check.constraint_name}: ${check.check_clause}`
+      );
+    }
+  }
+
+  const hasAnyExtra = tables.some(
+    (t) => t.uniqueConstraints.length > 0 || t.checkConstraints.length > 0
+  );
+  if (!hasAnyExtra && tables.every((t) => t.primaryKeys.length <= 1)) {
+    const onlyPk = tables.every(
+      (t) =>
+        t.uniqueConstraints.length === 0 &&
+        t.checkConstraints.length === 0
+    );
+    if (onlyPk) {
+      lines.push("");
+      lines.push("(No additional UNIQUE or CHECK constraints.)");
+    }
+  }
+
+  lines.push("");
+  return lines;
+}
+
 export function buildDesignedText(tables: SchemaTable[]): string {
   if (tables.length === 0) {
     return "SQLens ERD — Designed Text\n\nNo tables in schema.";
@@ -85,20 +139,10 @@ export function buildDesignedText(tables: SchemaTable[]): string {
         ]
       : ["── Relationships ──", "(none)", ""];
 
-  const constraintsSection = [
-    "── Constraints ──",
-    ...tables.map((table) => {
-      const pkList =
-        table.primaryKeys.length > 0
-          ? table.primaryKeys.join(", ")
-          : "(none detected)";
-      return `${table.table_name}: PRIMARY KEY (${pkList})`;
-    }),
-    "",
-    "Note: UNIQUE and CHECK constraints are not introspected in this view.",
-  ];
-
-  return [...header, ...entityBlocks, ...relationshipSection, ...constraintsSection].join(
-    "\n"
-  );
+  return [
+    ...header,
+    ...entityBlocks,
+    ...relationshipSection,
+    ...buildConstraintsSection(tables),
+  ].join("\n");
 }
