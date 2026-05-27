@@ -16,6 +16,7 @@ import { cn } from "../../../lib/utils/cn";
 import type { TrackedRow } from "../../../lib/simulator";
 import type { PlaybackSpeed } from "../../../hooks/useSimulatorPlayback";
 import { getIntermediateResultColumns } from "../stageConstants";
+import JoinArrowOverlay, { type PersistentArrow } from "./join/JoinArrowOverlay";
 import JoinMatchBridge from "./join/JoinMatchBridge";
 import {
   buildJoinMatchSteps,
@@ -32,7 +33,7 @@ type JoinPhase = "idle" | "tables" | "keys" | "matching" | "result" | "done";
 
 const MAX_ROWS = 14;
 
-type RowAnchor = { y: number; xEdge: number };
+type RowAnchor = { x: number; y: number };
 
 type KeyTableProps = {
   side: "left" | "right";
@@ -40,7 +41,7 @@ type KeyTableProps = {
   subtitle: string;
   rows: TrackedRow[];
   joinKey: string | null;
-  rowRefs: React.MutableRefObject<Map<string, HTMLTableRowElement>>;
+  rowRefs: React.MutableRefObject<Map<string, HTMLTableCellElement>>;
   visible: boolean;
   activeRowId: string | null;
   matchedRowIds: Set<string>;
@@ -121,10 +122,6 @@ function KeyTable({
               return (
                 <tr
                   key={row._rowId}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(row._rowId, el);
-                    else rowRefs.current.delete(row._rowId);
-                  }}
                   className={cn(
                     "border-b border-slate-800/50 transition-all duration-200",
                     active && "bg-emerald-500/25 ring-1 ring-inset ring-emerald-400/50",
@@ -134,6 +131,10 @@ function KeyTable({
                   )}
                 >
                   <td
+                    ref={(el) => {
+                      if (el) rowRefs.current.set(row._rowId, el);
+                      else rowRefs.current.delete(row._rowId);
+                    }}
                     className={cn(
                       "relative px-3 py-2 font-mono",
                       active || matched ? "font-semibold text-sky-100" : "text-slate-500",
@@ -246,15 +247,15 @@ export default function JoinPlaybackCanvas({
   const [phase, setPhase] = useState<JoinPhase>("idle");
   const [stepIndex, setStepIndex] = useState(-1);
   const [pairIndex, setPairIndex] = useState(0);
-  const [bridgeAnimating, setBridgeAnimating] = useState(false);
+  const [persistentArrows, setPersistentArrows] = useState<PersistentArrow[]>([]);
   const [completedSteps, setCompletedSteps] = useState(0);
   const [summaryFlash, setSummaryFlash] = useState(false);
   const [leftAnchors, setLeftAnchors] = useState<Map<string, RowAnchor>>(new Map());
   const [rightAnchors, setRightAnchors] = useState<Map<string, RowAnchor>>(new Map());
 
   const stageRef = useRef<HTMLDivElement>(null);
-  const leftRowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
-  const rightRowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
+  const leftRowRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
+  const rightRowRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
 
   const ms = (n: number) => Math.round(n / speed);
   const tablesMs = ms(380);
@@ -274,7 +275,7 @@ export default function JoinPlaybackCanvas({
   const skippedStepCount = Math.max(0, animSteps.length - stepsToAnimate.length);
 
   const currentStep: JoinMatchStep | undefined =
-    stepIndex >= 0 ? matchSteps[stepIndex] : undefined;
+    stepIndex >= 0 ? stepsToAnimate[stepIndex] : undefined;
   const currentPair: MatchPair | undefined = currentStep?.pairs[pairIndex];
 
   const activeLink: ActiveBridgeLink | null = useMemo(() => {
@@ -292,16 +293,19 @@ export default function JoinPlaybackCanvas({
     const stage = stageRef.current;
     if (!stage) return;
 
+    const sr = stage.getBoundingClientRect();
+
     const measureSide = (
-      refs: Map<string, HTMLTableRowElement>,
+      refs: Map<string, HTMLTableCellElement>,
       side: "left" | "right"
     ) => {
       const out = new Map<string, RowAnchor>();
-      refs.forEach((el, id) => {
-        const r = el.getBoundingClientRect();
+      refs.forEach((cell, id) => {
+        const r = cell.getBoundingClientRect();
+        const pad = 2;
         out.set(id, {
-          y: r.top + r.height / 2,
-          xEdge: side === "left" ? r.right : r.left,
+          x: (side === "left" ? r.right - pad : r.left + pad) - sr.left,
+          y: r.top + r.height / 2 - sr.top,
         });
       });
       return out;
@@ -313,9 +317,10 @@ export default function JoinPlaybackCanvas({
 
   useLayoutEffect(() => {
     if (phase === "idle") return;
+    measureAnchors();
     const raf = requestAnimationFrame(measureAnchors);
     return () => cancelAnimationFrame(raf);
-  }, [phase, stepIndex, pairIndex, bridgeAnimating, measureAnchors, animationKey]);
+  }, [phase, stepIndex, pairIndex, persistentArrows, measureAnchors, animationKey]);
 
   useEffect(() => {
     if (phase === "idle") return;
@@ -330,7 +335,7 @@ export default function JoinPlaybackCanvas({
     setPhase("idle");
     setStepIndex(-1);
     setPairIndex(0);
-    setBridgeAnimating(false);
+    setPersistentArrows([]);
     setCompletedSteps(0);
     setSummaryFlash(false);
     setLeftAnchors(new Map());
@@ -355,13 +360,32 @@ export default function JoinPlaybackCanvas({
       const step = stepsToAnimate[si];
 
       for (let pi = 0; pi < step.pairs.length; pi++) {
+        const pair = step.pairs[pi];
+        const arrowKey =
+          "null" in pair
+            ? `${step.leftId}-null-${pi}`
+            : `${step.leftId}-${pair.rightId}`;
+
         schedule(() => {
           setStepIndex(si);
           setPairIndex(pi);
-          setBridgeAnimating(true);
+          setPersistentArrows((prev) => [
+            ...prev.map((a) => ({ ...a, drawing: false })),
+            {
+              key: arrowKey,
+              leftId: step.leftId,
+              rightId: "rightId" in pair ? pair.rightId : null,
+              isNull: "null" in pair,
+              drawing: true,
+            },
+          ]);
         }, cursor);
         cursor += connectMs;
-        schedule(() => setBridgeAnimating(false), cursor);
+        schedule(() => {
+          setPersistentArrows((prev) =>
+            prev.map((a) => (a.key === arrowKey ? { ...a, drawing: false } : a))
+          );
+        }, cursor);
         cursor += holdMs;
         if (pi < step.pairs.length - 1) cursor += betweenPairsMs;
       }
@@ -378,7 +402,10 @@ export default function JoinPlaybackCanvas({
       cursor += ms(400);
     }
 
-    schedule(() => setPhase("result"), cursor + ms(80));
+    schedule(() => {
+      setPersistentArrows([]);
+      setPhase("result");
+    }, cursor + ms(80));
     schedule(() => setPhase("done"), cursor + ms(520));
 
     return () => timers.forEach(clearTimeout);
@@ -465,7 +492,7 @@ export default function JoinPlaybackCanvas({
       <div
         ref={stageRef}
         className={cn(
-          "relative grid grid-cols-[minmax(0,1fr)_minmax(88px,140px)_minmax(0,1fr)] items-start gap-2 sm:gap-3",
+          "relative grid grid-cols-[minmax(0,1fr)_minmax(88px,140px)_minmax(0,1fr)] items-stretch gap-2 sm:gap-3",
           panelsDimmed && "opacity-45"
         )}
         style={{ transition: "opacity 400ms ease" }}
@@ -493,13 +520,7 @@ export default function JoinPlaybackCanvas({
               matchCountByRowId={matchCountByRowId}
             />
 
-            <JoinMatchBridge
-              link={activeLink}
-              leftAnchors={leftAnchors}
-              rightAnchors={rightAnchors}
-              animating={bridgeAnimating}
-              bridgeUid={bridgeUid}
-            />
+            <JoinMatchBridge link={activeLink} />
 
             {rightRows.length === 0 ? (
               <div className="rounded-lg border border-slate-700/30 bg-slate-800/20 px-3 py-8 text-center text-[11px] italic text-slate-600">
@@ -522,6 +543,16 @@ export default function JoinPlaybackCanvas({
               />
             )}
           </>
+        )}
+
+        {phase === "matching" && persistentArrows.length > 0 && (
+          <JoinArrowOverlay
+            stageRef={stageRef}
+            arrows={persistentArrows}
+            leftAnchors={leftAnchors}
+            rightAnchors={rightAnchors}
+            overlayUid={bridgeUid}
+          />
         )}
       </div>
 
@@ -597,7 +628,7 @@ export default function JoinPlaybackCanvas({
       )}
 
       <p className="text-[10px] text-slate-600">
-        Each match flows across the bridge one at a time — no overlapping lines.
+        Arrows stay visible as each tuple connects; lines clear when the result appears.
       </p>
     </div>
   );
