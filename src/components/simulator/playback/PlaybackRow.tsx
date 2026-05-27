@@ -1,37 +1,66 @@
 import { type CSSProperties, memo } from "react";
+import { XCircle } from "lucide-react";
 import { cn } from "../../../lib/utils/cn";
 import type { RowDiff, RowStatus, TrackedRow } from "../../../lib/simulator";
+import type { TransitionPhase } from "../../../hooks/useSimulatorPlayback";
 
-/** Stagger delay between each animated row (ms). Keeps rows from all firing at once. */
-const ROW_STAGGER_MS = 55;
+const ROW_HEIGHT_PX = 36;
+
+const GROUP_BORDER: Record<number, string> = {
+  0: "border-l-emerald-500",
+  1: "border-l-violet-500",
+  2: "border-l-sky-500",
+  3: "border-l-amber-500",
+  4: "border-l-rose-500",
+  5: "border-l-teal-500",
+};
+
+const GROUP_BG: Record<number, string> = {
+  0: "bg-emerald-500/10",
+  1: "bg-violet-500/10",
+  2: "bg-sky-500/10",
+  3: "bg-amber-500/10",
+  4: "bg-rose-500/10",
+  5: "bg-teal-500/10",
+};
 
 type Props = {
   row: TrackedRow;
   columns: string[];
   hiddenColumns: Set<string>;
   rowDiff: RowDiff | undefined;
-  /** 0-based position of this row in the displayed list — drives CSS stagger */
-  rowIndex: number;
-  /** Ref callback for FLIP animation registration */
   rowRef?: (el: HTMLTableRowElement | null) => void;
-  /** When true, show the "change" reason column */
   showReason: boolean;
+  showRowId: boolean;
+  transitionPhase: TransitionPhase;
+  isCondemned: boolean;
+  isSurviving: boolean;
+  ejectDelayMs: number;
+  animateEject: boolean;
+  groupIndex?: number;
+  isGroupLeader?: boolean;
+  isGroupFollower?: boolean;
+  orderByColumns: Set<string>;
+  highlightOrderBy: boolean;
+  postOrderByHighlight: boolean;
+  isFromEnter: boolean;
+  fromEnterDelayMs: number;
+  stageType: string;
 };
 
 const ROW_BG: Record<RowStatus, string> = {
-  unchanged:        "",
-  removed:          "data-[status=removed]:opacity-25 data-[status=removed]:bg-red-500/8",
-  added:            "data-[status=added]:bg-emerald-500/8",
-  reordered:        "data-[status=reordered]:border-l-2 data-[status=reordered]:border-l-sky-500/60",
-  "null-introduced":"data-[status=null-introduced]:bg-amber-500/5",
+  unchanged: "",
+  removed: "data-[status=removed]:opacity-25 data-[status=removed]:bg-red-500/8",
+  added: "data-[status=added]:bg-emerald-500/8",
+  reordered: "data-[status=reordered]:border-l-2 data-[status=reordered]:border-l-sky-500/60",
+  "null-introduced": "data-[status=null-introduced]:bg-amber-500/5",
 };
 
-// Human-friendly label for each status badge
 const STATUS_BADGE: Partial<Record<RowStatus, { label: string; cls: string }>> = {
-  removed:          { label: "filtered",   cls: "border-red-500/30 bg-red-500/10 text-red-400" },
-  added:            { label: "matched",    cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
-  reordered:        { label: "reordered",  cls: "border-sky-500/30 bg-sky-500/10 text-sky-400" },
-  "null-introduced":{ label: "null row",   cls: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
+  removed: { label: "filtered", cls: "border-red-500/30 bg-red-500/10 text-red-400" },
+  added: { label: "matched", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
+  reordered: { label: "reordered", cls: "border-sky-500/30 bg-sky-500/10 text-sky-400" },
+  "null-introduced": { label: "null row", cls: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
 };
 
 const PlaybackRow = memo(function PlaybackRow({
@@ -39,34 +68,85 @@ const PlaybackRow = memo(function PlaybackRow({
   columns,
   hiddenColumns,
   rowDiff,
-  rowIndex,
   rowRef,
   showReason,
+  showRowId,
+  transitionPhase,
+  isCondemned,
+  isSurviving,
+  ejectDelayMs,
+  animateEject,
+  groupIndex,
+  isGroupLeader,
+  isGroupFollower,
+  orderByColumns,
+  highlightOrderBy,
+  postOrderByHighlight,
+  isFromEnter,
+  fromEnterDelayMs,
+  stageType,
 }: Props) {
-  const status: RowStatus = rowDiff?.status ?? "unchanged";
+  const status: RowStatus =
+    transitionPhase === "settled" || transitionPhase === "idle"
+      ? (rowDiff?.status ?? "unchanged")
+      : "unchanged";
   const badge = STATUS_BADGE[status];
   const nullCols = new Set(rowDiff?.nullColumns ?? []);
+  const isReordered = rowDiff?.status === "reordered";
 
-  // Only stagger rows that are actually animated (removed / added / null-introduced)
-  const staggered = status !== "unchanged" && status !== "reordered";
-  const rowStyle: CSSProperties | undefined = staggered
-    ? { "--pb-row-delay": `${rowIndex * ROW_STAGGER_MS}ms` } as CSSProperties
-    : undefined;
+  const rowStyle: CSSProperties = {
+    ...(animateEject && isCondemned && transitionPhase === "transforming"
+      ? {
+          animationDelay: `${ejectDelayMs}ms`,
+          maxHeight: `${ROW_HEIGHT_PX}px`,
+        }
+      : {}),
+    ...(isFromEnter ? { animationDelay: `${fromEnterDelayMs}ms` } : {}),
+    ...(groupIndex !== undefined && isGroupFollower && transitionPhase === "transforming"
+      ? { transitionDelay: `${(groupIndex ?? 0) * 150}ms` }
+      : {}),
+  };
 
   return (
     <tr
       ref={rowRef}
-      data-status={status}
+      data-status={transitionPhase === "settled" || transitionPhase === "idle" ? status : "unchanged"}
       style={rowStyle}
       className={cn(
-        "border-b border-slate-800/50 transition-colors",
-        ROW_BG[status]
+        "relative border-b border-slate-800/50 transition-colors",
+        ROW_BG[status],
+        isCondemned && transitionPhase === "departing" && "pb-row-condemned",
+        isCondemned && transitionPhase === "transforming" && animateEject && "pb-row-eject pb-row-collapsing",
+        isCondemned && transitionPhase === "transforming" && !animateEject && "pb-row-collapsing opacity-0",
+        isSurviving && transitionPhase === "arriving" && "pb-row-survived",
+        isReordered && transitionPhase === "transforming" && stageType === "ORDER_BY" && "pb-row-sliding",
+        groupIndex !== undefined && transitionPhase === "departing" && cn("border-l-2", GROUP_BORDER[groupIndex % 6], GROUP_BG[groupIndex % 6]),
+        isGroupLeader && transitionPhase === "transforming" && groupIndex !== undefined && GROUP_BG[groupIndex % 6],
+        isGroupFollower && transitionPhase === "transforming" && "pb-row-group-collapse opacity-0",
+        groupIndex !== undefined &&
+          (transitionPhase === "arriving" || transitionPhase === "settled") &&
+          cn("border-l-2 pb-row-group-arrive", GROUP_BORDER[groupIndex % 6]),
+        isFromEnter && transitionPhase === "transforming" && "pb-row-enter-cascade"
       )}
     >
-      {columns.map((col) => {
+      {showRowId && (
+        <td
+          className="w-6 border-r border-slate-800/40 px-1 py-2 text-center font-mono text-[9px] text-slate-600"
+          style={{
+            borderLeftColor: `hsl(${(Number(row._rowId.replace(/\D/g, "")) % 8) * 45} 70% 50% / 0.45)`,
+          }}
+        >
+          #{row._rowId.replace("row-", "r").slice(0, 3)}
+        </td>
+      )}
+      {columns.map((col, colIdx) => {
         const isHidden = hiddenColumns.has(col);
         const value = row[col];
         const isNullIntroduced = nullCols.has(col);
+        const isOrderCol = orderByColumns.has(col);
+        const isLastCol = colIdx === columns.length - 1;
+        const showCondemnedIcon =
+          isCondemned && transitionPhase === "departing" && isLastCol && !showReason;
 
         return (
           <td
@@ -74,11 +154,26 @@ const PlaybackRow = memo(function PlaybackRow({
             data-null-introduced={isNullIntroduced ? "true" : undefined}
             className={cn(
               "px-3 py-2 font-mono text-xs whitespace-nowrap",
-              isHidden ? "opacity-20 text-slate-600" : "text-slate-300",
-              isNullIntroduced && "rounded text-amber-300"
+              showCondemnedIcon && "relative",
+              isHidden && transitionPhase !== "departing" && transitionPhase !== "transforming"
+                ? "opacity-20 text-slate-600"
+                : "text-slate-300",
+              isHidden &&
+                (transitionPhase === "departing" || transitionPhase === "transforming") &&
+                "pb-col-dropped-data opacity-25",
+              isNullIntroduced && "rounded text-amber-300",
+              highlightOrderBy && isOrderCol && "pb-order-col-highlight",
+              postOrderByHighlight && isOrderCol && "pb-order-col-post"
             )}
           >
-            {isHidden ? (
+            {isHidden &&
+            (transitionPhase === "departing" || transitionPhase === "transforming") ? (
+              value === null || value === undefined ? (
+                <span className="italic text-orange-400/80">NULL</span>
+              ) : (
+                String(value)
+              )
+            ) : isHidden ? (
               <span className="italic text-slate-700">—</span>
             ) : value === null || value === undefined ? (
               <span
@@ -92,13 +187,25 @@ const PlaybackRow = memo(function PlaybackRow({
             ) : (
               String(value)
             )}
+            {showCondemnedIcon && (
+              <XCircle
+                className="pb-row-condemned-icon absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-red-400"
+                aria-hidden
+              />
+            )}
           </td>
         );
       })}
 
       {showReason && (
-        <td className="px-3 py-2 whitespace-nowrap">
-          {badge && (
+        <td className="relative px-3 py-2 whitespace-nowrap">
+          {isCondemned && transitionPhase === "departing" && (
+            <XCircle
+              className="pb-row-condemned-icon absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-red-400"
+              aria-hidden
+            />
+          )}
+          {(transitionPhase === "settled" || transitionPhase === "idle") && badge && (
             <span
               className={cn(
                 "pb-badge inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
@@ -109,13 +216,16 @@ const PlaybackRow = memo(function PlaybackRow({
               {badge.label}
             </span>
           )}
-          {rowDiff?.reason && status !== "unchanged" && (
-            <span className="pb-badge ml-2 text-[10px] italic text-slate-500">
-              {rowDiff.reason}
-            </span>
-          )}
+          {rowDiff?.reason &&
+            status !== "unchanged" &&
+            (transitionPhase === "settled" || transitionPhase === "idle") && (
+              <span className="pb-badge ml-2 text-[10px] italic text-slate-500">
+                {rowDiff.reason}
+              </span>
+            )}
         </td>
       )}
+
     </tr>
   );
 });

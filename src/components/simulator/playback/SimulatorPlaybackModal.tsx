@@ -2,18 +2,21 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useSimulatorPlayback } from "../../../hooks/useSimulatorPlayback";
-import PlaybackTimeline from "./PlaybackTimeline";
 import PlaybackStage from "./PlaybackStage";
 import PlaybackControls from "./PlaybackControls";
 import type { SimulatorSnapshot, StageDiff } from "../../../lib/simulator";
+import SqlContextPanel from "./SqlContextPanel";
+import LessonPanel from "./LessonPanel";
 
 type Props = {
   snapshots: SimulatorSnapshot[];
   diffs:     StageDiff[];
+  originalSql: string;
   onClose:   () => void;
 };
 
@@ -25,9 +28,12 @@ type Props = {
  * Keyboard shortcuts (Space, ←, →, R) are handled here and forwarded to the
  * playback hook.
  */
-export default function SimulatorPlaybackModal({ snapshots, diffs, onClose }: Props) {
+export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, onClose }: Props) {
   const pb = useSimulatorPlayback(snapshots.length);
   const { activeIndex, navigate, togglePlay, restart } = pb;
+  const [showRowIds, setShowRowIds] = useState<boolean>(() => localStorage.getItem("simulator:showRowIds") === "1");
+  const [showSqlMobile, setShowSqlMobile] = useState(false);
+  const [showLessonMobile, setShowLessonMobile] = useState(false);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -60,10 +66,12 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, onClose }: Pr
           break;
         case "ArrowRight":
           e.preventDefault();
+          if (pb.isTransitioning) return;
           navigate(activeIndex + 1);
           break;
         case "ArrowLeft":
           e.preventDefault();
+          if (pb.isTransitioning) return;
           navigate(activeIndex - 1);
           break;
         case "r":
@@ -75,7 +83,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, onClose }: Pr
           break;
       }
     },
-    [activeIndex, navigate, togglePlay, restart, onClose]
+    [activeIndex, navigate, togglePlay, restart, onClose, pb.isTransitioning]
   );
 
   useEffect(() => {
@@ -87,8 +95,14 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, onClose }: Pr
   const snapshot     = snapshots[activeIndex];
   const prevSnapshot = activeIndex > 0 ? snapshots[activeIndex - 1] : null;
   const diff         = diffs[activeIndex - 1] ?? null; // diffs[i] = prev→curr for stage i+1
+  if (!snapshot) return null;
 
   const dbLabel = snapshot?.label.replace(/^FROM\s+/i, "") ?? "query";
+  const joinStageIndex = snapshots.slice(0, activeIndex + 1).filter((s) => s.stageType === "JOIN").length - 1;
+
+  useEffect(() => {
+    localStorage.setItem("simulator:showRowIds", showRowIds ? "1" : "0");
+  }, [showRowIds]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   const modal = (
@@ -106,7 +120,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, onClose }: Pr
         <header className="flex items-center gap-3 border-b border-slate-700/50 bg-slate-900/60 px-5 py-3">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              SQL Execution Playback
+              Query Execution Simulation
             </span>
             <span className="text-slate-700">/</span>
             <span className="truncate text-sm font-medium text-slate-300">
@@ -136,38 +150,100 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, onClose }: Pr
           </button>
         </header>
 
-        {/* Body: timeline + stage content */}
-        <div className="flex flex-1 min-h-0">
-          <PlaybackTimeline
+        {/* Body: context + stage + lesson */}
+        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_280px]">
+          <SqlContextPanel
+            className="hidden h-full overflow-y-auto border-r border-slate-700/50 bg-slate-900/40 lg:block"
+            originalSql={originalSql}
+            activeStageType={snapshot.stageType}
+            joinStageIndex={Math.max(0, joinStageIndex)}
             snapshots={snapshots}
+            diffs={diffs}
             activeIndex={activeIndex}
-            navigate={(i) => { pb.navigate(i); }}
-            onNavigate={() => { /* autoplay continues — user can pause via controls */ }}
+            navigate={pb.navigate}
           />
 
           {snapshot && (
             <main className="flex flex-1 flex-col min-h-0 min-w-0">
+              <div className="flex items-center gap-2 border-b border-slate-700/40 px-4 py-2 lg:hidden">
+                <button
+                  onClick={() => setShowSqlMobile((v) => !v)}
+                  className="rounded-md border border-slate-700/60 bg-slate-800/50 px-2 py-1 text-xs text-slate-300"
+                >
+                  Show SQL
+                </button>
+                <button
+                  onClick={() => setShowLessonMobile((v) => !v)}
+                  className="rounded-md border border-slate-700/60 bg-slate-800/50 px-2 py-1 text-xs text-slate-300"
+                >
+                  Lesson
+                </button>
+              </div>
               <PlaybackStage
                 snapshot={snapshot}
                 prevSnapshot={prevSnapshot}
                 diff={diff}
                 animationKey={pb.animationKey}
                 speed={pb.speed}
+                transitionPhase={pb.transitionPhase}
+                setTransitionPhase={pb.setTransitionPhase}
+                showRowIds={showRowIds}
               />
             </main>
           )}
+
+          <div className="hidden lg:block">
+            {snapshot && (
+              <LessonPanel
+                snapshot={snapshot}
+                prevSnapshot={prevSnapshot}
+                diff={diff}
+                showRowIds={showRowIds}
+                onToggleRowIds={setShowRowIds}
+              />
+            )}
+          </div>
         </div>
+
+        {showSqlMobile && snapshot && (
+          <div className="border-t border-slate-700/50 lg:hidden">
+            <SqlContextPanel
+              originalSql={originalSql}
+              activeStageType={snapshot.stageType}
+              joinStageIndex={Math.max(0, joinStageIndex)}
+              snapshots={snapshots}
+              diffs={diffs}
+              activeIndex={activeIndex}
+              navigate={pb.navigate}
+            />
+          </div>
+        )}
+
+        {showLessonMobile && snapshot && (
+          <div className="max-h-[50vh] border-t border-slate-700/50 lg:hidden">
+            <LessonPanel
+              snapshot={snapshot}
+              prevSnapshot={prevSnapshot}
+              diff={diff}
+              showRowIds={showRowIds}
+              onToggleRowIds={setShowRowIds}
+            />
+          </div>
+        )}
 
         {/* Controls bar */}
         <PlaybackControls
           activeIndex={activeIndex}
           isPlaying={pb.isPlaying}
           speed={pb.speed}
-          animationKey={pb.animationKey}
           navigate={navigate}
           togglePlay={togglePlay}
-          restart={restart}
           setSpeed={pb.setSpeed}
+          toggleStepMode={pb.toggleStepMode}
+          stepMode={pb.stepMode}
+          isTransitioning={pb.isTransitioning}
+          activeStageType={snapshot.stageType}
+          stageTypes={snapshots.map((s) => s.stageType)}
           totalStages={snapshots.length}
         />
       </div>

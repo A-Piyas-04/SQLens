@@ -94,6 +94,7 @@ export default function SimulatorPanel({ query, selectedText, db }: Props) {
             snapshots={state.snapshots}
             diffs={state.diffs}
             isSelection={state.isSelection}
+            originalSql={selectedText.trim() || query}
           />
         )}
       </div>
@@ -149,9 +150,10 @@ type SuccessStateProps = {
   snapshots: SimulatorSnapshot[];
   diffs: StageDiff[];
   isSelection: boolean;
+  originalSql: string;
 };
 
-function SuccessState({ snapshots, diffs, isSelection }: SuccessStateProps) {
+function SuccessState({ snapshots, diffs, isSelection, originalSql }: SuccessStateProps) {
   const [showPlayback, setShowPlayback] = useState(false);
 
   return (
@@ -188,6 +190,7 @@ function SuccessState({ snapshots, diffs, isSelection }: SuccessStateProps) {
           <SimulatorPlaybackModal
             snapshots={snapshots}
             diffs={diffs}
+            originalSql={originalSql}
             onClose={() => setShowPlayback(false)}
           />
         </Suspense>

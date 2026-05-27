@@ -1,31 +1,63 @@
-import { memo } from "react";
+import { memo, useEffect, useRef, type CSSProperties } from "react";
 import type {
   SimulatorSnapshot,
   StageDiff,
-  TrackedRow,
+  SimulatorStageType,
 } from "../../../lib/simulator";
-import type { PlaybackSpeed } from "../../../hooks/useSimulatorPlayback";
+import {
+  ANIM_MS,
+  ENTRY_MS,
+  STAGGER_MS,
+  type PlaybackSpeed,
+  type TransitionPhase,
+} from "../../../hooks/useSimulatorPlayback";
 import PlaybackTable from "./PlaybackTable";
 import JoinPlaybackCanvas from "./JoinPlaybackCanvas";
-import StageAnnotation from "./StageAnnotation";
+import StageEntryBanner from "./StageEntryBanner";
+
+const ACT1_RATIO = 0.4;
+const ACT2_RATIO = 0.8;
+const ACT3_RATIO = 0.3;
 
 type Props = {
-  snapshot:      SimulatorSnapshot;
-  prevSnapshot:  SimulatorSnapshot | null;
-  diff:          StageDiff | null;
-  animationKey:  number;
-  speed:         PlaybackSpeed;
+  snapshot: SimulatorSnapshot;
+  prevSnapshot: SimulatorSnapshot | null;
+  diff: StageDiff | null;
+  animationKey: number;
+  speed: PlaybackSpeed;
+  transitionPhase: TransitionPhase;
+  setTransitionPhase: (phase: TransitionPhase) => void;
+  showRowIds: boolean;
 };
 
-/**
- * Extract the join type from the stage label (preferred — e.g. "LEFT JOIN orders")
- * or fall back to the annotation text. Using the label is more reliable for
- * multi-JOIN queries where the annotation may only describe the first join.
- */
 function extractJoinType(annotation: string, label?: string): string {
   const src = label ?? annotation;
   const m = src.match(/\b(INNER|LEFT|RIGHT|FULL(?: OUTER)?|CROSS)?\s*JOIN\b/i);
   return m ? m[0].trim().toUpperCase() : "JOIN";
+}
+
+function parseStageIndex(stageId: string): number {
+  const m = stageId.match(/^stage-(\d+)/);
+  return m ? Number(m[1]) : 0;
+}
+
+function usesPrevRowsDuringTransform(stageType: SimulatorStageType): boolean {
+  return (
+    stageType === "WHERE" ||
+    stageType === "HAVING" ||
+    stageType === "LIMIT" ||
+    stageType === "GROUP_BY" ||
+    stageType === "SELECT"
+  );
+}
+
+function shouldChoreograph(
+  stageType: SimulatorStageType,
+  prevSnapshot: SimulatorSnapshot | null
+): boolean {
+  if (stageType === "JOIN") return false;
+  if (!prevSnapshot) return stageType === "FROM";
+  return true;
 }
 
 const PlaybackStage = memo(function PlaybackStage({
@@ -34,27 +66,94 @@ const PlaybackStage = memo(function PlaybackStage({
   diff,
   animationKey,
   speed,
+  transitionPhase,
+  setTransitionPhase,
+  showRowIds,
 }: Props) {
   const isJoin = snapshot.stageType === "JOIN";
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const prevStageIndexRef = useRef(parseStageIndex(snapshot.stageId));
 
-  // Gather removed rows from the diff to show them inline at filtering stages
-  const removedRows: TrackedRow[] = [];
-  if (diff && (snapshot.stageType === "WHERE" || snapshot.stageType === "HAVING" || snapshot.stageType === "LIMIT")) {
-    const removedIds = new Set(
-      diff.rowDiffs.filter((d) => d.status === "removed").map((d) => d.rowId)
-    );
-    if (prevSnapshot) {
-      for (const row of prevSnapshot.rows) {
-        if (removedIds.has(row._rowId)) removedRows.push(row);
-      }
+  const animMs = ANIM_MS[speed];
+  const act1Ms = Math.round(animMs * ACT1_RATIO);
+  const act2Ms = Math.round(animMs * ACT2_RATIO);
+  const act3Ms = Math.round(animMs * ACT3_RATIO);
+
+  const clearTimeouts = () => {
+    for (const id of timeoutsRef.current) clearTimeout(id);
+    timeoutsRef.current = [];
+  };
+
+  const schedule = (fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timeoutsRef.current.push(id);
+  };
+
+  useEffect(() => {
+    clearTimeouts();
+
+    const newIndex = parseStageIndex(snapshot.stageId);
+    const isBackward = newIndex < prevStageIndexRef.current;
+    prevStageIndexRef.current = newIndex;
+
+    if (isBackward || !shouldChoreograph(snapshot.stageType, prevSnapshot)) {
+      setTransitionPhase("idle");
+      return;
     }
-  }
+
+    const finish = () => {
+      setTransitionPhase("settled");
+      schedule(() => setTransitionPhase("idle"), 50);
+    };
+
+    if (!prevSnapshot && snapshot.stageType === "FROM") {
+      setTransitionPhase("transforming");
+      schedule(() => setTransitionPhase("arriving"), act2Ms);
+      schedule(() => finish(), act2Ms + act3Ms);
+      return;
+    }
+
+    setTransitionPhase("departing");
+    schedule(() => setTransitionPhase("transforming"), act1Ms);
+    schedule(() => setTransitionPhase("arriving"), act1Ms + act2Ms);
+    schedule(() => finish(), act1Ms + act2Ms + act3Ms);
+
+    return clearTimeouts;
+  }, [animationKey, snapshot.stageId, snapshot.stageType, prevSnapshot, speed, setTransitionPhase, act1Ms, act2Ms, act3Ms]);
+
+  const showPrev =
+    transitionPhase === "departing" ||
+    (transitionPhase === "transforming" &&
+      usesPrevRowsDuringTransform(snapshot.stageType));
+
+  const displayRows = showPrev
+    ? (prevSnapshot?.rows ?? snapshot.rows)
+    : snapshot.rows;
+
+  const displayPrevRows = prevSnapshot?.rows ?? [];
+  const limitValue =
+    snapshot.stageType === "LIMIT"
+      ? (diff?.rowDiffs.find((d) => d.status === "removed")?.reason?.match(/LIMIT (\d+)/i)?.[1] ??
+        String(snapshot.rowCount))
+      : undefined;
 
   return (
-    // `relative` so the floating StageAnnotation can be absolutely positioned
-    <div className="relative flex flex-1 flex-col min-h-0">
-      {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto p-6">
+    <div
+      className="pb-stage-wrapper relative flex flex-1 flex-col min-h-0"
+      style={
+        {
+          "--pb-anim-ms": `${animMs}ms`,
+          "--pb-stagger-ms": `${STAGGER_MS[speed]}ms`,
+          "--pb-act1-ms": `${act1Ms}ms`,
+          "--pb-act2-ms": `${act2Ms}ms`,
+          "--pb-act3-ms": `${act3Ms}ms`,
+          "--pb-remove-ms": `${act2Ms}ms`,
+          "--pb-entry-ms": `${ENTRY_MS[speed]}ms`,
+        } as CSSProperties
+      }
+    >
+      <StageEntryBanner stageType={snapshot.stageType} animationKey={animationKey} />
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         {isJoin ? (
           <JoinPlaybackCanvas
             leftRows={prevSnapshot?.rows ?? []}
@@ -67,18 +166,22 @@ const PlaybackStage = memo(function PlaybackStage({
           />
         ) : (
           <PlaybackTable
-            rows={snapshot.rows}
+            rows={displayRows}
+            targetRows={snapshot.rows}
+            prevRows={displayPrevRows}
             diff={diff}
             animationKey={animationKey}
             speed={speed}
             stageType={snapshot.stageType}
-            removedRows={removedRows}
+            transitionPhase={transitionPhase}
+            showRowIds={showRowIds}
+            prevRowCount={prevSnapshot?.rowCount ?? snapshot.rowCount}
+            targetRowCount={snapshot.rowCount}
+            limitValue={limitValue}
+            stageSql={snapshot.sql}
           />
         )}
       </div>
-
-      {/* Floating explanation pop-up — bottom-right of this container */}
-      <StageAnnotation snapshot={snapshot} diff={diff} animationKey={animationKey} />
     </div>
   );
 });

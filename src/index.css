@@ -127,7 +127,7 @@ body {
   animation: practice-radial-panel-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* ── Simulator Playback Canvas animations ───────────────────────────────── */
+/* === Playback === */
 
 /*
  * Row removed: holds full opacity briefly, flashes red, then dims gracefully.
@@ -197,6 +197,38 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pb-row-remove {
+  0% { opacity: 1; transform: scaleX(1); background-color: transparent; }
+  20% { background-color: rgb(239 68 68 / 0.22); }
+  100% { opacity: 0; transform: scaleX(0); background-color: rgb(239 68 68 / 0.14); }
+}
+
+@keyframes pb-row-enter {
+  0% { opacity: 0; transform: translateY(-20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pb-col-collapse {
+  0% { opacity: 1; max-width: 260px; width: auto; }
+  100% { opacity: 0; max-width: 0; width: 0; padding-left: 0; padding-right: 0; }
+}
+
+@keyframes pb-glow-flash {
+  0% { background-color: rgb(56 189 248 / 0.22); }
+  100% { background-color: transparent; }
+}
+
+@keyframes pb-stage-entry {
+  0% { opacity: 0; transform: translate(-50%, -20px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes pb-count-update {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
 /* ── .pb-table scoped rules: fire on tbody remount (key prop change) ──── */
 
 /*
@@ -206,6 +238,40 @@ body {
 .pb-table tr[data-status="removed"] {
   animation: pb-row-removed var(--pb-anim-ms, 600ms) cubic-bezier(0.4, 0, 0.2, 1) forwards;
   animation-delay: var(--pb-row-delay, 0ms);
+}
+
+.pb-table tr[data-will-remove="true"] {
+  transform-origin: left;
+  animation: pb-row-remove var(--pb-remove-ms, 400ms) ease-in forwards;
+  animation-delay: var(--pb-row-delay, 0ms);
+}
+
+.pb-table tr[data-row-enter="true"] {
+  animation: pb-row-enter var(--pb-entry-ms, 300ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--pb-row-delay, 0ms);
+}
+
+.pb-table th[data-will-collapse="true"],
+.pb-table td[data-will-collapse="true"] {
+  overflow: hidden;
+  animation: pb-col-collapse var(--pb-anim-ms, 500ms) ease forwards;
+}
+
+.pb-table tr[data-pb-flip-glow="true"] {
+  animation: pb-glow-flash 320ms ease-out;
+}
+
+.pb-stage-entry-banner {
+  animation: pb-stage-entry 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pb-count-update {
+  animation: pb-count-update 260ms ease;
+}
+
+.cm-active-clause {
+  border-radius: 4px;
+  background-color: rgb(251 191 36 / 0.2);
 }
 
 .pb-table tr[data-status="added"] {
@@ -230,6 +296,11 @@ body {
   animation-delay: calc(var(--pb-row-index, 0) * 110ms);
 }
 
+.pb-join-right-row {
+  animation: pb-row-reveal 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--pb-row-index, 0) * 110ms);
+}
+
 /* JOIN result row stagger */
 .pb-join-result-row {
   animation: pb-result-fade-up 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -243,7 +314,14 @@ body {
   .pb-badge,
   .pb-progress-bar,
   .pb-join-left-row,
-  .pb-join-result-row { animation: none !important; transition: none !important; }
+  .pb-join-right-row,
+  .pb-join-result-row,
+  .pb-stage-entry-banner,
+  .pb-count-update,
+  .pb-table tr[data-will-remove="true"],
+  .pb-table tr[data-row-enter="true"],
+  .pb-table th[data-will-collapse="true"],
+  .pb-table td[data-will-collapse="true"] { animation: none !important; transition: none !important; }
 }
 
 /* React Flow dark theme overrides */
@@ -296,5 +374,239 @@ body {
 
   .practice-hub-toggle.practice-hub-open {
     transform: none;
+  }
+}
+
+/* ================================================================
+   SIMULATOR PLAYBACK — STAGE TRANSITION ANIMATIONS
+   All durations use CSS custom properties set on .pb-stage-wrapper
+   ================================================================ */
+
+@keyframes pb-row-condemned {
+  0%, 100% { background-color: transparent; }
+  25%, 75% { background-color: rgb(127 29 29 / 0.5); }
+  50%     { background-color: rgb(127 29 29 / 0.8); }
+}
+
+@keyframes pb-row-eject {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(60px); opacity: 0; }
+}
+
+@keyframes pb-row-survived {
+  0%   { box-shadow: inset 3px 0 0 #10b981; }
+  60%  { box-shadow: inset 3px 0 0 #10b981; }
+  100% { box-shadow: inset 3px 0 0 transparent; }
+}
+
+@keyframes pb-row-enter-cascade {
+  from { transform: translateY(-15px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes pb-row-sliding {
+  0%   { background-color: rgb(56 189 248 / 0.0); }
+  30%  { background-color: rgb(56 189 248 / 0.15); }
+  100% { background-color: rgb(56 189 248 / 0.0); }
+}
+
+@keyframes pb-key-pulse {
+  0%, 100% { background-color: transparent; }
+  50%     { background-color: rgb(245 158 11 / 0.25); }
+}
+
+@keyframes pb-scan-beam {
+  from { transform: translateX(-100%); opacity: 0.8; }
+  80%  { opacity: 0.8; }
+  to   { transform: translateX(100%);  opacity: 0; }
+}
+
+@keyframes pb-stage-banner {
+  from { transform: translateY(-20px) translateX(-50%); opacity: 0; }
+  to   { transform: translateY(0)     translateX(-50%); opacity: 1; }
+}
+
+@keyframes pb-row-group-arrive {
+  from { transform: translateX(-30px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+.pb-row-condemned {
+  animation: pb-row-condemned var(--pb-act1-ms, 280ms) ease-in-out forwards;
+}
+
+.pb-row-condemned-icon {
+  animation: pb-row-condemned-icon-fade var(--pb-act1-ms, 280ms) ease-in-out forwards;
+  opacity: 0;
+}
+
+@keyframes pb-row-condemned-icon-fade {
+  0%, 40% { opacity: 0; }
+  50%, 100% { opacity: 1; }
+}
+
+.pb-row-eject {
+  animation: pb-row-eject var(--pb-act2-ms, 560ms) ease-in forwards;
+}
+
+.pb-row-collapsing {
+  transition: max-height var(--pb-remove-ms, 560ms) ease-in,
+              padding var(--pb-remove-ms, 560ms) ease-in,
+              border var(--pb-remove-ms, 560ms) ease-in;
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom-width: 0 !important;
+  overflow: hidden;
+}
+
+.pb-row-survived {
+  animation: pb-row-survived 300ms ease-out forwards;
+}
+
+.pb-row-enter-cascade {
+  animation: pb-row-enter-cascade var(--pb-entry-ms, 350ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pb-row-sliding {
+  animation: pb-row-sliding var(--pb-act2-ms, 560ms) ease-out forwards;
+}
+
+.pb-table tr[data-pb-flip-glow="true"] {
+  animation: pb-row-sliding var(--pb-act2-ms, 560ms) ease-out;
+  filter: blur(0.5px);
+}
+
+.pb-row-group-collapse {
+  transition: transform var(--pb-act2-ms, 560ms) ease-in,
+              opacity var(--pb-act2-ms, 560ms) ease-in,
+              max-height var(--pb-remove-ms, 560ms) ease-in;
+  max-height: 0 !important;
+  overflow: hidden;
+}
+
+.pb-row-group-arrive {
+  animation: pb-row-group-arrive var(--pb-act3-ms, 210ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pb-key-pulse {
+  animation: pb-key-pulse 600ms ease-in-out 2;
+}
+
+.pb-scan-beam {
+  animation: pb-scan-beam var(--pb-scan-ms, 250ms) ease-out forwards;
+}
+
+.pb-col-dropped-header {
+  color: rgb(248 113 113) !important;
+  position: relative;
+}
+
+.pb-col-dropped-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 1px;
+  width: 0;
+  background: rgb(248 113 113);
+  animation: pb-strike-draw var(--pb-act1-ms, 280ms) ease-out forwards;
+}
+
+@keyframes pb-strike-draw {
+  to { width: 100%; }
+}
+
+.pb-col-dropped-data {
+  opacity: 0.25;
+}
+
+.pb-col-collapsing {
+  transition: width var(--pb-remove-ms, 560ms) ease-in,
+              min-width var(--pb-remove-ms, 560ms) ease-in,
+              padding var(--pb-remove-ms, 560ms) ease-in,
+              border var(--pb-remove-ms, 560ms) ease-in,
+              opacity var(--pb-remove-ms, 560ms) ease-in;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.pb-col-survived {
+  animation: pb-col-survived 400ms ease-out forwards;
+}
+
+@keyframes pb-col-survived {
+  0% { background-color: rgb(52 211 153 / 0.2); }
+  100% { background-color: transparent; }
+}
+
+.pb-order-col-highlight {
+  background-color: rgb(186 230 253 / 0.2);
+}
+
+.pb-order-col-post {
+  color: rgb(186 230 253);
+  animation: pb-order-post-fade 600ms ease-out forwards;
+}
+
+@keyframes pb-order-post-fade {
+  0% { color: rgb(186 230 253); }
+  100% { color: inherit; }
+}
+
+.pb-table-from-enter {
+  animation: pb-table-border-in 200ms ease-out forwards;
+  overflow: hidden;
+}
+
+@keyframes pb-table-border-in {
+  from { max-height: 0; opacity: 0.6; }
+  to   { max-height: 2000px; opacity: 1; }
+}
+
+.pb-join-result-row {
+  animation: pb-row-enter-cascade var(--pb-entry-ms, 350ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pb-result-flash-emerald {
+  animation: pb-result-flash 400ms ease-out;
+}
+
+.pb-result-flash-amber {
+  animation: pb-result-flash-amber 400ms ease-out;
+}
+
+@keyframes pb-result-flash {
+  0% { background-color: rgb(16 185 129 / 0.25); }
+  100% { background-color: transparent; }
+}
+
+@keyframes pb-result-flash-amber {
+  0% { background-color: rgb(245 158 11 / 0.2); }
+  100% { background-color: transparent; }
+}
+
+.pb-null-fade-in {
+  animation: pb-null-fade 500ms ease-out forwards;
+}
+
+@keyframes pb-null-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="pb-row-"],
+  [class*="pb-col-"],
+  [class*="pb-key-"],
+  [class*="pb-scan-"],
+  .pb-table-from-enter {
+    animation: none !important;
+    transition: opacity 100ms ease !important;
+    filter: none !important;
   }
 }

@@ -1,62 +1,89 @@
-import { type CSSProperties } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  FastForward,
   Pause,
   Play,
-  RotateCcw,
 } from "lucide-react";
 import { cn } from "../../../lib/utils/cn";
 import {
-  HOLD_MS,
   type PlaybackSpeed,
   type PlaybackState,
 } from "../../../hooks/useSimulatorPlayback";
+import type { SimulatorStageType } from "../../../lib/simulator";
+import { STAGE_COLORS } from "../stageConstants";
 
 const SPEEDS: PlaybackSpeed[] = [0.5, 1, 2, 4];
 
 type Props = Pick<
   PlaybackState,
-  "activeIndex" | "isPlaying" | "speed" | "animationKey" | "navigate" | "togglePlay" | "restart" | "setSpeed"
+  | "activeIndex"
+  | "isPlaying"
+  | "speed"
+  | "navigate"
+  | "togglePlay"
+  | "setSpeed"
+  | "toggleStepMode"
+  | "stepMode"
 > & {
   totalStages: number;
+  isTransitioning: boolean;
+  activeStageType: SimulatorStageType;
+  stageTypes: SimulatorStageType[];
 };
 
 export default function PlaybackControls({
   activeIndex,
   isPlaying,
   speed,
-  animationKey,
   navigate,
   togglePlay,
-  restart,
   setSpeed,
+  toggleStepMode,
+  stepMode,
+  isTransitioning,
+  activeStageType,
+  stageTypes,
   totalStages,
 }: Props) {
   const isFirst = activeIndex === 0;
   const isLast  = activeIndex >= totalStages - 1;
+  const stageColor = STAGE_COLORS[activeStageType];
+  const speedLabels: Record<PlaybackSpeed, string> = {
+    0.5: "Slow",
+    1: "Normal",
+    2: "Fast",
+    4: "Skip",
+  };
 
   return (
     <div className="flex flex-col gap-0 border-t border-slate-700/50 bg-slate-900/80">
-      {/* Progress bar drain */}
-      <div className="h-0.5 w-full overflow-hidden bg-slate-800/60">
-        <div
-          key={`${activeIndex}-${speed}-${animationKey}`}
-          className="pb-progress-bar h-full bg-gradient-to-r from-sky-500/60 to-sky-400/80"
-          style={{
-            animation: isPlaying
-              ? `pb-progress-drain ${HOLD_MS[speed]}ms linear forwards`
-              : "none",
-            width: isPlaying ? "100%" : "100%",
-          } as CSSProperties}
-        />
+      <div
+        className="grid gap-1 px-3 pt-2"
+        style={{ gridTemplateColumns: `repeat(${Math.max(totalStages, 1)}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: totalStages }).map((_, index) => {
+          const segmentColor = STAGE_COLORS[stageTypes[index] ?? activeStageType].dot;
+          return (
+          <div
+            key={index}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              index < activeIndex
+                ? segmentColor
+                : index === activeIndex
+                  ? cn(segmentColor, "animate-pulse")
+                  : "bg-slate-700/70"
+            )}
+          />
+        );})}
       </div>
 
       <div className="flex items-center gap-3 px-4 py-3">
         {/* ← Prev */}
         <button
           aria-label="Previous stage"
-          disabled={isFirst}
+          disabled={isFirst || isTransitioning}
           onClick={() => navigate(activeIndex - 1)}
           className={cn(
             "flex size-8 items-center justify-center rounded-md border transition-colors",
@@ -81,19 +108,19 @@ export default function PlaybackControls({
           )}
         </button>
 
-        {/* Restart */}
+        {/* Step mode */}
         <button
-          aria-label="Restart"
-          onClick={restart}
+          aria-label="Toggle step mode"
+          onClick={toggleStepMode}
           className="flex size-8 items-center justify-center rounded-md border border-slate-700/60 bg-slate-800/50 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-slate-300"
         >
-          <RotateCcw className="size-3.5" aria-hidden />
+          {stepMode ? <Play className="size-3.5" aria-hidden /> : <FastForward className="size-3.5" aria-hidden />}
         </button>
 
         {/* → Next */}
         <button
           aria-label="Next stage"
-          disabled={isLast}
+          disabled={isLast || isTransitioning}
           onClick={() => navigate(activeIndex + 1)}
           className={cn(
             "flex size-8 items-center justify-center rounded-md border transition-colors",
@@ -106,11 +133,13 @@ export default function PlaybackControls({
         </button>
 
         {/* Stage counter */}
-        <span className="ml-1 text-xs tabular-nums text-slate-500">
+        <span className="ml-1 inline-flex items-center gap-1 text-xs tabular-nums text-slate-500">
+          <span className={cn("inline-block size-2 rounded-full", stageColor.dot)} />
           Stage{" "}
           <span className="font-semibold text-slate-300">{activeIndex + 1}</span>
           {" "}of{" "}
-          <span className="font-semibold text-slate-300">{totalStages}</span>
+          <span className="font-semibold text-slate-300">{totalStages}</span>:{" "}
+          <span className="font-semibold text-slate-300">{activeStageType}</span>
         </span>
 
         {/* Speed selector */}
@@ -120,7 +149,7 @@ export default function PlaybackControls({
             {SPEEDS.map((s) => (
               <button
                 key={s}
-                aria-label={`${s}× speed`}
+                aria-label={`${speedLabels[s]} speed`}
                 aria-pressed={speed === s}
                 onClick={() => setSpeed(s)}
                 className={cn(
@@ -130,7 +159,7 @@ export default function PlaybackControls({
                     : "bg-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-800/60"
                 )}
               >
-                {s}×
+                {speedLabels[s]}
               </button>
             ))}
           </div>

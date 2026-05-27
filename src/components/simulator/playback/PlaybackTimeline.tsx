@@ -1,3 +1,4 @@
+// @deprecated — merged into SqlContextPanel via StageStepList
 import {
   ArrowUpDown,
   ChartBarStacked,
