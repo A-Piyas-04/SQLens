@@ -1,6 +1,19 @@
-const API_BASE = import.meta.env.VITE_API_URL?.trim()
-  ? import.meta.env.VITE_API_URL.trim().replace(/\/+$/, "")
-  : "";
+function resolveApiBase(): string {
+  const configured = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, "") ?? "";
+  if (!configured) return "";
+
+  // Vite bakes VITE_* at build time. If localhost was set in Vercel env by mistake,
+  // ignore it in production so the app calls same-origin /api/generate-sql.
+  if (import.meta.env.PROD) {
+    const isLocalhost =
+      /^https?:\/\/(localhost|127\.0\.0\.1|backend)(:\d+)?\/?$/i.test(configured);
+    if (isLocalhost) return "";
+  }
+
+  return configured;
+}
+
+const API_BASE = resolveApiBase();
 
 type GenerateResponse = {
   sql: string;
