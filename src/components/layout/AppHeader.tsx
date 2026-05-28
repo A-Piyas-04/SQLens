@@ -16,7 +16,7 @@ export default function AppHeader({ actions }: Props) {
 
           <div>
             <h1 className="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
-              SQL Simulator
+              SQLens
             </h1>
             <p className="text-sm text-slate-400 sm:text-base">
               Real PostgreSQL in your browser.

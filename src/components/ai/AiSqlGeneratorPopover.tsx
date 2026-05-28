@@ -132,16 +132,15 @@ export default function AiSqlGeneratorPopover({
 
       <button
         type="button"
-        onClick={onToggle}
-        aria-label={isOpen ? "Close AI SQL generator" : "Open AI SQL generator"}
-        aria-expanded={isOpen}
+        disabled
+        title="coming soon"
+        aria-label="AI SQL generator — coming soon"
+        aria-disabled
         className={cn(
-          "practice-hub-toggle relative z-20 flex size-14 items-center justify-center rounded-full",
-          "border border-slate-600/80 bg-slate-800/95 text-blue-300",
+          "practice-hub-toggle relative z-20 flex size-14 cursor-not-allowed items-center justify-center rounded-full",
+          "border border-slate-600/80 bg-slate-800/95 text-blue-300 opacity-60",
           "shadow-xl shadow-slate-950/60 backdrop-blur-sm",
-          "hover:border-blue-500/50 hover:bg-slate-700 hover:text-blue-200",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60",
-          isOpen && "border-blue-500/50 bg-blue-950/90 text-blue-200 practice-hub-open"
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
         )}
       >
         {isOpen ? (
