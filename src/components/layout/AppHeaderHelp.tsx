@@ -1,7 +1,12 @@
-import { CircleHelp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { HelpTourIcon } from "../icons";
 import { cn } from "../../lib/utils/cn";
+import {
+  HEADER_ACTION_ICON_SIZE,
+  headerActionButtonClass,
+  headerActionButtonOpenClass,
+} from "./headerActionButton";
 
 type Props = {
   onStartTour: () => void;
@@ -37,13 +42,11 @@ export default function AppHeaderHelp({ onStartTour }: Props) {
         aria-label="Help"
         aria-expanded={isOpen}
         className={cn(
-          "flex size-10 items-center justify-center rounded-lg border border-slate-700/60",
-          "bg-slate-800/50 text-slate-400 transition-colors",
-          "hover:border-slate-600/70 hover:bg-slate-800/80 hover:text-slate-200",
-          isOpen && "border-blue-500/40 bg-slate-800/80 text-blue-200"
+          headerActionButtonClass,
+          isOpen && headerActionButtonOpenClass
         )}
       >
-        <CircleHelp className="size-4" aria-hidden />
+        <HelpTourIcon size={HEADER_ACTION_ICON_SIZE} className="text-sky-300" />
       </button>
 
       {isOpen ? (

@@ -1,10 +1,10 @@
+import type { AppIconComponent } from "../components/icons";
 import {
-  Braces,
-  Database,
-  FileCode2,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+  QueryTemplateIcon,
+  SampleDatabaseIcon,
+  SqlSnippetIcon,
+  VisualizationPresetIcon,
+} from "../components/icons";
 
 export type PracticeCategoryId =
   | "samples"
@@ -15,14 +15,14 @@ export type PracticeCategoryId =
 export type PracticeCategory = {
   id: PracticeCategoryId;
   title: string;
-  icon: LucideIcon;
+  icon: AppIconComponent;
 };
 
 export const PRACTICE_CATEGORIES: PracticeCategory[] = [
-  { id: "samples", title: "Sample Databases", icon: Database },
-  { id: "templates", title: "Query Templates", icon: FileCode2 },
-  { id: "snippets", title: "SQL Snippets", icon: Braces },
-  { id: "presets", title: "Visualization Presets", icon: Sparkles },
+  { id: "samples", title: "Sample Databases", icon: SampleDatabaseIcon },
+  { id: "templates", title: "Query Templates", icon: QueryTemplateIcon },
+  { id: "snippets", title: "SQL Snippets", icon: SqlSnippetIcon },
+  { id: "presets", title: "Visualization Presets", icon: VisualizationPresetIcon },
 ];
 
 export function getPracticeCategory(id: PracticeCategoryId): PracticeCategory {

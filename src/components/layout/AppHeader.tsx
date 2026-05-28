@@ -1,6 +1,6 @@
-import { Database } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { SqlensLogo } from "../icons";
 import AppHeaderHelp from "./AppHeaderHelp";
 
 type Props = {
@@ -14,7 +14,7 @@ export default function AppHeader({ actions, onStartTour }: Props) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="flex size-12 items-center justify-center rounded-xl border border-blue-500/35 bg-gradient-to-br from-blue-600/35 to-slate-900 shadow-lg shadow-blue-950/40 ring-1 ring-white/5">
-            <Database className="size-5 text-blue-300" aria-hidden />
+            <SqlensLogo size={32} />
           </div>
 
           <div>
@@ -32,7 +32,7 @@ export default function AppHeader({ actions, onStartTour }: Props) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-start gap-2 pt-0.5">
+        <div className="flex shrink-0 items-center gap-2">
           {onStartTour ? <AppHeaderHelp onStartTour={onStartTour} /> : null}
           {actions}
         </div>

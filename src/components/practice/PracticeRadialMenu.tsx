@@ -1,11 +1,17 @@
-import { LayoutGrid, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useRef, type CSSProperties } from "react";
 
+import { PracticeHubIcon } from "../icons";
 import {
   PRACTICE_CATEGORIES,
   getPracticeCategory,
   type PracticeCategoryId,
 } from "../../constants/practiceCategories";
+import {
+  HEADER_ACTION_ICON_SIZE,
+  headerActionButtonClass,
+  headerActionButtonOpenClass,
+} from "../layout/headerActionButton";
 import { cn } from "../../lib/utils/cn";
 import PracticeCategoryContent from "./PracticeCategoryContent";
 
@@ -14,9 +20,10 @@ import PracticeCategoryContent from "./PracticeCategoryContent";
  * Screen offsets: +x = left, +y = down.
  * Order: samples (180°) → templates (200°) → snippets (230°) → presets (270°).
  */
-const ORBIT_RADIUS = 148;
-/** Fixed bearings per category: samples → templates → snippets → presets */
-const ORBIT_BEARINGS = [180, 221, 245, 270];
+/** Keep orbit icons in the down-left quadrant so the hub (top-right) stays clear */
+const ORBIT_RADIUS = 128;
+/** samples → templates → snippets → presets */
+const ORBIT_BEARINGS = [200, 225, 250, 272];
 
 function bearingToOffset(bearingDeg: number, radius: number) {
   const rad = (bearingDeg * Math.PI) / 180;
@@ -80,7 +87,7 @@ export default function PracticeRadialMenu({
     <div
       className={cn(
         "relative z-50 shrink-0 overflow-visible",
-        isOpen ? "h-[210px] w-[min(100vw-2rem,300px)] sm:w-[300px]" : "size-14"
+        isOpen ? "h-[240px] w-[min(100vw-2rem,360px)] sm:w-[360px]" : "size-14"
       )}
     >
       {isOpen ? (
@@ -110,7 +117,7 @@ export default function PracticeRadialMenu({
           >
             <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
               <div className="flex min-w-0 items-center gap-2">
-                <activeMeta.icon className="size-4 shrink-0 text-blue-400" aria-hidden />
+                <activeMeta.icon size={22} className="shrink-0" />
                 <h2 className="truncate text-sm font-semibold text-slate-100">
                   {activeMeta.title}
                 </h2>
@@ -162,13 +169,13 @@ export default function PracticeRadialMenu({
                       title={category.title}
                       onClick={() => handleCategoryClick(category.id)}
                       className={cn(
-                        "group pointer-events-auto absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2.5",
-                        isActive && "z-10"
+                        "group pointer-events-auto absolute right-0 top-1/2 z-30 flex -translate-y-1/2 items-center gap-2.5",
+                        isActive && "z-40"
                       )}
                     >
                       <span
                         className={cn(
-                          "max-w-[9.5rem] truncate text-right text-xs font-medium leading-tight",
+                          "max-w-[8.5rem] truncate text-right text-xs font-medium leading-tight",
                           "drop-shadow-[0_1px_2px_rgba(2,6,23,0.9)]",
                           isActive ? "text-blue-200" : "text-slate-200"
                         )}
@@ -177,13 +184,13 @@ export default function PracticeRadialMenu({
                       </span>
                       <span
                         className={cn(
-                          "flex size-11 shrink-0 items-center justify-center rounded-full border shadow-lg transition-colors duration-200",
+                          "flex size-12 shrink-0 items-center justify-center rounded-full border shadow-lg transition-colors duration-200",
                           isActive
                             ? "border-blue-400/70 bg-blue-600/90 text-white shadow-blue-950/50"
                             : "border-slate-600/80 bg-slate-800/95 text-blue-300 shadow-slate-950/50 group-hover:border-blue-500/50 group-hover:bg-slate-700"
                         )}
                       >
-                        <Icon className="size-4" aria-hidden />
+                        <Icon size={24} />
                       </span>
                     </button>
                   </div>
@@ -199,18 +206,16 @@ export default function PracticeRadialMenu({
           aria-label={isOpen ? "Close practice menu" : "Open practice menu"}
           aria-expanded={isOpen}
           className={cn(
-            "practice-hub-toggle absolute right-0 top-0 z-20 flex size-14 items-center justify-center rounded-full sm:right-0",
-            "border border-slate-600/80 bg-slate-800/95 text-blue-300",
-            "shadow-xl shadow-slate-950/60 backdrop-blur-sm",
-            "hover:border-blue-500/50 hover:bg-slate-700 hover:text-blue-200",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60",
-            isOpen && "border-blue-500/50 bg-blue-950/90 text-blue-200 practice-hub-open"
+            headerActionButtonClass,
+            "practice-hub-toggle absolute top-0 z-50",
+            isOpen ? "-right-70" : "right-0",
+            isOpen && headerActionButtonOpenClass
           )}
         >
           {isOpen ? (
-            <X className="size-5" aria-hidden />
+            <X className="size-6" aria-hidden />
           ) : (
-            <LayoutGrid className="size-5" aria-hidden />
+            <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} />
           )}
         </button>
       </div>

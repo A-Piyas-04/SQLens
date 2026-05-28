@@ -1,6 +1,8 @@
-import { RefreshCw, Table2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import type { SchemaTable } from "../../lib/db/schema";
+import { IconTile } from "../icons/IconTile";
+import { SchemaTablesIcon } from "../icons";
 import AnimatedReveal from "../common/AnimatedReveal";
 import Button from "../common/Button";
 import SchemaTableCard from "./SchemaTableCard";
@@ -14,8 +16,10 @@ export default function SchemaSidebar({ tables, onRefresh }: Props) {
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Table2 className="size-4 text-blue-400" aria-hidden />
+        <div className="flex items-center gap-3">
+          <IconTile>
+            <SchemaTablesIcon size={26} className="text-blue-300" />
+          </IconTile>
           <h2 className="font-semibold text-slate-100">Schema</h2>
         </div>
 

@@ -1,5 +1,6 @@
-import { Database, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
+import { SqlensLogo } from "../icons";
 import type { BootStep } from "../../hooks/useAppBootReady";
 import { cn } from "../../lib/utils/cn";
 
@@ -35,7 +36,7 @@ export default function AppBootSplash({
         <div className="app-boot-card rounded-2xl border border-slate-800/80 bg-slate-900/70 p-8 shadow-2xl shadow-blue-950/20 backdrop-blur-md">
           <div className="mb-8 flex flex-col items-center text-center">
             <div className="app-boot-logo mb-5 flex size-16 items-center justify-center rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/35 to-slate-900 shadow-lg shadow-blue-950/40">
-              <Database className="size-8 text-blue-300" aria-hidden />
+              <SqlensLogo size={36} />
             </div>
 
             <h1 className="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent">

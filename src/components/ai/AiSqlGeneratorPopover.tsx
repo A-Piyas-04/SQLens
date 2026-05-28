@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
 
+import { AiSqlIcon } from "../icons";
 import { generateSql } from "../../lib/api/aiClient";
 import { assertSafeSql } from "../../lib/sql/assertSafeSql";
 import { cn } from "../../lib/utils/cn";
+import {
+  HEADER_ACTION_ICON_SIZE,
+  headerActionButtonClass,
+  headerActionButtonOpenClass,
+} from "../layout/headerActionButton";
 import Button from "../common/Button";
 
 type Props = {
@@ -75,7 +81,7 @@ export default function AiSqlGeneratorPopover({
         >
           <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
             <div className="flex min-w-0 items-center gap-2">
-              <Sparkles className="size-4 shrink-0 text-blue-400" aria-hidden />
+              <AiSqlIcon size={22} className="shrink-0" />
               <h2 className="truncate text-sm font-semibold text-slate-100">
                 AI SQL Generator
               </h2>
@@ -113,7 +119,7 @@ export default function AiSqlGeneratorPopover({
               disabled={disabled || isLoading || !prompt.trim()}
               onClick={() => void handleGenerate()}
             >
-              <Sparkles className="size-3.5" aria-hidden />
+              <AiSqlIcon size={16} className="shrink-0" />
               {isLoading ? "Generating…" : "Generate SQL"}
             </Button>
 
@@ -137,16 +143,15 @@ export default function AiSqlGeneratorPopover({
         aria-label="AI SQL generator — coming soon"
         aria-disabled
         className={cn(
-          "practice-hub-toggle relative z-20 flex size-14 cursor-not-allowed items-center justify-center rounded-full",
-          "border border-slate-600/80 bg-slate-800/95 text-blue-300 opacity-60",
-          "shadow-xl shadow-slate-950/60 backdrop-blur-sm",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+          headerActionButtonClass,
+          "practice-hub-toggle cursor-not-allowed opacity-60",
+          isOpen && headerActionButtonOpenClass
         )}
       >
         {isOpen ? (
-          <X className="size-5" aria-hidden />
+          <X className="size-6" aria-hidden />
         ) : (
-          <Sparkles className="size-5" aria-hidden />
+          <AiSqlIcon size={HEADER_ACTION_ICON_SIZE} />
         )}
       </button>
     </div>

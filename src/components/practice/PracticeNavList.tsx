@@ -4,7 +4,10 @@ import {
   PRACTICE_CATEGORIES,
   type PracticeCategoryId,
 } from "../../constants/practiceCategories";
+import { IconTile } from "../icons/IconTile";
 import { cn } from "../../lib/utils/cn";
+
+const SIDEBAR_ICON_SIZE = 26;
 
 type Props = {
   activeCategory: PracticeCategoryId | null;
@@ -36,8 +39,10 @@ export default function PracticeNavList({
                 )}
                 aria-expanded={isActive}
               >
-                <span className="flex min-w-0 items-center gap-2">
-                  <Icon className="size-4 shrink-0 text-blue-400" aria-hidden />
+                <span className="flex min-w-0 items-center gap-3">
+                  <IconTile>
+                    <Icon size={SIDEBAR_ICON_SIZE} />
+                  </IconTile>
                   <span className="truncate text-sm font-semibold text-slate-100">
                     {category.title}
                   </span>

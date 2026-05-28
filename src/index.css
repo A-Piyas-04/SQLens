@@ -300,14 +300,6 @@ body {
   }
 }
 
-.practice-hub-toggle {
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.practice-hub-toggle.practice-hub-open {
-  transform: rotate(-90deg);
-}
-
 .practice-orbit-item {
   animation: practice-orbit-shuttle 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--orbit-delay, 0ms);
@@ -583,10 +575,6 @@ body {
   .practice-orbit-item,
   .practice-radial-panel {
     animation: none !important;
-  }
-
-  .practice-hub-toggle.practice-hub-open {
-    transform: none;
   }
 
   .app-boot-card,

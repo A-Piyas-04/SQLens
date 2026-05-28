@@ -1,6 +1,8 @@
-import { ChevronDown, FolderOpen, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { IconTile } from "../icons/IconTile";
+import { ProjectFolderIcon } from "../icons";
 import type { Project } from "../../lib/projects/projectStore";
 import { cn } from "../../lib/utils/cn";
 
@@ -111,8 +113,10 @@ export default function ProjectSwitcher({
           isOpen && "border-blue-500/40 bg-slate-800/80"
         )}
       >
-        <div className="flex min-w-0 items-center gap-2">
-          <FolderOpen className="size-4 shrink-0 text-blue-400" aria-hidden />
+        <div className="flex min-w-0 items-center gap-3">
+          <IconTile>
+            <ProjectFolderIcon size={26} className="text-blue-300" />
+          </IconTile>
           <span className="truncate font-medium">
             {activeProject?.name ?? "No project"}
           </span>
