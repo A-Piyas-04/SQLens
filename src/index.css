@@ -207,6 +207,55 @@ body {
   }
 }
 
+/* Onboarding tour — opacity only (transform breaks fixed positioning) */
+.onboarding-tooltip {
+  transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.onboarding-spotlight {
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease;
+}
+
+/* Onboarding step cards — animated gradient borders */
+.onboarding-featured-card-glow-blue,
+.onboarding-featured-card-glow-purple {
+  background-size: 200% 200%;
+  animation: onboarding-featured-border 4s ease infinite;
+}
+
+.onboarding-featured-card-glow-blue {
+  background: linear-gradient(
+    135deg,
+    rgb(56 189 248 / 0.55),
+    rgb(59 130 246 / 0.4),
+    rgb(125 211 252 / 0.45)
+  );
+}
+
+.onboarding-featured-card-glow-purple {
+  background: linear-gradient(
+    135deg,
+    rgb(168 85 247 / 0.55),
+    rgb(59 130 246 / 0.35),
+    rgb(139 92 246 / 0.5)
+  );
+}
+
+@keyframes onboarding-featured-border {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 /* Thin scrollbar for sidebar */
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -545,6 +594,14 @@ body {
   .app-boot-progress::after,
   .app-boot-status,
   .app-boot-splash-out .app-boot-splash {
+    animation: none !important;
+  }
+
+  .onboarding-tooltip,
+  .onboarding-spotlight,
+  .onboarding-featured-card-glow-blue,
+  .onboarding-featured-card-glow-purple {
+    transition: none !important;
     animation: none !important;
   }
 }

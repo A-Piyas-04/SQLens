@@ -1,3 +1,5 @@
+import { clearOnboardingComplete } from "../onboarding/onboardingStore";
+
 export type Project = {
   id: string;
   name: string;
@@ -100,6 +102,7 @@ export function clearAllLocalData(): void {
   localStorage.removeItem(SIMULATOR_SIDEBAR_WIDTH_KEY);
   localStorage.removeItem(SIMULATOR_SHOW_ROW_IDS_KEY);
   localStorage.removeItem(SIMULATOR_DEBUG_KEY);
+  clearOnboardingComplete();
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────

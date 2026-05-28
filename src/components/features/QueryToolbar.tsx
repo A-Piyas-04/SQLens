@@ -28,7 +28,10 @@ export default function QueryToolbar({
       : "Run Query";
 
   const buttons = (
-    <div className={cn("flex items-center gap-2", variant === "header" && "shrink-0")}>
+    <div
+      className={cn("flex items-center gap-2", variant === "header" && "shrink-0")}
+      {...(variant === "header" ? { "data-tour": "run-query" } : {})}
+    >
       <Button
         variant="primary"
         size={variant === "header" ? "sm" : "md"}

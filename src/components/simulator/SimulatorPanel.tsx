@@ -60,6 +60,7 @@ export default function SimulatorPanel({ query, selectedText, db }: Props) {
   return (
     <Panel
       title="SQL Execution Simulator"
+      dataTour="simulator-panel"
       action={
         <Button
           variant="secondary"

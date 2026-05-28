@@ -22,6 +22,7 @@ export default function ResizableSidebar({
       style={{ width }}
     >
       <aside
+        data-tour="workspace-sidebar"
         className={cn(
           "h-[calc(100vh-8rem)] overflow-hidden rounded-xl",
           "border border-slate-800/70 bg-slate-900/55 backdrop-blur-md",

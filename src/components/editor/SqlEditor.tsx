@@ -91,7 +91,7 @@ const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
   }
 
   return (
-    <Panel title="SQL Editor" action={toolbar} interactive>
+    <Panel title="SQL Editor" action={toolbar} interactive dataTour="sql-editor">
       <div className="overflow-hidden rounded-lg border border-slate-700/70 bg-slate-950/40 transition-colors duration-200 hover:border-slate-600/70">
         <CodeMirror
           ref={cmRef}

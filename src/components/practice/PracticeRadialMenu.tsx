@@ -195,6 +195,7 @@ export default function PracticeRadialMenu({
         <button
           type="button"
           onClick={onToggle}
+          data-tour="practice-menu"
           aria-label={isOpen ? "Close practice menu" : "Open practice menu"}
           aria-expanded={isOpen}
           className={cn(

@@ -95,7 +95,7 @@ export default function ProjectSwitcher({
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative" data-tour="project-switcher">
       {/* ── Trigger ─────────────────────────────────────────────────── */}
       <button
         onClick={() => {

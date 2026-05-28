@@ -1,11 +1,14 @@
 import { Database } from "lucide-react";
 import type { ReactNode } from "react";
 
+import AppHeaderHelp from "./AppHeaderHelp";
+
 type Props = {
   actions?: ReactNode;
+  onStartTour?: () => void;
 };
 
-export default function AppHeader({ actions }: Props) {
+export default function AppHeader({ actions, onStartTour }: Props) {
   return (
     <header className="rounded-2xl border border-slate-800/70 bg-slate-900/40 p-4 shadow-xl shadow-slate-950/30 backdrop-blur-md sm:p-5">
       <div className="flex items-start justify-between gap-4">
@@ -29,9 +32,10 @@ export default function AppHeader({ actions }: Props) {
           </div>
         </div>
 
-        {actions ? (
-          <div className="flex shrink-0 items-start gap-2 pt-0.5">{actions}</div>
-        ) : null}
+        <div className="flex shrink-0 items-start gap-2 pt-0.5">
+          {onStartTour ? <AppHeaderHelp onStartTour={onStartTour} /> : null}
+          {actions}
+        </div>
       </div>
     </header>
   );

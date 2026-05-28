@@ -12,7 +12,7 @@ type Props = {
 export default function ResultTable({ rows }: Props) {
   if (rows.length === 0) {
     return (
-      <Panel title="Results">
+      <Panel title="Results" dataTour="results-panel">
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/70 bg-slate-950/40 px-6 py-10 text-center">
           <p className="text-sm font-medium text-slate-300">No results yet</p>
           <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
@@ -48,6 +48,7 @@ export default function ResultTable({ rows }: Props) {
     <AnimatedReveal>
       <Panel
         title="Results"
+        dataTour="results-panel"
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" size="sm" onClick={copyResults}>

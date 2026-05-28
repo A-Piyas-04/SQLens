@@ -9,6 +9,8 @@ type Props = {
   children: ReactNode;
   className?: string;
   interactive?: boolean;
+  /** Target for onboarding spotlight (`data-tour`) */
+  dataTour?: string;
 };
 
 export default function Panel({
@@ -18,10 +20,12 @@ export default function Panel({
   children,
   className,
   interactive = false,
+  dataTour,
 }: Props) {
   return (
     <section
       id={id}
+      data-tour={dataTour}
       className={cn(
         "rounded-xl border border-slate-800/70 bg-slate-900/55 backdrop-blur-md",
         "shadow-lg shadow-slate-950/35 ring-1 ring-white/[0.03]",

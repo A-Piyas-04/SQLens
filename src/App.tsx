@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 
+import OnboardingTour from "./components/onboarding/OnboardingTour";
 import AiSqlGeneratorPopover from "./components/ai/AiSqlGeneratorPopover";
 import SimulatorPanel from "./components/simulator/SimulatorPanel";
 import AppBootGate from "./components/layout/AppBootGate";
@@ -19,6 +20,7 @@ import PracticeSidebar from "./components/practice/PracticeSidebar";
 import PracticeRadialMenu from "./components/practice/PracticeRadialMenu";
 import type { PracticeCategoryId } from "./constants/practiceCategories";
 import { useActiveProject } from "./hooks/useActiveProject";
+import { useOnboardingTour } from "./hooks/useOnboardingTour";
 import { useResizablePanel } from "./hooks/useResizablePanel";
 import { useSqlWorkspace } from "./hooks/useSqlWorkspace";
 import { clearAllLocalData } from "./lib/projects/projectStore";
@@ -44,6 +46,7 @@ export default function App() {
   } = useActiveProject();
 
   const workspace = useSqlWorkspace(db, activeProject?.id ?? "");
+  const onboarding = useOnboardingTour();
   const hasSelection = !!workspace.selectedText.trim();
 
   function handleToggleAiMenu() {
@@ -123,6 +126,7 @@ export default function App() {
 
       <div className="relative mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
         <AppHeader
+          onStartTour={onboarding.restart}
           actions={
             <>
               <AiSqlGeneratorPopover
@@ -198,12 +202,25 @@ export default function App() {
 
           <Panel
             id="erd-section"
+            dataTour="erd-section"
             title="Entity Relationship Diagram"
             className="scroll-mt-6"
           >
             <ErdViewer tables={workspace.tables} />
           </Panel>
         </WorkspaceLayout>
+
+        <OnboardingTour
+          isActive={onboarding.isActive}
+          step={onboarding.step}
+          stepIndex={onboarding.stepIndex}
+          totalSteps={onboarding.totalSteps}
+          isFirst={onboarding.isFirst}
+          isLast={onboarding.isLast}
+          onNext={onboarding.next}
+          onBack={onboarding.back}
+          onSkip={onboarding.skip}
+        />
       </div>
     </div>
     </AppBootGate>
