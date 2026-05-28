@@ -12,6 +12,12 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(59 130 246 / 0.35);
+  color: white;
 }
 
 /* Content reveal animations */
@@ -63,6 +69,141 @@ body {
 
   to {
     opacity: 0;
+  }
+}
+
+/* View transition class recipes */
+::view-transition-old(.fade-out),
+::view-transition-new(.fade-in),
+::view-transition-old(.fade-in),
+::view-transition-new(.fade-out) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(.fade-out) {
+  animation-name: vt-fade-out;
+}
+
+::view-transition-new(.fade-in) {
+  animation-name: vt-fade-in;
+}
+
+::view-transition-new(.fade-in-up) {
+  animation-name: vt-fade-in-up;
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes vt-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* App boot splash */
+.app-boot-grid {
+  background-image:
+    linear-gradient(rgb(148 163 184 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+}
+
+.app-boot-card {
+  animation: app-boot-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.app-boot-logo {
+  animation: app-boot-logo-pulse 2.4s ease-in-out infinite;
+}
+
+.app-boot-progress {
+  position: relative;
+  overflow: hidden;
+}
+
+.app-boot-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.35),
+    transparent
+  );
+  animation: app-boot-shimmer 1.6s ease-in-out infinite;
+}
+
+.app-boot-status {
+  animation: app-boot-status-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes app-boot-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes app-boot-logo-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(59 130 246 / 0.15);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgb(59 130 246 / 0);
+  }
+}
+
+@keyframes app-boot-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes app-boot-status-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.app-boot-splash-out .app-boot-splash {
+  animation: app-boot-splash-out 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes app-boot-splash-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.02);
   }
 }
 
@@ -397,6 +538,14 @@ body {
 
   .practice-hub-toggle.practice-hub-open {
     transform: none;
+  }
+
+  .app-boot-card,
+  .app-boot-logo,
+  .app-boot-progress::after,
+  .app-boot-status,
+  .app-boot-splash-out .app-boot-splash {
+    animation: none !important;
   }
 }
 

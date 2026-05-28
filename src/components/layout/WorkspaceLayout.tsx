@@ -26,7 +26,7 @@ export default function WorkspaceLayout({
       )}
     >
       <div className="lg:hidden">
-        <aside className="rounded-xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-lg shadow-slate-950/30 backdrop-blur-sm">
+        <aside className="rounded-xl border border-slate-800/70 bg-slate-900/55 p-4 shadow-xl shadow-slate-950/35 ring-1 ring-white/[0.03] backdrop-blur-md">
           {sidebar}
         </aside>
       </div>

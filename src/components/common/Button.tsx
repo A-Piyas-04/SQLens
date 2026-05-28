@@ -13,9 +13,9 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white shadow-md shadow-blue-950/40 hover:shadow-blue-900/50 border border-blue-400/30",
+    "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white shadow-md shadow-blue-950/45 hover:shadow-blue-900/55 border border-blue-400/35 ring-1 ring-white/10",
   secondary:
-    "bg-slate-800/90 hover:bg-slate-700/90 text-slate-100 border border-slate-700/80 hover:border-slate-600 shadow-sm shadow-slate-950/30",
+    "bg-slate-800/90 hover:bg-slate-700/90 text-slate-100 border border-slate-700/80 hover:border-slate-600 shadow-sm shadow-slate-950/35 ring-1 ring-white/[0.03]",
   ghost:
     "bg-transparent hover:bg-slate-800/70 text-slate-300 hover:text-white border border-transparent hover:border-slate-700/60",
   danger:

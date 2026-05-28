@@ -13,7 +13,12 @@ export default function ResultTable({ rows }: Props) {
   if (rows.length === 0) {
     return (
       <Panel title="Results">
-        <p className="text-sm text-slate-400">No results</p>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/70 bg-slate-950/40 px-6 py-10 text-center">
+          <p className="text-sm font-medium text-slate-300">No results yet</p>
+          <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+            Run a query to see rows here. Use Ctrl+Enter or the Run button in the editor.
+          </p>
+        </div>
       </Panel>
     );
   }
@@ -57,17 +62,18 @@ export default function ResultTable({ rows }: Props) {
         }
       >
         <p className="mb-3 text-sm text-slate-400">
-          {rows.length} row(s) returned
+          <span className="font-medium text-slate-300">{rows.length}</span> row
+          {rows.length === 1 ? "" : "s"} returned
         </p>
 
-        <div className="max-h-[420px] overflow-auto rounded-lg border border-slate-700/80">
+        <div className="max-h-[420px] overflow-auto rounded-lg border border-slate-700/70 bg-slate-950/30">
           <table className="w-full border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-sm">
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col}
-                    className="border-b border-slate-700/80 px-4 py-2.5 text-left font-medium whitespace-nowrap text-slate-200"
+                    className="border-b border-slate-700/70 px-4 py-2.5 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-slate-300 uppercase"
                   >
                     {col}
                   </th>

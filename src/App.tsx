@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import AiSqlGeneratorPopover from "./components/ai/AiSqlGeneratorPopover";
 import SimulatorPanel from "./components/simulator/SimulatorPanel";
+import AppBootGate from "./components/layout/AppBootGate";
 import AppHeader from "./components/layout/AppHeader";
 import LoadingBanner from "./components/layout/LoadingBanner";
 import WorkspaceLayout from "./components/layout/WorkspaceLayout";
@@ -109,9 +110,14 @@ export default function App() {
   );
 
   return (
+    <AppBootGate db={db}>
     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-white">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/25 via-slate-950 to-slate-950"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/30 via-slate-950 to-slate-950"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:linear-gradient(rgba(148,163,184,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.04)_1px,transparent_1px)] [background-size:48px_48px]"
         aria-hidden
       />
 
@@ -200,5 +206,6 @@ export default function App() {
         </WorkspaceLayout>
       </div>
     </div>
+    </AppBootGate>
   );
 }

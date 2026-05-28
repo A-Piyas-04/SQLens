@@ -24,10 +24,10 @@ export default function ResizableSidebar({
       <aside
         className={cn(
           "h-[calc(100vh-8rem)] overflow-hidden rounded-xl",
-          "border border-slate-800/80 bg-slate-900/60 backdrop-blur-sm",
-          "shadow-xl shadow-slate-950/40",
+          "border border-slate-800/70 bg-slate-900/55 backdrop-blur-md",
+          "shadow-xl shadow-slate-950/40 ring-1 ring-white/[0.03]",
           "transition-shadow duration-200",
-          isResizing && "shadow-2xl shadow-blue-950/30 ring-1 ring-blue-500/20"
+          isResizing && "shadow-2xl shadow-blue-950/30 ring-1 ring-blue-500/25"
         )}
       >
         <div className="h-full overflow-y-auto p-4 scrollbar-thin">

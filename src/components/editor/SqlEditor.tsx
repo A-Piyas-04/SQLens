@@ -92,7 +92,7 @@ const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
 
   return (
     <Panel title="SQL Editor" action={toolbar} interactive>
-      <div className="overflow-hidden rounded-lg border border-slate-700/80 transition-colors duration-200 hover:border-slate-600/80">
+      <div className="overflow-hidden rounded-lg border border-slate-700/70 bg-slate-950/40 transition-colors duration-200 hover:border-slate-600/70">
         <CodeMirror
           ref={cmRef}
           value={value}
