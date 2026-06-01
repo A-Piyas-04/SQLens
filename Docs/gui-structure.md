@@ -108,22 +108,23 @@ Every SQL execution stage has its own accent color, used consistently in both th
 
 ## Floating Action Buttons (FABs)
 
-### AI SQL Generator — `AiSqlGeneratorPopover`
+### AI SQL Assistant — `AiSqlGeneratorPopover`
 
 **File:** `src/components/ai/AiSqlGeneratorPopover.tsx`
 
 | State | UI |
 |-------|----|
-| Closed | 56px circle, `Sparkles` icon, slate-800 bg, blue-300 text |
-| Open | Same circle + backdrop overlay (`slate-950/40 blur`) + dropdown panel |
+| Closed | Header toolbar button **AI SQL** (`AiSqlIcon`) |
+| Open | Backdrop + dropdown panel (max ~380px, scrollable) |
 
-**Dropdown panel** (max 320px wide, `rounded-xl`, dark glass `bg-slate-900/95 backdrop-blur-md`):
-- Header: `Sparkles` icon + "AI SQL Generator" + × dismiss button
-- 3-row textarea: "Describe the query you want", placeholder example
-- "Generate SQL" primary button (full width, disabled while loading or empty)
-- Status: "SQL is inserted into the editor. Review and run manually." or red error text
+**Dropdown panel:**
+- Header: `AiSqlIcon` + "SQL Assistant" + × dismiss
+- Textarea: "Ask about a query goal" (e.g. courses for CSE students)
+- **Get suggestions** primary button
+- Results: summary, numbered breakdown, technique cards, tables/columns, pitfalls
+- Footer: "Suggestions only — write the SQL yourself in the editor."
 
-**Flow:** Prompt → POST `/api/generate-sql` → `assertSafeSql()` guard → `loadQuery()` inserts into editor → popover closes.
+**Flow:** Prompt + active schema → POST `/api/sql-guidance` → `sanitizeGuidance()` → read-only cards (no editor insert).
 
 **Keyboard:** Escape closes.
 
@@ -520,20 +521,18 @@ User types SQL in SqlEditor
     → QueryHistory records entry
 ```
 
-### AI SQL Generation Flow
+### AI SQL Guidance Flow
 
 ```
-User clicks Sparkles FAB
+User clicks AI SQL (header)
   → Popover opens
-  → User types natural language prompt
-  → "Generate SQL" button
-    → POST /api/generate-sql (Express backend)
-    → Google Gemini API → SQL string
-    → sanitizeGeneratedSql() (backend)
-    → assertSafeSql() (frontend guard)
-    → loadQuery() → inserts into editor
-    → Popover closes
-  → User reviews SQL → runs manually
+  → User describes query goal
+  → "Get suggestions"
+    → formatSchemaForAi(tables) + POST /api/sql-guidance
+    → Google Gemini → JSON guidance
+    → sanitizeGuidance() (reject runnable SQL)
+    → Cards shown in popover
+  → User writes SQL in editor manually
 ```
 
 ### Simulator Flow

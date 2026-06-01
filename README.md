@@ -1,6 +1,6 @@
 # SQLens
 
-A browser-based PostgreSQL playground for learning and experimenting with SQL. Run real PostgreSQL queries in the browser, visualize schema and query execution, and optionally generate SQL with AI.
+A browser-based PostgreSQL playground for learning and experimenting with SQL. Run real PostgreSQL queries in the browser, visualize schema and query execution, and optionally get SQL learning hints from an AI assistant.
 
 ## Features
 
@@ -29,11 +29,12 @@ A browser-based PostgreSQL playground for learning and experimenting with SQL. R
 - **Practice hub** — Sample databases (Students, E-commerce, Library, HR), query templates, SQL snippets, visualization presets
 - **One-click loaders** — Load bundled DDL + seed data into the active project
 
-### AI SQL generation (optional)
+### AI SQL assistant (optional)
 
-- **AI SQL Generator** — Natural language → SQL via Google Gemini through Vercel serverless route `POST /api/generate-sql`
-- Requires only server-side env vars on Vercel (no separate backend deployment required)
-- **Privacy note** — AI prompts are sent to Google Gemini; avoid entering secrets, credentials, or sensitive personal data
+- **SQL Assistant** — Describe a query goal in natural language; Gemini suggests concepts (JOIN types, `GROUP BY`, `HAVING`, etc.) without writing SQL into the editor
+- API: `POST /api/sql-guidance` (Vercel serverless or Express backend via `VITE_API_URL`)
+- Active project schema is sent with each request so suggestions can reference your tables and columns
+- **Privacy note** — Prompts and schema summaries are sent to Google Gemini; avoid entering secrets, credentials, or sensitive personal data
 
 ### SQL Execution Simulator
 
@@ -72,7 +73,7 @@ A browser-based PostgreSQL playground for learning and experimenting with SQL. R
 Optional:
 
 - [Docker](https://www.docker.com/) — frontend + AI backend via `docker compose`
-- `GEMINI_API_KEY` — for AI SQL generation
+- `GEMINI_API_KEY` — for the SQL assistant
 
 ## Getting started
 
@@ -136,7 +137,7 @@ SQLens frontend is a Vite SPA and can be deployed as static assets on either Ver
 
 The AI endpoint is implemented as a Vercel serverless function:
 
-- `api/generate-sql.ts`
+- `api/sql-guidance.ts` (primary), `api/generate-sql.ts` (legacy)
 
 Required Vercel env vars:
 
@@ -179,7 +180,7 @@ Runs Vitest (simulator engine + ERD designed-text export).
 6. Use **Export** on the ERD canvas to download PNG, SVG, PDF, or Designed Text.
 7. Open the **Practice** hub for sample databases and templates.
 8. Use **Simulate Query** / **Play Simulation** to step through query execution visually.
-9. Optional: **AI SQL Generator** (Sparkles) to draft SQL from a natural-language prompt.
+9. Optional: **AI SQL** assistant — ask about a query goal; get clause and table suggestions (no auto-insert into the editor).
 10. Switch projects in the sidebar; **Reset DB** clears the current project database.
 
 ## Project structure
@@ -209,7 +210,7 @@ SQLens/
 │       ├── projects/           # Project store
 │       ├── simulator/          # Parse → pipeline → snapshots → diffs
 │       └── sql/                # assertSafeSql, simplifyError
-├── api/                        # Vercel serverless AI route (/api/generate-sql)
+├── api/                        # Vercel serverless AI routes (/api/sql-guidance, …)
 ├── backend/                    # Optional local Express backend (legacy/local workflows)
 ├── Docs/
 │   ├── project-state.md        # Roadmap and feature status

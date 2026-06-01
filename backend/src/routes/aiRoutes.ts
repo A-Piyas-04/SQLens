@@ -1,15 +1,21 @@
 import { Router, type Response } from "express";
 
 import { buildSqlGenerationPrompt } from "../prompts/sqlPrompt";
+import { buildSqlGuidancePrompt } from "../prompts/sqlGuidancePrompt";
 import {
   AiModelUnavailableError,
   AiQuotaExceededError,
   generateWithGemini,
 } from "../services/gemini";
+import {
+  GUIDANCE_SQL_REJECTED_MESSAGE,
+  sanitizeGuidance,
+} from "../utils/sanitizeGuidance";
 import { sanitizeGeneratedSql } from "../utils/sanitizeSql";
 
 const router = Router();
 const MAX_PROMPT_CHARS = 2_000;
+const MAX_SCHEMA_CHARS = 4_000;
 
 function parsePrompt(body: unknown): string {
   if (
@@ -36,6 +42,43 @@ function parsePrompt(body: unknown): string {
   return prompt;
 }
 
+type GuidanceBody = {
+  prompt: string;
+  schema?: string;
+};
+
+function parseGuidanceBody(body: unknown): GuidanceBody {
+  if (typeof body !== "object" || body === null) {
+    throw new Error("Request body must include a non-empty string prompt.");
+  }
+
+  const record = body as Record<string, unknown>;
+
+  if (typeof record.prompt !== "string") {
+    throw new Error("Request body must include a non-empty string prompt.");
+  }
+
+  const prompt = record.prompt.trim();
+  if (!prompt) {
+    throw new Error("Request body must include a non-empty string prompt.");
+  }
+  if (prompt.length > MAX_PROMPT_CHARS) {
+    throw new Error(
+      `Prompt is too long. Maximum length is ${MAX_PROMPT_CHARS} characters.`
+    );
+  }
+
+  let schema: string | undefined;
+  if (record.schema !== undefined) {
+    if (typeof record.schema !== "string") {
+      throw new Error("schema must be a string when provided.");
+    }
+    schema = record.schema.trim().slice(0, MAX_SCHEMA_CHARS) || undefined;
+  }
+
+  return { prompt, schema };
+}
+
 const QUOTA_ERROR_MESSAGE =
   "AI quota exceeded on all configured Gemini models. Please wait a bit or add another model via GEMINI_MODEL_FALLBACKS.";
 
@@ -59,7 +102,14 @@ function sendAiError(
 
   const message = error instanceof Error ? error.message : fallback;
 
-  if (message.includes("prompt")) {
+  if (
+    message.includes("prompt") ||
+    message.includes("schema must") ||
+    message.includes("Prompt is too long") ||
+    message.includes("invalid guidance") ||
+    message === GUIDANCE_SQL_REJECTED_MESSAGE ||
+    message.includes("must be a non-empty")
+  ) {
     res.status(400).json({ error: message });
     return;
   }
@@ -84,6 +134,25 @@ router.post("/generate-sql", async (req, res) => {
     res.json({ sql });
   } catch (error) {
     sendAiError(res, error, "Failed to generate SQL. Please try again.");
+  }
+});
+
+router.post("/sql-guidance", async (req, res) => {
+  try {
+    const { prompt, schema } = parseGuidanceBody(req.body);
+    const raw = await generateWithGemini(
+      buildSqlGuidancePrompt(prompt, schema)
+    );
+    const guidance = sanitizeGuidance(raw);
+    res.json({ guidance });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === GUIDANCE_SQL_REJECTED_MESSAGE
+    ) {
+      console.error("[api/sql-guidance] rejected runnable SQL in model output");
+    }
+    sendAiError(res, error, "Failed to get SQL guidance. Please try again.");
   }
 });
 

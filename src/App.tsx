@@ -139,7 +139,7 @@ export default function App() {
               <AiSqlGeneratorPopover
                 isOpen={aiMenuOpen}
                 onToggle={handleToggleAiMenu}
-                onApplySql={workspace.loadQuery}
+                tables={workspace.tables}
                 disabled={workspace.isRunning}
               />
             </>

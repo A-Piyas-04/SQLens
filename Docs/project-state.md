@@ -24,7 +24,7 @@ Users can currently:
 - ✅ Selected query runner — run only selected SQL (or fall back to full editor); Ctrl+Enter shortcut
 - ✅ Practice sidebar — sample databases, query templates, SQL snippets, visualization presets
 - ✅ One-click sample DB loaders (Students, E-commerce, Library, HR) with relational schemas and seed data
-- ✅ AI SQL Generator — natural language → SQL via Gemini, inserted into editor for manual review and run
+- ✅ AI SQL Assistant — natural language query goals → Gemini suggests clauses/techniques (no SQL inserted into editor); `POST /api/sql-guidance`
 - ✅ SQL Execution Simulator — full visual simulator with JOIN, GROUP BY, HAVING, row diffing, diff annotations, JOIN canvas, and debug inspector
 - ✅ Simulator Playback Modal — fullscreen animated playback with autoplay, speed control (0.5×–4×), FLIP row animations, animated JOIN canvas, floating stage annotations, and keyboard shortcuts
 - ✅ ERD scroll button — one-click smooth scroll to the Entity Relationship Diagram from the editor toolbar
@@ -115,34 +115,37 @@ Behavior: if selected text is non-empty, only that SQL runs and is saved to hist
 
 ## Phase 3 — AI Features
 
-**Shipped.** Natural language → SQL via Gemini, inserted into the editor for manual review.
+**Shipped.** Natural language query goals → structured guidance via Gemini (JOIN types, `GROUP BY`, `HAVING`, tables/columns, pitfalls). The assistant does not write runnable SQL or insert into the editor.
 
 ### Architecture
 
 ```
-User prompt (textarea in popover)
-  → POST /api/generate-sql  (Express backend)
-  → Google Gemini API       (gemini-2.5-flash-lite by default)
-  → sanitizeGeneratedSql()  (backend — strips markdown fences, trims)
-  → assertSafeSql()         (frontend — blocks DROP DATABASE, TRUNCATE, ALTER SYSTEM, etc.)
-  → workspace.loadQuery()   (inserts into editor; user runs manually)
+User goal (textarea in popover) + optional schema summary
+  → POST /api/sql-guidance  (Express or Vercel serverless)
+  → buildSqlGuidancePrompt() — tutor role, JSON-only output, no SQL
+  → Google Gemini API
+  → sanitizeGuidance() — parse JSON; reject SELECT/INSERT/… + markdown SQL fences
+  → Read-only cards in popover (summary, breakdown, techniques, pitfalls)
 ```
 
 ### Frontend
 
 | File | Purpose |
 |------|---------|
-| `src/components/ai/AiSqlGeneratorPopover.tsx` | Floating Sparkles FAB → popover with textarea + Generate SQL button; Escape to close |
-| `src/lib/api/aiClient.ts` | `generateSql(prompt)` — POST to `VITE_API_URL/api/generate-sql`; throws on error or empty result |
-| `src/lib/sql/assertSafeSql.ts` | Blocks destructive SQL from AI-generated output before inserting into editor |
+| `src/components/ai/AiSqlGeneratorPopover.tsx` | Header **AI SQL** button → popover; **Get suggestions**; renders guidance cards |
+| `src/lib/api/aiClient.ts` | `requestSqlGuidance(prompt, schema?)` — POST `/api/sql-guidance`; returns `SqlGuidance` |
+| `src/lib/api/formatSchemaForAi.ts` | Compact schema text from `SchemaTable[]` for the prompt |
+| `src/lib/api/sqlGuidanceTypes.ts` | `SqlGuidance` TypeScript types |
 
 ### Backend (`backend/`)
 
 | File | Purpose |
 |------|---------|
 | `backend/src/index.ts` | Express 5 app — CORS, JSON body parsing, mounts AI router |
-| `backend/src/routes/aiRoutes.ts` | `POST /generate-sql` — validates prompt, calls Gemini, returns `{ sql }`; maps quota/model/bad-prompt errors to HTTP status codes |
-| `backend/src/services/gemini.ts` | `generateWithGemini(prompt)` — tries `GEMINI_MODEL` then fallback models on quota/404/503; `AiQuotaExceededError` only after all models fail |
+| `backend/src/routes/aiRoutes.ts` | `POST /sql-guidance` — `{ prompt, schema? }` → `{ guidance }`; legacy `POST /generate-sql` retained |
+| `backend/src/prompts/sqlGuidancePrompt.ts` | Tutor system prompt (JSON shape, no runnable SQL) |
+| `backend/src/utils/sanitizeGuidance.ts` | Parse/validate guidance; block query-like output |
+| `backend/src/services/gemini.ts` | `generateWithGemini(prompt)` — model fallback chain |
 
 **Env vars required:**
 - `backend/.env`: `GEMINI_API_KEY`; optionally `GEMINI_MODEL` (default `gemini-2.5-flash-lite`); optionally `GEMINI_MODEL_FALLBACKS` (comma-separated, else built-in chain: `gemini-2.0-flash-lite`, `gemini-2.0-flash`, `gemini-1.5-flash`)
