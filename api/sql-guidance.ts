@@ -92,12 +92,23 @@ function sendError(
     return;
   }
 
-  if (message.includes("GEMINI_API_KEY")) {
-    json(res, 500, { error: "Server is missing AI configuration." });
+  if (message.includes("Missing GEMINI_API_KEY")) {
+    json(res, 503, {
+      error:
+        "AI is not configured. Set GEMINI_API_KEY in backend/.env or Vercel env vars.",
+    });
     return;
   }
 
-  json(res, 500, { error: fallback });
+  if (message.includes("Invalid GEMINI_API_KEY")) {
+    json(res, 503, {
+      error:
+        "Gemini rejected the API key. Verify GEMINI_API_KEY in server environment variables.",
+    });
+    return;
+  }
+
+  json(res, 500, { error: message || fallback });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -119,9 +130,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const { prompt, schema } = parseBody(req.body);
-    const raw = await generateWithGemini(
-      buildSqlGuidancePrompt(prompt, schema)
-    );
+    const raw = await generateWithGemini(buildSqlGuidancePrompt(prompt, schema), {
+      jsonMode: true,
+    });
     const guidance = sanitizeGuidance(raw);
     json(res, 200, { guidance });
   } catch (error) {

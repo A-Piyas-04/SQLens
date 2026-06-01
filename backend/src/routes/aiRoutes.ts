@@ -122,7 +122,38 @@ function sendAiError(
     return;
   }
 
-  res.status(500).json({ error: fallback });
+  if (message.includes("Missing GEMINI_API_KEY")) {
+    res.status(503).json({
+      error:
+        "AI is not configured. Add GEMINI_API_KEY to backend/.env and restart Docker (docker compose up --build).",
+    });
+    return;
+  }
+
+  if (message.includes("Invalid GEMINI_API_KEY")) {
+    res.status(503).json({
+      error:
+        "Gemini rejected the API key. Check GEMINI_API_KEY in backend/.env (Google AI Studio), then restart Docker.",
+    });
+    return;
+  }
+
+  if (message.includes("Cannot reach Google Gemini API")) {
+    res.status(503).json({ error: message });
+    return;
+  }
+
+  if (message.includes("Gemini API access denied")) {
+    res.status(503).json({ error: message });
+    return;
+  }
+
+  if (message === "AI request failed. Please try again.") {
+    res.status(502).json({ error: message });
+    return;
+  }
+
+  res.status(500).json({ error: message || fallback });
 }
 
 router.post("/generate-sql", async (req, res) => {
@@ -140,9 +171,9 @@ router.post("/generate-sql", async (req, res) => {
 router.post("/sql-guidance", async (req, res) => {
   try {
     const { prompt, schema } = parseGuidanceBody(req.body);
-    const raw = await generateWithGemini(
-      buildSqlGuidancePrompt(prompt, schema)
-    );
+    const raw = await generateWithGemini(buildSqlGuidancePrompt(prompt, schema), {
+      jsonMode: true,
+    });
     const guidance = sanitizeGuidance(raw);
     res.json({ guidance });
   } catch (error) {

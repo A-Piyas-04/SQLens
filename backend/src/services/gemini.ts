@@ -1,16 +1,17 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /** Free-tier-friendly primary; override with GEMINI_MODEL in backend/.env */
-const DEFAULT_PRIMARY_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_PRIMARY_MODEL = "gemini-2.0-flash-lite";
 
 /**
- * Tried in order after GEMINI_MODEL when a model is rate-limited or unavailable.
- * Override entirely with GEMINI_MODEL_FALLBACKS (comma-separated) in backend/.env.
+ * Tried in order when the primary model fails (quota, 404, 403, overload, etc.).
+ * Override with GEMINI_MODEL_FALLBACKS (comma-separated) in backend/.env.
  */
 const DEFAULT_FALLBACK_MODELS = [
-  "gemini-2.0-flash-lite",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash-lite",
 ];
 
 export class AiQuotaExceededError extends Error {
@@ -66,7 +67,13 @@ function getErrorStatus(error: unknown): number | undefined {
   if (!error || typeof error !== "object") return undefined;
   const record = error as Record<string, unknown>;
   const status = record.status ?? record.statusCode;
-  return typeof status === "number" ? status : undefined;
+  if (typeof status === "number") return status;
+
+  const message = getErrorMessage(error);
+  const bracketMatch = message.match(/\[(\d{3})\]/);
+  if (bracketMatch) return Number(bracketMatch[1]);
+
+  return undefined;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -95,22 +102,40 @@ function isModelNotFound(error: unknown): boolean {
 
 function isOverloaded(error: unknown): boolean {
   const status = getErrorStatus(error);
-  if (status === 503) return true;
+  if (status === 503 || status === 500) return true;
 
   const message = getErrorMessage(error);
-  return /overloaded|temporarily unavailable|503/i.test(message);
+  return /overloaded|temporarily unavailable|503|500/i.test(message);
 }
 
 function isAuthError(error: unknown): boolean {
   const status = getErrorStatus(error);
-  if (status === 401 || status === 403) return true;
+  if (status === 401) return true;
 
   const message = getErrorMessage(error);
-  return /api.?key|permission|unauthorized|forbidden/i.test(message);
+  return /invalid.*api.*key|api key not valid|api_key_invalid/i.test(message);
 }
 
-function isRetryableWithNextModel(error: unknown): boolean {
-  return isQuotaExceeded(error) || isModelNotFound(error) || isOverloaded(error);
+function isAccessDenied(error: unknown): boolean {
+  return getErrorStatus(error) === 403;
+}
+
+function isNetworkError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|network/i.test(
+    message
+  );
+}
+
+/** Whether to try the next model in the chain (not used for invalid key / network). */
+function shouldTryNextModel(error: unknown): boolean {
+  return (
+    isQuotaExceeded(error) ||
+    isModelNotFound(error) ||
+    isOverloaded(error) ||
+    isAccessDenied(error) ||
+    getErrorStatus(error) === 400
+  );
 }
 
 function classifyAttempt(error: unknown): Pick<ModelAttempt, "reason" | "quota" | "notFound"> {
@@ -136,6 +161,12 @@ function throwAfterAllModelsFailed(attempts: ModelAttempt[]): never {
     throw new AiModelUnavailableError();
   }
 
+  if (attempts.some((a) => /403|forbidden|access denied/i.test(a.reason))) {
+    throw new Error(
+      "Gemini API access denied. Verify GEMINI_API_KEY at Google AI Studio and enable the Generative Language API for your project."
+    );
+  }
+
   throw new Error("AI request failed. Please try again.");
 }
 
@@ -158,9 +189,15 @@ function getClient(): GoogleGenerativeAI {
 async function generateWithModel(
   genAI: GoogleGenerativeAI,
   modelName: string,
-  prompt: string
+  prompt: string,
+  jsonMode = false
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: modelName });
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    ...(jsonMode
+      ? { generationConfig: { responseMimeType: "application/json" } }
+      : {}),
+  });
   const result = await model.generateContent(prompt);
   const text = result.response.text();
 
@@ -171,9 +208,15 @@ async function generateWithModel(
   return text;
 }
 
-export async function generateWithGemini(prompt: string): Promise<string> {
+export async function generateWithGemini(
+  prompt: string,
+  options?: { jsonMode?: boolean }
+): Promise<string> {
   const models = resolveModelChain();
   const attempts: ModelAttempt[] = [];
+  const jsonMode = options?.jsonMode ?? false;
+
+  console.info(`[gemini] model chain: ${models.join(" → ")}`);
 
   try {
     const genAI = getClient();
@@ -182,7 +225,19 @@ export async function generateWithGemini(prompt: string): Promise<string> {
       const modelName = models[i];
 
       try {
-        const text = await generateWithModel(genAI, modelName, prompt);
+        let text: string;
+        try {
+          text = await generateWithModel(genAI, modelName, prompt, jsonMode);
+        } catch (error) {
+          if (jsonMode && shouldTryNextModel(error)) {
+            console.warn(
+              `[gemini] ${modelName} JSON mode failed, retrying same model without JSON…`
+            );
+            text = await generateWithModel(genAI, modelName, prompt, false);
+          } else {
+            throw error;
+          }
+        }
 
         if (i > 0) {
           console.info(`[gemini] succeeded with fallback model: ${modelName}`);
@@ -198,6 +253,12 @@ export async function generateWithGemini(prompt: string): Promise<string> {
           throw new Error("Invalid GEMINI_API_KEY or insufficient API permissions.");
         }
 
+        if (isNetworkError(error)) {
+          throw new Error(
+            "Cannot reach Google Gemini API. Check Docker/network access or try again later."
+          );
+        }
+
         const attempt: ModelAttempt = {
           model: modelName,
           ...classifyAttempt(error),
@@ -206,9 +267,10 @@ export async function generateWithGemini(prompt: string): Promise<string> {
 
         const hasMore = i < models.length - 1;
         if (hasMore) {
-          const kind = isRetryableWithNextModel(error) ? "retryable" : "error";
+          const nextModel = models[i + 1];
+          const kind = shouldTryNextModel(error) ? "retryable" : "non-retryable";
           console.warn(
-            `[gemini] ${modelName} failed (${kind}: ${attempt.reason.slice(0, 100)}), trying ${models[i + 1]}…`
+            `[gemini] ${modelName} failed (${kind}: ${attempt.reason.slice(0, 100)}), trying ${nextModel}…`
           );
           continue;
         }

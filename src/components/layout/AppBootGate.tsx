@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useAppBootReady } from "../../hooks/useAppBootReady";
 import { cn } from "../../lib/utils/cn";
 import { withViewTransition } from "../../lib/utils/viewTransition";
-import AppBootSplash from "./AppBootSplash";
+import AppBootSkeleton from "./AppBootSkeleton";
 
 type Props = {
   db: PGlite;
@@ -29,11 +29,9 @@ export default function AppBootGate({ db, children }: Props) {
     <>
       {showSplash ? (
         <div className={cn(revealed && "app-boot-splash-out")}>
-          <AppBootSplash
-            step={boot.step}
+          <AppBootSkeleton
             stepLabel={boot.stepLabel}
             progress={boot.progress}
-            steps={boot.steps}
           />
         </div>
       ) : null}

@@ -4,13 +4,27 @@ function resolveApiBase(): string {
   const configured = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, "") ?? "";
   if (!configured) return "";
 
+  // Docker-internal hostname — not resolvable from the user's browser.
+  if (/^https?:\/\/backend(:\d+)?\/?$/i.test(configured)) {
+    return "";
+  }
+
   if (import.meta.env.PROD) {
     const isLocalhost =
-      /^https?:\/\/(localhost|127\.0\.0\.1|backend)(:\d+)?\/?$/i.test(configured);
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(configured);
     if (isLocalhost) return "";
   }
 
   return configured;
+}
+
+function wrapFetchError(err: unknown): Error {
+  if (err instanceof TypeError) {
+    return new Error(
+      "Cannot reach the SQL assistant API. If you use Docker, restart with docker compose up --build. Otherwise ensure the backend is running on port 3001."
+    );
+  }
+  return err instanceof Error ? err : new Error("Request failed.");
 }
 
 const API_BASE = resolveApiBase();
@@ -42,11 +56,16 @@ export async function requestSqlGuidance(
     body.schema = schema.trim();
   }
 
-  const response = await fetch(`${API_BASE}/api/sql-guidance`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/sql-guidance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    throw wrapFetchError(err);
+  }
 
   const data = await parseJsonResponse<GuidanceResponse>(response);
 

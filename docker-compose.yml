@@ -10,7 +10,9 @@ services:
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=http://backend:3001
+      # Browser must call same-origin /api; Vite proxies to the backend service.
+      - VITE_API_URL=
+      - VITE_API_PROXY_TARGET=http://backend:3001
     depends_on:
       - backend
 
@@ -20,7 +22,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PORT=3001
     env_file:
       - ./backend/.env
+    volumes:
+      # Keep runtime in sync with backend/.env (dotenv + compose env_file).
+      - ./backend/.env:/app/.env:ro
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4

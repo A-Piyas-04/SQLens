@@ -93,7 +93,7 @@ Query execution and persistence work without any server. AI generation works whe
 ### Full stack with Docker
 
 ```bash
-# Set GEMINI_API_KEY in backend/.env (or root .env for compose)
+# Copy backend/.env.example → backend/.env and set GEMINI_API_KEY=your_key
 docker compose up --build
 ```
 

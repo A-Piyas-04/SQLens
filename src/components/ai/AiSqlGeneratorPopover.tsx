@@ -79,16 +79,16 @@ export default function AiSqlGeneratorPopover({
         <div
           className={cn(
             "practice-radial-panel absolute right-0 top-full z-50 mt-2",
-            "w-[min(calc(100vw-2rem),380px)]",
-            "max-h-[min(70vh,520px)] overflow-y-auto",
-            "rounded-sm border border-line bg-surface-elevated p-4",
+            "w-[min(calc(100vw-1.5rem),32rem)] sm:w-[min(calc(100vw-2rem),36rem)]",
+            "max-h-[min(85vh,42rem)] overflow-y-auto",
+            "rounded-sm border border-line bg-surface-elevated p-5 sm:p-6",
             "shadow-md scrollbar-thin"
           )}
         >
-          <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <AiSqlIcon size={22} className="shrink-0" />
-              <h2 className="truncate text-sm font-semibold text-ink">
+          <div className="mb-4 flex items-center justify-between gap-2 border-b border-line pb-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <AiSqlIcon size={24} className="shrink-0" />
+              <h2 className="truncate text-base font-semibold text-ink sm:text-lg">
                 SQL Assistant
               </h2>
             </div>
@@ -102,25 +102,25 @@ export default function AiSqlGeneratorPopover({
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-ink-muted">
+              <span className="mb-2 block text-sm font-medium text-ink-muted">
                 Ask about a query goal
               </span>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder='e.g. Show courses taken by students in the CSE department'
-                rows={3}
+                rows={4}
                 disabled={disabled || isLoading}
-                className="w-full resize-none rounded-sm border border-line bg-surface-inset px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+                className="min-h-[6.5rem] w-full resize-y rounded-sm border border-line bg-surface-inset px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 sm:text-base"
               />
             </label>
 
             <Button
               type="button"
               variant="primary"
-              size="sm"
+              size="md"
               className="w-full"
               disabled={disabled || isLoading || !prompt.trim()}
               onClick={() => void handleGetSuggestions()}
@@ -136,17 +136,17 @@ export default function AiSqlGeneratorPopover({
             ) : null}
 
             {guidance ? (
-              <div className="space-y-4 border-t border-line pt-3">
-                <p className="text-sm leading-relaxed text-ink-secondary">
+              <div className="space-y-5 border-t border-line pt-4">
+                <p className="text-sm leading-relaxed text-ink-secondary sm:text-base">
                   {guidance.summary}
                 </p>
 
                 {guidance.problemBreakdown.length > 0 ? (
                   <section>
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted sm:text-sm">
                       Break it down
                     </h3>
-                    <ol className="list-decimal space-y-1.5 pl-4 text-sm text-ink-secondary">
+                    <ol className="list-decimal space-y-2 pl-5 text-sm text-ink-secondary sm:text-base">
                       {guidance.problemBreakdown.map((step) => (
                         <li key={step} className="leading-relaxed">
                           {step}
@@ -158,19 +158,19 @@ export default function AiSqlGeneratorPopover({
 
                 {guidance.techniques.length > 0 ? (
                   <section>
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted sm:text-sm">
                       Techniques to consider
                     </h3>
-                    <ul className="space-y-2">
+                    <ul className="space-y-2.5">
                       {guidance.techniques.map((technique) => (
                         <li
                           key={`${technique.name}-${technique.whenToUse}`}
-                          className="rounded-sm border border-line bg-surface-muted/50 px-3 py-2"
+                          className="rounded-sm border border-line bg-surface-muted/50 px-4 py-3"
                         >
-                          <p className="text-sm font-semibold text-accent-ink">
+                          <p className="text-sm font-semibold text-accent-ink sm:text-base">
                             {technique.name}
                           </p>
-                          <p className="mt-0.5 text-sm leading-relaxed text-ink-secondary">
+                          <p className="mt-1 text-sm leading-relaxed text-ink-secondary sm:text-base">
                             {technique.whenToUse}
                           </p>
                           {technique.notes ? (
@@ -186,10 +186,10 @@ export default function AiSqlGeneratorPopover({
 
                 {guidance.tablesAndColumns.length > 0 ? (
                   <section>
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                    <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-ink-muted sm:text-sm">
                       Tables & columns
                     </h3>
-                    <ul className="space-y-1 text-sm text-ink-secondary">
+                    <ul className="space-y-1.5 text-sm text-ink-secondary sm:text-base">
                       {guidance.tablesAndColumns.map((item) => (
                         <li key={item} className="leading-relaxed">
                           {item}
@@ -201,11 +201,11 @@ export default function AiSqlGeneratorPopover({
 
                 {guidance.pitfalls.length > 0 ? (
                   <section>
-                    <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                      <AlertTriangle className="size-3.5" aria-hidden />
+                    <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-muted sm:text-sm">
+                      <AlertTriangle className="size-4" aria-hidden />
                       Pitfalls
                     </h3>
-                    <ul className="space-y-1 text-sm text-ink-secondary">
+                    <ul className="space-y-1.5 text-sm text-ink-secondary sm:text-base">
                       {guidance.pitfalls.map((item) => (
                         <li key={item} className="leading-relaxed">
                           {item}
@@ -217,7 +217,7 @@ export default function AiSqlGeneratorPopover({
               </div>
             ) : null}
 
-            <p className="text-xs text-ink-muted">
+            <p className="text-sm text-ink-muted">
               Suggestions only — write the SQL yourself in the editor.
             </p>
           </div>

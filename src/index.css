@@ -221,87 +221,40 @@ h3,
   }
 }
 
-/* App boot splash */
+/* App boot — skeleton layout */
 .app-boot-grid {
   background-image:
     linear-gradient(var(--color-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+  background-size: 48px 48px;
+  opacity: 0.35;
 }
 
-.app-boot-card {
-  animation: app-boot-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.app-boot-logo {
-  animation: app-boot-logo-pulse 2.4s ease-in-out infinite;
-}
-
-.app-boot-progress {
+.skeleton-shimmer {
   position: relative;
   overflow: hidden;
 }
 
-.app-boot-progress::after {
+.skeleton-shimmer::after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(255 255 255 / 0.5),
+    color-mix(in srgb, var(--color-bg-elevated) 55%, transparent),
     transparent
   );
-  animation: app-boot-shimmer 1.6s ease-in-out infinite;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
 }
 
-.app-boot-status {
-  animation: app-boot-status-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes app-boot-card-in {
+@keyframes skeleton-shimmer {
   from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
+    transform: translateX(-100%);
   }
 
   to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes app-boot-logo-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 18%, transparent);
-  }
-
-  50% {
-    box-shadow: 0 0 0 8px transparent;
-  }
-}
-
-@keyframes app-boot-shimmer {
-  from {
-    transform: translateX(-120%);
-  }
-
-  to {
-    transform: translateX(120%);
-  }
-}
-
-@keyframes app-boot-status-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateX(100%);
   }
 }
 
@@ -739,10 +692,7 @@ h3,
     animation: none !important;
   }
 
-  .app-boot-card,
-  .app-boot-logo,
-  .app-boot-progress::after,
-  .app-boot-status,
+  .skeleton-shimmer::after,
   .app-boot-splash-out .app-boot-splash {
     animation: none !important;
   }

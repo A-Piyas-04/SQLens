@@ -1,7 +1,11 @@
 node_modules
 dist
 .git
-.env
-.env.local
 npm-debug.log
 .DS_Store
+
+# Secrets — use env_file / compose at runtime, not image layers
+.env
+.env.*
+**/.env
+**/.env.*

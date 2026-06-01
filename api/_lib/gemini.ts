@@ -1,8 +1,10 @@
-const DEFAULT_PRIMARY_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_PRIMARY_MODEL = "gemini-2.0-flash-lite";
+
 const DEFAULT_FALLBACK_MODELS = [
-  "gemini-2.0-flash-lite",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash-lite",
 ];
 
 export class AiQuotaExceededError extends Error {
@@ -26,32 +28,6 @@ type ModelAttempt = {
   notFound: boolean;
 };
 
-function debugLog(
-  location: string,
-  message: string,
-  data: Record<string, unknown>,
-  hypothesisId: string
-): void {
-  // #region agent log
-  fetch("http://127.0.0.1:7502/ingest/188b4fd5-bade-4808-914e-354929823f23", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "618ede",
-    },
-    body: JSON.stringify({
-      sessionId: "618ede",
-      runId: "pre-fix",
-      hypothesisId,
-      location,
-      message,
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-}
-
 function parseCommaSeparatedModels(raw: string | undefined): string[] {
   if (!raw?.trim()) return [];
   return raw
@@ -70,7 +46,7 @@ function uniqueModels(models: string[]): string[] {
   });
 }
 
-function resolveModelChain(): string[] {
+export function resolveModelChain(): string[] {
   const primary = process.env.GEMINI_MODEL?.trim() || DEFAULT_PRIMARY_MODEL;
   const envFallbacks = parseCommaSeparatedModels(process.env.GEMINI_MODEL_FALLBACKS);
   const fallbacks =
@@ -86,30 +62,86 @@ function getErrorMessage(error: unknown): string {
   return "";
 }
 
-function isQuotaError(error: unknown): boolean {
+function getErrorStatus(error: unknown): number | undefined {
+  const message = getErrorMessage(error);
+  const bracketMatch = message.match(/\[(\d{3})\]/);
+  if (bracketMatch) return Number(bracketMatch[1]);
+  return undefined;
+}
+
+function isQuotaExceeded(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status === 429) return true;
   return /429|quota|resource_exhausted|rate.?limit/i.test(getErrorMessage(error));
 }
 
-function isNotFoundError(error: unknown): boolean {
+function isModelNotFound(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status === 404) return true;
   return /404|not found|is not supported for generateContent/i.test(
     getErrorMessage(error)
   );
 }
 
-function isRetryableWithFallback(error: unknown): boolean {
-  return /429|503|quota|resource_exhausted|overloaded|temporarily unavailable/i.test(
+function isOverloaded(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status === 503 || status === 500) return true;
+  return /overloaded|temporarily unavailable|503|500/i.test(getErrorMessage(error));
+}
+
+function isAccessDenied(error: unknown): boolean {
+  return getErrorStatus(error) === 403;
+}
+
+function isAuthError(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  if (status === 401) return true;
+  return /invalid.*api.*key|api key not valid|api_key_invalid/i.test(
     getErrorMessage(error)
   );
 }
 
+function isNetworkError(error: unknown): boolean {
+  return /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|ECONNRESET|network/i.test(
+    getErrorMessage(error)
+  );
+}
+
+function shouldTryNextModel(error: unknown): boolean {
+  return (
+    isQuotaExceeded(error) ||
+    isModelNotFound(error) ||
+    isOverloaded(error) ||
+    isAccessDenied(error) ||
+    getErrorStatus(error) === 400
+  );
+}
+
+function throwAfterAllModelsFailed(attempts: ModelAttempt[]): never {
+  console.error(
+    "[gemini] all models failed:",
+    attempts.map((a) => ({ model: a.model, reason: a.reason.slice(0, 120) }))
+  );
+
+  if (attempts.some((a) => a.quota)) {
+    throw new AiQuotaExceededError();
+  }
+
+  if (attempts.length > 0 && attempts.every((a) => a.notFound)) {
+    throw new AiModelUnavailableError();
+  }
+
+  if (attempts.some((a) => /403|forbidden|access denied/i.test(a.reason))) {
+    throw new Error(
+      "Gemini API access denied. Verify GEMINI_API_KEY at Google AI Studio and enable the Generative Language API."
+    );
+  }
+
+  throw new Error("AI request failed. Please try again.");
+}
+
 function assertApiKey(): string {
   const key = process.env.GEMINI_API_KEY?.trim();
-  debugLog(
-    "api/_lib/gemini.ts:106",
-    "api key presence checked",
-    { hasKey: !!key },
-    "H1"
-  );
   if (!key) {
     throw new Error("Missing GEMINI_API_KEY.");
   }
@@ -134,14 +166,9 @@ function extractGeminiText(payload: unknown): string {
 async function generateWithModel(
   apiKey: string,
   model: string,
-  prompt: string
+  prompt: string,
+  jsonMode = false
 ): Promise<string> {
-  debugLog(
-    "api/_lib/gemini.ts:136",
-    "calling gemini model",
-    { model },
-    "H3"
-  );
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
   )}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -153,73 +180,87 @@ async function generateWithModel(
     },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
+      ...(jsonMode
+        ? { generationConfig: { responseMimeType: "application/json" } }
+        : {}),
     }),
   });
 
   const body = await response.json().catch(() => ({}));
-  debugLog(
-    "api/_lib/gemini.ts:155",
-    "gemini http response",
-    {
-      model,
-      status: response.status,
-      ok: response.ok,
-      hasApiErrorMessage:
-        typeof (body as { error?: { message?: unknown } })?.error?.message ===
-        "string",
-    },
-    "H3"
-  );
+
   if (!response.ok) {
     const maybeMessage =
       (body as { error?: { message?: string } })?.error?.message ||
       `Gemini request failed (${response.status})`;
-    throw new Error(maybeMessage);
+    throw new Error(`[${response.status}] ${maybeMessage}`);
   }
 
   return extractGeminiText(body);
 }
 
-export async function generateWithGemini(prompt: string): Promise<string> {
+export async function generateWithGemini(
+  prompt: string,
+  options?: { jsonMode?: boolean }
+): Promise<string> {
   const apiKey = assertApiKey();
   const models = resolveModelChain();
-  debugLog(
-    "api/_lib/gemini.ts:183",
-    "model chain resolved",
-    { modelCount: models.length, firstModel: models[0] ?? null, promptLength: prompt.length },
-    "H2"
-  );
+  const jsonMode = options?.jsonMode ?? false;
   const attempts: ModelAttempt[] = [];
 
-  for (let index = 0; index < models.length; index += 1) {
-    const model = models[index];
+  console.info(`[gemini] model chain: ${models.join(" → ")}`);
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+
     try {
-      return await generateWithModel(apiKey, model, prompt);
+      let text: string;
+      try {
+        text = await generateWithModel(apiKey, model, prompt, jsonMode);
+      } catch (error) {
+        if (jsonMode && shouldTryNextModel(error)) {
+          console.warn(
+            `[gemini] ${model} JSON mode failed, retrying same model without JSON…`
+          );
+          text = await generateWithModel(apiKey, model, prompt, false);
+        } else {
+          throw error;
+        }
+      }
+
+      if (i > 0) {
+        console.info(`[gemini] succeeded with fallback model: ${model}`);
+      }
+
+      return text;
     } catch (error) {
+      if (isAuthError(error)) {
+        throw new Error("Invalid GEMINI_API_KEY or insufficient API permissions.");
+      }
+
+      if (isNetworkError(error)) {
+        throw new Error(
+          "Cannot reach Google Gemini API. Check server network access or try again later."
+        );
+      }
+
       const reason = getErrorMessage(error);
-      const attempt: ModelAttempt = {
+      attempts.push({
         model,
         reason,
-        quota: isQuotaError(error),
-        notFound: isNotFoundError(error),
-      };
-      attempts.push(attempt);
+        quota: isQuotaExceeded(error),
+        notFound: isModelNotFound(error),
+      });
 
-      const hasMore = index < models.length - 1;
-      if (hasMore && isRetryableWithFallback(error)) {
+      const hasMore = i < models.length - 1;
+      if (hasMore) {
+        const kind = shouldTryNextModel(error) ? "retryable" : "non-retryable";
+        console.warn(
+          `[gemini] ${model} failed (${kind}: ${reason.slice(0, 100)}), trying ${models[i + 1]}…`
+        );
         continue;
       }
-      break;
     }
   }
 
-  if (attempts.some((attempt) => attempt.quota)) {
-    throw new AiQuotaExceededError();
-  }
-
-  if (attempts.length > 0 && attempts.every((attempt) => attempt.notFound)) {
-    throw new AiModelUnavailableError();
-  }
-
-  throw new Error("AI request failed. Please try again.");
+  throwAfterAllModelsFailed(attempts);
 }
