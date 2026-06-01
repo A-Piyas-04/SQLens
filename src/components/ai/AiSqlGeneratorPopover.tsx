@@ -139,7 +139,7 @@ export default function AiSqlGeneratorPopover({
       <button
         type="button"
         disabled
-        title="coming soon"
+        title="AI SQL generator — coming soon"
         aria-label="AI SQL generator — coming soon"
         aria-disabled
         className={cn(
@@ -149,10 +149,11 @@ export default function AiSqlGeneratorPopover({
         )}
       >
         {isOpen ? (
-          <X className="size-6" aria-hidden />
+          <X className="size-4 shrink-0" aria-hidden />
         ) : (
-          <AiSqlIcon size={HEADER_ACTION_ICON_SIZE} />
+          <AiSqlIcon size={HEADER_ACTION_ICON_SIZE} className="shrink-0" />
         )}
+        <span>{isOpen ? "Close" : "AI SQL"}</span>
       </button>
     </div>
   );

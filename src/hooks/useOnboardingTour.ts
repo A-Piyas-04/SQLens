@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  ONBOARDING_STEPS,
-  findVisibleTourTarget,
-  type OnboardingStep,
-} from "../constants/onboardingSteps";
+import { ONBOARDING_STEPS, type OnboardingStep } from "../constants/onboardingSteps";
 import {
   hasCompletedOnboarding,
   setOnboardingComplete,
@@ -24,6 +20,7 @@ export function useOnboardingTour() {
   }, []);
 
   const restart = useCallback(() => {
+    setOnboardingComplete(false);
     setStepIndex(0);
     setIsActive(true);
   }, []);
@@ -58,17 +55,6 @@ export function useOnboardingTour() {
       setIsActive(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (!isActive || !step.target) return;
-
-    if (step.scrollIntoView) {
-      findVisibleTourTarget(step.target)?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [isActive, stepIndex, step.target, step.scrollIntoView]);
 
   return {
     isActive,

@@ -42,6 +42,7 @@
   --radius-ui: 4px;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-elevate: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --onboarding-scrim: rgb(28 25 22 / 0.45);
 }
 
 @theme {
@@ -321,6 +322,10 @@ h3,
 }
 
 /* Onboarding tour */
+.onboarding-scrim {
+  background: var(--onboarding-scrim);
+}
+
 .onboarding-tooltip {
   transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }

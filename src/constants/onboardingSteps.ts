@@ -9,8 +9,6 @@ export type OnboardingStep = {
   /** Matches `data-tour` on a DOM element; omit for centered modal steps */
   target?: string;
   placement?: OnboardingPlacement;
-  /** Scroll target into view before showing (e.g. ERD below the fold) */
-  scrollIntoView?: boolean;
   /** Card + spotlight accent — purple for signature MVP step only */
   accent?: OnboardingAccent;
   /** Short bullets (optional) */
@@ -66,7 +64,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "SQL Execution Simulator",
     body: "SQLens’s core experience — visualize exactly how PostgreSQL runs your query, one stage at a time.",
     target: "simulator-panel",
-    scrollIntoView: true,
     highlights: [
       "Stage-by-stage playback (FROM → JOIN → WHERE → …)",
       "Rows animate as they’re filtered, joined, or aggregated",
@@ -78,7 +75,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Entity Relationship Diagram",
     body: "Visualize tables and foreign keys. Use View ERD in the editor toolbar to jump here anytime.",
     target: "erd-section",
-    scrollIntoView: true,
   },
   {
     id: "finish",
@@ -92,12 +88,95 @@ export function getOnboardingTargetSelector(target: string): string {
   return `[data-tour="${target}"]`;
 }
 
-/** Prefer the visible match when desktop/mobile duplicate the same tour id. */
+/** Padding from viewport edges when deciding if a tour target is “on screen”. */
+export const TOUR_VIEWPORT_MARGIN = 48;
+
+/** Minimum visible px (width and height) to count as on screen (handles very tall panels). */
+const TOUR_MIN_VISIBLE_PX = 72;
+
+export function isTourTargetInViewport(
+  el: Element,
+  margin: number = TOUR_VIEWPORT_MARGIN
+): boolean {
+  const rect = el.getBoundingClientRect();
+  if (rect.width <= 4 || rect.height <= 4) return false;
+
+  const viewTop = margin;
+  const viewLeft = margin;
+  const viewBottom = window.innerHeight - margin;
+  const viewRight = window.innerWidth - margin;
+
+  const visibleTop = Math.max(rect.top, viewTop);
+  const visibleLeft = Math.max(rect.left, viewLeft);
+  const visibleBottom = Math.min(rect.bottom, viewBottom);
+  const visibleRight = Math.min(rect.right, viewRight);
+
+  const visibleWidth = visibleRight - visibleLeft;
+  const visibleHeight = visibleBottom - visibleTop;
+
+  return visibleWidth >= TOUR_MIN_VISIBLE_PX && visibleHeight >= TOUR_MIN_VISIBLE_PX;
+}
+
+function tourScrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+}
+
+/** Prefer an on-screen match when desktop/mobile duplicate the same tour id. */
 export function findVisibleTourTarget(target: string): Element | null {
   const nodes = document.querySelectorAll(getOnboardingTargetSelector(target));
+  let fallback: Element | null = null;
+
   for (const node of nodes) {
     const box = node.getBoundingClientRect();
-    if (box.width > 4 && box.height > 4) return node;
+    if (box.width <= 4 || box.height <= 4) continue;
+    if (!fallback) fallback = node;
+    if (isTourTargetInViewport(node)) return node;
   }
-  return null;
+
+  return fallback;
+}
+
+/** Scroll the page (and nested scroll containers) until the tour target is visible. */
+export function ensureTourTargetVisible(target: string): Promise<void> {
+  const el = findVisibleTourTarget(target);
+  if (!el || isTourTargetInViewport(el)) {
+    return Promise.resolve();
+  }
+
+  const targetEl = el;
+
+  targetEl.scrollIntoView({
+    behavior: tourScrollBehavior(),
+    block: "center",
+    inline: "nearest",
+  });
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("scrollend", done);
+      clearTimeout(timer);
+      resolve();
+    };
+
+    let frame = 0;
+    const maxFrames = 90;
+
+    function tick() {
+      frame += 1;
+      if (isTourTargetInViewport(targetEl) || frame >= maxFrames) {
+        done();
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    window.addEventListener("scrollend", done, { once: true });
+    requestAnimationFrame(tick);
+    const timer = window.setTimeout(done, 900);
+  });
 }

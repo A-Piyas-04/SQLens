@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 import { PracticeHubIcon } from "../icons";
 import {
@@ -15,19 +15,11 @@ import {
 import { cn } from "../../lib/utils/cn";
 import PracticeCategoryContent from "./PracticeCategoryContent";
 
-/**
- * Arc at fixed compass bearings 180°, 200°, 230°, 270° (down → down-left → left).
- * Screen offsets: +x = left, +y = down.
- * Order: samples (180°) → templates (200°) → snippets (230°) → presets (270°).
- */
-/** Keep orbit icons in the down-left quadrant so the hub (top-right) stays clear */
 const ORBIT_RADIUS = 128;
-/** samples → templates → snippets → presets */
 const ORBIT_BEARINGS = [200, 225, 250, 272];
 
 function bearingToOffset(bearingDeg: number, radius: number) {
   const rad = (bearingDeg * Math.PI) / 180;
-  // Compass ° clockwise from north → screen (+x left, +y down)
   return {
     x: Math.sin(rad) * radius,
     y: -Math.cos(rad) * radius,
@@ -38,6 +30,7 @@ function getOrbitSlot(index: number) {
   const bearing = ORBIT_BEARINGS[index] ?? ORBIT_BEARINGS[0];
   return bearingToOffset(bearing, ORBIT_RADIUS);
 }
+
 type Props = {
   isOpen: boolean;
   activeCategory: PracticeCategoryId | null;
@@ -62,6 +55,33 @@ export default function PracticeRadialMenu({
   onApplyVisualizationPreset,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const hubRef = useRef<HTMLButtonElement>(null);
+  const [hubCenter, setHubCenter] = useState<{ x: number; y: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!isOpen || !hubRef.current) {
+      setHubCenter(null);
+      return;
+    }
+
+    function updateHubCenter() {
+      const el = hubRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setHubCenter({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      });
+    }
+
+    updateHubCenter();
+    window.addEventListener("resize", updateHubCenter);
+    window.addEventListener("scroll", updateHubCenter, true);
+    return () => {
+      window.removeEventListener("resize", updateHubCenter);
+      window.removeEventListener("scroll", updateHubCenter, true);
+    };
+  }, [isOpen, activeCategory]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -84,16 +104,11 @@ export default function PracticeRadialMenu({
   const activeMeta = activeCategory ? getPracticeCategory(activeCategory) : null;
 
   return (
-    <div
-      className={cn(
-        "relative z-50 shrink-0 overflow-visible",
-        isOpen ? "h-[240px] w-[min(100vw-2rem,360px)] sm:w-[360px]" : "size-14"
-      )}
-    >
+    <div className="relative flex shrink-0 items-stretch">
       {isOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-surface-inset "
+          className="fixed inset-0 z-40 bg-surface-inset/80"
           aria-label="Close practice menu"
           onClick={() => {
             onSelectCategory(null);
@@ -102,123 +117,127 @@ export default function PracticeRadialMenu({
         />
       ) : null}
 
-      {/* Above backdrop (z-40) so orbit labels/buttons stay sharp */}
-      <div className="absolute inset-0 z-50 overflow-visible">
-        {isOpen && activeCategory && activeMeta ? (
-          <div
-            ref={panelRef}
-            className={cn(
-              "practice-radial-panel absolute z-50",
-              "w-[min(calc(100vw-5.5rem),280px)]",
-              "rounded-sm border border-line bg-surface-elevated p-4",
-              "shadow-md",
-              "right-0 top-[4.75rem] sm:right-[calc(100%+0.75rem)] sm:top-0"
-            )}
-          >
-            <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <activeMeta.icon size={22} className="shrink-0" />
-                <h2 className="truncate text-sm font-semibold text-ink">
-                  {activeMeta.title}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => onSelectCategory(null)}
-                className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
-                aria-label="Back to categories"
-              >
-                <X className="size-4" aria-hidden />
-              </button>
-            </div>
-
-            <PracticeCategoryContent
-              categoryId={activeCategory}
-              isLoading={isLoading}
-              onLoadSampleDatabase={onLoadSampleDatabase}
-              onLoadQuery={onLoadQuery}
-              onInsertSnippet={onInsertSnippet}
-              onApplyVisualizationPreset={onApplyVisualizationPreset}
-              compact
-            />
-          </div>
-        ) : null}
-
-        {/* Orbit anchor = hub center */}
-        <div className="pointer-events-none absolute right-7 top-7 size-0">
-          {isOpen
-            ? PRACTICE_CATEGORIES.map((category, index) => {
-                const isActive = activeCategory === category.id;
-                const Icon = category.icon;
-                const { x, y } = getOrbitSlot(index);
-
-                return (
-                  <div
-                    key={category.id}
-                    className="practice-orbit-item pointer-events-none absolute left-0 top-0"
-                    style={
-                      {
-                        "--orbit-x": `${x}px`,
-                        "--orbit-y": `${y}px`,
-                        "--orbit-delay": `${index * 60}ms`,
-                      } as CSSProperties
-                    }
-                  >
-                    <button
-                      type="button"
-                      title={category.title}
-                      onClick={() => handleCategoryClick(category.id)}
-                      className={cn(
-                        "group pointer-events-auto absolute right-0 top-1/2 z-30 flex -translate-y-1/2 items-center gap-2.5",
-                        isActive && "z-40"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "max-w-[8.5rem] truncate text-right text-xs font-medium leading-tight",
-                          "drop-shadow-[0_1px_2px_rgba(2,6,23,0.9)]",
-                          isActive ? "text-accent-ink" : "text-ink"
-                        )}
-                      >
-                        {category.title}
-                      </span>
-                      <span
-                        className={cn(
-                          "flex size-12 shrink-0 items-center justify-center rounded-full border shadow-lg transition-colors duration-200",
-                          isActive
-                            ? "border-accent bg-accent text-white"
-                            : "border-line-strong bg-surface-muted text-accent  group-hover:border-accent group-hover:bg-surface-muted"
-                        )}
-                      >
-                        <Icon size={24} />
-                      </span>
-                    </button>
-                  </div>
-                );
-              })
-            : null}
-        </div>
-
-        <button
-          type="button"
-          onClick={onToggle}
-          data-tour="practice-menu"
-          aria-label={isOpen ? "Close practice menu" : "Open practice menu"}
-          aria-expanded={isOpen}
-          className={cn(
-            headerActionButtonClass,
-            "practice-hub-toggle absolute top-0 z-50",
-            isOpen ? "-right-70" : "right-0",
-            isOpen && headerActionButtonOpenClass
-          )}
+      {isOpen && hubCenter ? (
+        <div
+          className="pointer-events-none fixed z-50 overflow-visible"
+          style={{
+            left: hubCenter.x,
+            top: hubCenter.y,
+            width: 0,
+            height: 0,
+          }}
         >
-          {isOpen ? (
-            <X className="size-6" aria-hidden />
-          ) : (
-            <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} />
-          )}
-        </button>
-      </div>
+          {activeCategory && activeMeta ? (
+            <div
+              ref={panelRef}
+              className={cn(
+                "practice-radial-panel pointer-events-auto absolute z-50",
+                "w-[min(calc(100vw-2rem),280px)]",
+                "rounded-sm border border-line bg-surface-elevated p-4 shadow-md",
+                "right-full top-0 mr-3 max-sm:fixed max-sm:right-4 max-sm:top-16 max-sm:mr-0"
+              )}
+            >
+              <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <activeMeta.icon size={22} className="shrink-0" />
+                  <h2 className="truncate text-sm font-semibold text-ink">
+                    {activeMeta.title}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectCategory(null)}
+                  className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
+                  aria-label="Back to categories"
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </div>
+
+              <PracticeCategoryContent
+                categoryId={activeCategory}
+                isLoading={isLoading}
+                onLoadSampleDatabase={onLoadSampleDatabase}
+                onLoadQuery={onLoadQuery}
+                onInsertSnippet={onInsertSnippet}
+                onApplyVisualizationPreset={onApplyVisualizationPreset}
+                compact
+              />
+            </div>
+          ) : null}
+
+          {PRACTICE_CATEGORIES.map((category, index) => {
+            const isActive = activeCategory === category.id;
+            const Icon = category.icon;
+            const { x, y } = getOrbitSlot(index);
+
+            return (
+              <div
+                key={category.id}
+                className="practice-orbit-item pointer-events-none absolute left-0 top-0"
+                style={
+                  {
+                    "--orbit-x": `${x}px`,
+                    "--orbit-y": `${y}px`,
+                    "--orbit-delay": `${index * 60}ms`,
+                  } as CSSProperties
+                }
+              >
+                <button
+                  type="button"
+                  title={category.title}
+                  onClick={() => handleCategoryClick(category.id)}
+                  className={cn(
+                    "group pointer-events-auto absolute right-0 top-1/2 z-30 flex -translate-y-1/2 items-center gap-2.5",
+                    isActive && "z-40"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "max-w-[8.5rem] truncate text-right text-xs font-medium leading-tight",
+                      isActive ? "text-accent-ink" : "text-ink"
+                    )}
+                  >
+                    {category.title}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors duration-200",
+                      isActive
+                        ? "border-accent bg-accent text-white"
+                        : "border-line-strong bg-surface-elevated text-accent group-hover:border-accent"
+                    )}
+                  >
+                    <Icon size={22} />
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      <button
+        ref={hubRef}
+        type="button"
+        onClick={onToggle}
+        data-tour="practice-menu"
+        aria-label={isOpen ? "Close practice menu" : "Open practice menu"}
+        aria-expanded={isOpen}
+        title={isOpen ? "Close practice menu" : "Samples, templates, and SQL snippets"}
+        className={cn(
+          headerActionButtonClass,
+          "practice-hub-toggle",
+          isOpen && headerActionButtonOpenClass
+        )}
+      >
+        {isOpen ? (
+          <X className="size-4 shrink-0" aria-hidden />
+        ) : (
+          <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} className="shrink-0" />
+        )}
+        <span>{isOpen ? "Close" : "Practice"}</span>
+      </button>
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-import type { OnboardingStep } from "../../constants/onboardingSteps";
+import {
+  ensureTourTargetVisible,
+  type OnboardingStep,
+} from "../../constants/onboardingSteps";
 import OnboardingSpotlightOverlay from "./OnboardingSpotlightOverlay";
 import OnboardingStepCard from "./OnboardingStepCard";
 import { getStepAccent } from "./onboardingThemes";
@@ -42,11 +45,26 @@ export default function OnboardingTour({
       return;
     }
 
+    let cancelled = false;
     setLayoutReady(false);
-    const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setLayoutReady(true));
-    });
-    return () => cancelAnimationFrame(frame);
+
+    async function prepareStepLayout() {
+      if (step.target) {
+        await ensureTourTargetVisible(step.target);
+      }
+      if (cancelled) return;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelled) setLayoutReady(true);
+        });
+      });
+    }
+
+    void prepareStepLayout();
+    return () => {
+      cancelled = true;
+    };
   }, [isActive, stepIndex, step.target]);
 
   useEffect(() => {
@@ -95,7 +113,7 @@ export default function OnboardingTour({
         <OnboardingSpotlightOverlay rect={rect} accent={accent} />
       ) : (
         <div
-          className="absolute inset-0 bg-surface-inset  pointer-events-auto"
+          className="onboarding-scrim absolute inset-0 pointer-events-auto"
           aria-hidden
         />
       )}

@@ -1,15 +1,22 @@
 import { cn } from "../../lib/utils/cn";
 
-/** Shared chrome for header action icon buttons (help, AI, practice hub). */
+/** Compact header toolbar control (JetBrains / Linear–style). */
 export const headerActionButtonClass = cn(
-  "relative z-20 flex size-14 shrink-0 items-center justify-center rounded-sm",
-  "border border-line-strong bg-surface-inset text-accent-ink",
-  "transition-colors hover:border-accent hover:bg-surface-raised hover:text-accent",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+  "relative z-20 inline-flex h-10 shrink-0 items-center gap-2 px-4",
+  "text-sm font-medium text-ink-secondary sm:text-[15px]",
+  "transition-colors",
+  "hover:bg-surface-muted hover:text-ink",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+  "disabled:cursor-not-allowed disabled:opacity-50"
 );
 
-export const headerActionButtonOpenClass =
-  "border-accent bg-accent-muted text-accent-ink";
+export const headerActionButtonOpenClass = "bg-surface-muted text-ink";
 
-/** Icon size tuned for 56px (size-14) circular buttons */
-export const HEADER_ACTION_ICON_SIZE = 30;
+/** Icon size for header toolbar buttons */
+export const HEADER_ACTION_ICON_SIZE = 20;
+
+export const headerToolbarClass = cn(
+  "flex h-10 items-stretch overflow-visible rounded-sm border border-line bg-surface-raised"
+);
+
+export const headerToolbarDividerClass = "w-px shrink-0 self-stretch bg-line";

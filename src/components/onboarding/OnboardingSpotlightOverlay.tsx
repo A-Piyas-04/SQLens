@@ -1,8 +1,7 @@
 import { cn } from "../../lib/utils/cn";
 import type { SpotlightRect } from "./useSpotlightRect";
 
-const PANEL_CLASS =
-  "absolute bg-surface-inset/90 pointer-events-auto";
+const PANEL_CLASS = "onboarding-scrim absolute pointer-events-auto";
 
 import type { OnboardingAccent } from "../../constants/onboardingSteps";
 

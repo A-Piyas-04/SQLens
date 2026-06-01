@@ -125,12 +125,6 @@ export default function App() {
           onStartTour={onboarding.restart}
           actions={
             <>
-              <AiSqlGeneratorPopover
-                isOpen={aiMenuOpen}
-                onToggle={handleToggleAiMenu}
-                onApplySql={workspace.loadQuery}
-                disabled={workspace.isRunning}
-              />
               <PracticeRadialMenu
                 isOpen={practiceMenuOpen}
                 activeCategory={practiceCategory}
@@ -141,6 +135,12 @@ export default function App() {
                 onLoadQuery={workspace.loadQuery}
                 onInsertSnippet={handleInsertSnippet}
                 onApplyVisualizationPreset={workspace.applyVisualizationPreset}
+              />
+              <AiSqlGeneratorPopover
+                isOpen={aiMenuOpen}
+                onToggle={handleToggleAiMenu}
+                onApplySql={workspace.loadQuery}
+                disabled={workspace.isRunning}
               />
             </>
           }
