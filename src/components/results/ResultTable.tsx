@@ -13,9 +13,9 @@ export default function ResultTable({ rows }: Props) {
   if (rows.length === 0) {
     return (
       <Panel title="Results" dataTour="results-panel">
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/70 bg-slate-950/40 px-6 py-10 text-center">
-          <p className="text-sm font-medium text-slate-300">No results yet</p>
-          <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+        <div className="flex flex-col items-center justify-center rounded-sm border border-dashed border-line bg-surface-inset px-6 py-10 text-center">
+          <p className="text-sm font-medium text-ink-secondary">No results yet</p>
+          <p className="mt-1 max-w-sm text-xs leading-relaxed text-ink-muted">
             Run a query to see rows here. Use Ctrl+Enter or the Run button in the editor.
           </p>
         </div>
@@ -62,19 +62,19 @@ export default function ResultTable({ rows }: Props) {
           </div>
         }
       >
-        <p className="mb-3 text-sm text-slate-400">
-          <span className="font-medium text-slate-300">{rows.length}</span> row
+        <p className="mb-3 text-sm text-ink-muted">
+          <span className="font-medium text-ink-secondary">{rows.length}</span> row
           {rows.length === 1 ? "" : "s"} returned
         </p>
 
-        <div className="max-h-[420px] overflow-auto rounded-lg border border-slate-700/70 bg-slate-950/30">
+        <div className="max-h-[420px] overflow-auto rounded-sm border border-line bg-surface-inset">
           <table className="w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-sm">
+            <thead className="sticky top-0 z-10 bg-surface-muted ">
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col}
-                    className="border-b border-slate-700/70 px-4 py-2.5 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-slate-300 uppercase"
+                    className="border-b border-line px-4 py-2.5 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-ink-secondary uppercase"
                   >
                     {col}
                   </th>
@@ -87,8 +87,8 @@ export default function ResultTable({ rows }: Props) {
                 <tr
                   key={index}
                   className={cn(
-                    "border-b border-slate-800/80 transition-colors duration-150",
-                    "hover:bg-slate-800/40"
+                    "border-b border-line transition-colors duration-150",
+                    "hover:bg-surface-muted"
                   )}
                 >
                   {columns.map((col) => {
@@ -97,7 +97,7 @@ export default function ResultTable({ rows }: Props) {
                     return (
                       <td
                         key={col}
-                        className="px-4 py-2.5 font-mono text-xs whitespace-nowrap text-slate-200"
+                        className="px-4 py-2.5 font-mono text-xs whitespace-nowrap text-ink"
                       >
                         {value === null ? (
                           <span className="italic text-orange-300">NULL</span>

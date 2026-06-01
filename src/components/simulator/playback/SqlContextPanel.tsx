@@ -49,15 +49,15 @@ export default function SqlContextPanel({
 
   return (
     <aside className={className}>
-      <div className="border-b border-slate-700/50 p-3">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">SQL Context</p>
-        <div className="overflow-hidden rounded-lg border border-slate-700/70 bg-slate-950/60">
+      <div className="border-b border-line p-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-ink-muted">SQL Context</p>
+        <div className="overflow-hidden rounded-sm border border-line bg-surface-inset">
           <CodeMirror
             value={originalSql}
             height="280px"
             minHeight="200px"
             editable={false}
-            theme="dark"
+            theme="light"
             basicSetup={{ lineNumbers: false, foldGutter: false }}
             extensions={extensions}
           />
@@ -65,7 +65,7 @@ export default function SqlContextPanel({
       </div>
 
       <div className="p-2">
-        <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Execution Stages</p>
+        <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Execution Stages</p>
         <StageStepList snapshots={snapshots} diffs={diffs} activeIndex={activeIndex} onSelect={navigate} />
       </div>
     </aside>

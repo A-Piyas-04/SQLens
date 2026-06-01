@@ -70,17 +70,17 @@ export function buildErdGraph(tables: SchemaTable[]): {
         type: "smoothstep",
         animated: false,
         label: `${fk.column_name} → ${fk.foreign_column_name}`,
-        labelStyle: { fill: "#94a3b8", fontSize: 10 },
-        labelBgStyle: { fill: "#0f172a", fillOpacity: 0.85 },
+        labelStyle: { fill: "#5c574f", fontSize: 10, fontWeight: 500 },
+        labelBgStyle: { fill: "#f6f4ef", fillOpacity: 1 },
         labelBgPadding: [4, 2] as [number, number],
         labelBgBorderRadius: 3,
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: "#60a5fa",
+          color: "#0d6b63",
           width: 14,
           height: 14,
         },
-        style: { stroke: "#60a5fa", strokeWidth: 1.5 },
+        style: { stroke: "#0d6b63", strokeWidth: 1.5 },
       });
     });
   });

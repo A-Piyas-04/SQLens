@@ -134,8 +134,8 @@ export default function ErdExportMenu({ tables, containerRef }: Props) {
             role="menu"
             className={cn(
               "absolute right-0 top-full z-50 mt-1 min-w-[10.5rem]",
-              "rounded-lg border border-slate-700/80 bg-slate-900/95 py-1",
-              "shadow-xl shadow-slate-950/60 backdrop-blur-md"
+              "rounded-sm border border-line bg-surface-elevated py-1 shadow-md",
+              "shadow-sm "
             )}
           >
             {MENU_ITEMS.map((item) => (
@@ -145,9 +145,9 @@ export default function ErdExportMenu({ tables, containerRef }: Props) {
                   role="menuitem"
                   aria-describedby={item.hint ? `erd-export-hint-${item.id}` : undefined}
                   className={cn(
-                    "w-full px-3 py-2 text-left text-xs text-slate-200",
-                    "transition-colors hover:bg-slate-800/80 hover:text-white",
-                    item.hint && "hover:bg-blue-950/40"
+                    "w-full px-3 py-2 text-left text-xs text-ink",
+                    "transition-colors hover:bg-surface-muted hover:text-ink",
+                    item.hint && "hover:bg-accent-muted"
                   )}
                   onClick={() => handleExport(item.id)}
                 >
@@ -159,9 +159,9 @@ export default function ErdExportMenu({ tables, containerRef }: Props) {
                     role="tooltip"
                     className={cn(
                       "pointer-events-none absolute right-full top-1/2 z-[60] mr-2 w-52",
-                      "-translate-y-1/2 rounded-md border border-slate-300",
-                      "bg-white px-3 py-2.5 text-sm font-bold leading-snug text-black",
-                      "shadow-lg shadow-slate-950/25",
+                      "-translate-y-1/2 rounded-sm border border-line",
+                      "bg-surface-elevated px-3 py-2.5 text-sm font-bold leading-snug text-ink",
+                      "shadow-sm",
                       "opacity-0 transition-opacity duration-150",
                       "group-hover:opacity-100"
                     )}

@@ -80,7 +80,7 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
 
   return (
     <div className="flex gap-3">
-      <aside className="hidden w-40 shrink-0 rounded-lg border border-slate-700/50 bg-slate-900/40 p-2 lg:block">
+      <aside className="hidden w-40 shrink-0 rounded-sm border border-line bg-surface-raised p-2 lg:block">
         <StageStepList snapshots={snapshots} diffs={diffs} activeIndex={activeIndex} onSelect={navigate} />
       </aside>
 
@@ -88,7 +88,7 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
         <div
           ref={cardRef}
           className={cn(
-            "relative overflow-hidden rounded-xl border transition-all duration-150 ease-out",
+            "relative overflow-hidden rounded-sm border transition-all duration-150 ease-out",
             colors.border
           )}
         >
@@ -108,22 +108,22 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
               aria-hidden
             />
             <div>
-              <p className="text-sm font-semibold text-slate-100">
+              <p className="text-sm font-semibold text-ink">
                 {active.label}
               </p>
-              <p className="mt-0.5 text-base font-medium text-slate-200">
+              <p className="mt-0.5 text-base font-medium text-ink">
                 {active.annotation}
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <div className="inline-flex overflow-hidden rounded-md border border-slate-700/60">
+            <div className="inline-flex overflow-hidden rounded-sm border border-line">
               <button
                 onClick={() => setViewMode("before")}
                 className={cn(
                   "px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                  viewMode === "before" ? "bg-slate-700/80 text-slate-100" : "bg-slate-900/40 text-slate-400"
+                  viewMode === "before" ? "bg-surface-muted text-ink" : "bg-surface-raised text-ink-muted"
                 )}
               >
                 Before
@@ -132,7 +132,7 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
                 onClick={() => setViewMode("after")}
                 className={cn(
                   "px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors",
-                  viewMode === "after" ? "bg-slate-700/80 text-slate-100" : "bg-slate-900/40 text-slate-400"
+                  viewMode === "after" ? "bg-surface-muted text-ink" : "bg-surface-raised text-ink-muted"
                 )}
               >
                 After
@@ -144,22 +144,22 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
                 −{removedRows.length} removed
               </span>
             )}
-            <span className="rounded-full border border-slate-700/60 bg-slate-900/60 px-2 py-0.5 text-[11px] font-mono text-slate-400">
+            <span className="rounded-full border border-line bg-surface-raised px-2 py-0.5 text-[11px] font-mono text-ink-muted">
               {active.rowCount} {active.rowCount === 1 ? "row" : "rows"}
             </span>
           </div>
         </div>
 
         {/* Generated SQL */}
-        <div className="border-b border-slate-800/60 bg-slate-950/40 px-4 py-2.5">
-          <p className="font-mono text-[11px] leading-relaxed text-slate-500 break-all">
+        <div className="border-b border-line bg-surface-inset px-4 py-2.5">
+          <p className="font-mono text-[11px] leading-relaxed text-ink-muted break-all">
             {active.sql}
           </p>
         </div>
 
         {/* JOIN canvas — cause before effect */}
         {active.stageType === "JOIN" && active.rightTableRows && fromSnapshot && (
-          <div className="border-b border-slate-800/60 px-4 pb-4 pt-4">
+          <div className="border-b border-line px-4 pb-4 pt-4">
             <SimulatorJoinCanvas
               leftRows={fromSnapshot.rows}
               rightRows={active.rightTableRows}
@@ -189,7 +189,7 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
             Previous
           </Button>
 
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-ink-muted">
             Stage {activeIndex + 1} of {snapshots.length}
           </span>
 

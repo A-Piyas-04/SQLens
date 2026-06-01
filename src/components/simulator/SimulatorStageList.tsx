@@ -25,25 +25,25 @@ const STAGE_ICONS: Record<SimulatorStageType, LucideIcon> = {
 };
 
 const STAGE_COLORS: Record<SimulatorStageType, string> = {
-  FROM: "text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/15",
-  JOIN: "text-purple-400 bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/15",
-  WHERE: "text-amber-400 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/15",
-  GROUP_BY: "text-violet-400 bg-violet-500/10 border-violet-500/20 hover:bg-violet-500/15",
-  HAVING: "text-orange-400 bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/15",
-  SELECT: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/15",
-  ORDER_BY: "text-sky-400 bg-sky-500/10 border-sky-500/20 hover:bg-sky-500/15",
-  LIMIT: "text-rose-400 bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/15",
+  FROM: "text-stone-800 bg-stone-100 border-stone-300 hover:bg-stone-50",
+  JOIN: "text-orange-900 bg-orange-100 border-orange-300 hover:bg-orange-50",
+  WHERE: "text-amber-900 bg-amber-100 border-amber-300 hover:bg-amber-50",
+  GROUP_BY: "text-rose-900 bg-rose-100 border-rose-300 hover:bg-rose-50",
+  HAVING: "text-orange-950 bg-orange-50 border-orange-200 hover:bg-orange-50/80",
+  SELECT: "text-emerald-900 bg-emerald-100 border-emerald-300 hover:bg-emerald-50",
+  ORDER_BY: "text-teal-900 bg-teal-100 border-teal-300 hover:bg-teal-50",
+  LIMIT: "text-red-900 bg-red-100 border-red-300 hover:bg-red-50",
 };
 
 const CONNECTOR_COLORS: Record<SimulatorStageType, string> = {
-  FROM: "bg-blue-500/30",
-  JOIN: "bg-purple-500/30",
-  WHERE: "bg-amber-500/30",
-  GROUP_BY: "bg-violet-500/30",
-  HAVING: "bg-orange-500/30",
-  SELECT: "bg-emerald-500/30",
-  ORDER_BY: "bg-sky-500/30",
-  LIMIT: "bg-rose-500/30",
+  FROM: "bg-stone-400",
+  JOIN: "bg-orange-500",
+  WHERE: "bg-amber-500",
+  GROUP_BY: "bg-rose-500",
+  HAVING: "bg-orange-600",
+  SELECT: "bg-emerald-500",
+  ORDER_BY: "bg-teal-500",
+  LIMIT: "bg-red-500",
 };
 
 type Props = {
@@ -63,7 +63,7 @@ export default function SimulatorStageList({ stages }: Props) {
           <div key={stage.id} className="flex flex-col items-start">
             <div
               className={cn(
-                "flex w-full items-start gap-3 rounded-lg border px-4 py-3",
+                "flex w-full items-start gap-3 rounded-sm border px-4 py-3",
                 "transition-colors duration-200",
                 colorClass
               )}
@@ -78,7 +78,7 @@ export default function SimulatorStageList({ stages }: Props) {
                 </p>
               </div>
 
-              <span className="ml-auto shrink-0 rounded-full bg-slate-950/40 px-2 py-0.5 text-[10px] font-mono font-medium opacity-60">
+              <span className="ml-auto shrink-0 rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-mono font-medium opacity-60">
                 {i + 1}
               </span>
             </div>
@@ -86,7 +86,7 @@ export default function SimulatorStageList({ stages }: Props) {
             {!isLast && (
               <div className="ml-6 flex flex-col items-center gap-0.5 py-1">
                 <div className={cn("h-3 w-0.5 rounded-full", connectorColor)} />
-                <div className="size-1 rounded-full bg-slate-600/60" />
+                <div className="size-1 rounded-full bg-line-strong" />
                 <div className={cn("h-3 w-0.5 rounded-full", CONNECTOR_COLORS[stages[i + 1].type])} />
               </div>
             )}

@@ -158,35 +158,35 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
   const modal = (
     // Backdrop
     <div
-      className="fixed inset-0 z-50 flex items-stretch bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-stretch bg-ink/40 "
       role="dialog"
       aria-modal="true"
       aria-label="SQL Execution Playback"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Panel */}
-      <div className="relative flex flex-1 flex-col overflow-hidden bg-[#0d1117] ring-1 ring-slate-700/50 m-3 rounded-xl">
+      <div className="relative flex flex-1 flex-col overflow-hidden bg-surface-elevated ring-1 ring-line m-3 rounded-sm shadow-md">
         {/* Header */}
-        <header className="flex items-center gap-3 border-b border-slate-700/50 bg-slate-900/60 px-5 py-3">
+        <header className="flex items-center gap-3 border-b border-line bg-surface-raised px-5 py-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
               Query Execution Simulation
             </span>
-            <span className="text-slate-700">/</span>
-            <span className="truncate text-sm font-medium text-slate-300">
+            <span className="text-ink-muted">/</span>
+            <span className="truncate text-sm font-medium text-ink-secondary">
               {dbLabel}
             </span>
           </div>
 
           {/* Keyboard hint */}
-          <div className="ml-auto mr-3 hidden items-center gap-3 text-[10px] text-slate-600 sm:flex">
-            <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-500">Space</kbd>
+          <div className="ml-auto mr-3 hidden items-center gap-3 text-[10px] text-ink-muted sm:flex">
+            <kbd className="rounded border border-line bg-surface-muted px-1.5 py-0.5 text-ink-muted">Space</kbd>
             play/pause
-            <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-500">← →</kbd>
+            <kbd className="rounded border border-line bg-surface-muted px-1.5 py-0.5 text-ink-muted">← →</kbd>
             navigate
-            <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-500">R</kbd>
+            <kbd className="rounded border border-line bg-surface-muted px-1.5 py-0.5 text-ink-muted">R</kbd>
             restart
-            <kbd className="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-500">Esc</kbd>
+            <kbd className="rounded border border-line bg-surface-muted px-1.5 py-0.5 text-ink-muted">Esc</kbd>
             close
           </div>
 
@@ -194,7 +194,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
             ref={closeButtonRef}
             aria-label="Close playback"
             onClick={onClose}
-            className="flex size-7 shrink-0 items-center justify-center rounded-md border border-slate-700/60 bg-slate-800/50 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-slate-200"
+            className="flex size-7 shrink-0 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <X className="size-3.5" aria-hidden />
           </button>
@@ -207,7 +207,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
             style={{ width: sidebarWidth }}
           >
             <SqlContextPanel
-              className="h-full min-w-0 flex-1 overflow-y-auto border-r border-slate-700/50 bg-slate-900/40"
+              className="h-full min-w-0 flex-1 overflow-y-auto border-r border-line bg-surface-raised"
               originalSql={originalSql}
               activeStageType={snapshot.stageType}
               joinStageIndex={Math.max(0, joinStageIndex)}
@@ -224,24 +224,24 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
               onPointerDown={handleSidebarResizeStart}
               className={
                 isResizingSidebar
-                  ? "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize bg-sky-500/50"
-                  : "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-sky-500/30 active:bg-sky-500/50"
+                  ? "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize bg-accent"
+                  : "absolute right-0 top-0 z-20 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-accent-muted active:bg-accent"
               }
             />
           </div>
 
           {snapshot && (
             <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <div className="flex items-center gap-2 border-b border-slate-700/40 px-4 py-2 lg:hidden">
+              <div className="flex items-center gap-2 border-b border-line px-4 py-2 lg:hidden">
                 <button
                   onClick={() => setShowSqlMobile((v) => !v)}
-                  className="rounded-md border border-slate-700/60 bg-slate-800/50 px-2 py-1 text-xs text-slate-300"
+                  className="rounded-sm border border-line bg-surface-muted px-2 py-1 text-xs text-ink-secondary"
                 >
                   Show SQL
                 </button>
                 <button
                   onClick={() => setShowLessonMobile((v) => !v)}
-                  className="rounded-md border border-slate-700/60 bg-slate-800/50 px-2 py-1 text-xs text-slate-300"
+                  className="rounded-sm border border-line bg-surface-muted px-2 py-1 text-xs text-ink-secondary"
                 >
                   Lesson
                 </button>
@@ -273,7 +273,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
         </div>
 
         {showSqlMobile && snapshot && (
-          <div className="border-t border-slate-700/50 lg:hidden">
+          <div className="border-t border-line lg:hidden">
             <SqlContextPanel
               originalSql={originalSql}
               activeStageType={snapshot.stageType}
@@ -287,7 +287,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
         )}
 
         {showLessonMobile && snapshot && (
-          <div className="max-h-[50vh] border-t border-slate-700/50 lg:hidden">
+          <div className="max-h-[50vh] border-t border-line lg:hidden">
             <LessonPanel
               snapshot={snapshot}
               prevSnapshot={prevSnapshot}

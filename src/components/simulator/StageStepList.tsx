@@ -37,19 +37,19 @@ export default function StageStepList({
             onClick={() => onSelect(index)}
             aria-current={isActive ? "step" : undefined}
             className={cn(
-              "group flex items-center gap-2 rounded-md border border-transparent px-2.5 py-2 text-left transition-colors",
+              "group flex items-center gap-2 rounded-sm border border-transparent px-2.5 py-2 text-left transition-colors",
               isActive && cn(colors.activeRow, colors.border),
-              isCompleted && "text-slate-400 hover:bg-slate-800/60",
-              isPending && "text-slate-600 hover:bg-slate-800/40"
+              isCompleted && "text-ink-muted hover:bg-surface-muted",
+              isPending && "text-ink-muted hover:bg-surface-muted"
             )}
           >
-            <span className={cn("flex size-5 shrink-0 items-center justify-center", isActive ? colors.icon : "text-slate-500")}>
+            <span className={cn("flex size-5 shrink-0 items-center justify-center", isActive ? colors.icon : "text-ink-muted")}>
               {isCompleted ? <Check className="size-3.5" aria-hidden /> : <Icon className="size-3.5" aria-hidden />}
             </span>
 
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[11px] font-semibold leading-tight">{snap.stageType}</span>
-              <span className="block text-[10px] text-slate-500">{snap.rowCount} rows</span>
+              <span className="block text-[10px] text-ink-muted">{snap.rowCount} rows</span>
             </span>
 
             {index > 0 && diffValue !== 0 && (

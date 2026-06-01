@@ -16,7 +16,7 @@ const ROW_STATUS_CLASSES: Record<RowStatus, string> = {
   removed:
     "opacity-40 bg-red-500/8 text-red-300 line-through",
   added: "bg-emerald-500/8",
-  reordered: "border-l-2 border-sky-500/60",
+  reordered: "border-l-2 border-l-teal-700",
   "null-introduced": "bg-amber-500/5",
 };
 
@@ -33,7 +33,7 @@ const ROW_STATUS_BADGE: Partial<Record<RowStatus, { label: string; classes: stri
   },
   reordered: {
     label: "reordered",
-    classes: "border-sky-500/30 bg-sky-500/10 text-sky-400",
+    classes: "border-teal-300 bg-teal-100 text-teal-800",
   },
   "null-introduced": {
     label: "null row",
@@ -68,16 +68,16 @@ export default function SimulatorSnapshotTable({
   // ── Empty state ─────────────────────────────────────────────────────────────
   if (rows.length === 0 && hiddenCols.length === 0) {
     return (
-      <p className="py-4 text-center text-xs text-slate-500">
+      <p className="py-4 text-center text-xs text-ink-muted">
         No rows at this stage.
       </p>
     );
   }
 
   return (
-    <div className="max-h-[320px] overflow-auto rounded-lg border border-slate-700/60">
+    <div className="max-h-[320px] overflow-auto rounded-sm border border-line">
       <table className="w-full border-collapse text-xs">
-        <thead className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-sm">
+        <thead className="sticky top-0 z-10 bg-surface-muted ">
           <tr>
             {allCols.map((col) => {
               const isHidden = hiddenCols.includes(col);
@@ -85,10 +85,10 @@ export default function SimulatorSnapshotTable({
                 <th
                   key={col}
                   className={cn(
-                    "border-b border-slate-700/80 px-3 py-2 text-left font-semibold whitespace-nowrap",
+                    "border-b border-line px-3 py-2 text-left font-semibold whitespace-nowrap",
                     isHidden
-                      ? "text-slate-600 line-through opacity-50"
-                      : "text-slate-300"
+                      ? "text-ink-muted line-through opacity-50"
+                      : "text-ink-secondary"
                   )}
                 >
                   {col}
@@ -102,7 +102,7 @@ export default function SimulatorSnapshotTable({
             })}
             {/* Reason column header — only when diff data is present */}
             {diff && (
-              <th className="border-b border-slate-700/80 px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
+              <th className="border-b border-line px-3 py-2 text-left font-semibold text-ink-muted whitespace-nowrap">
                 change
               </th>
             )}
@@ -121,8 +121,8 @@ export default function SimulatorSnapshotTable({
                 key={row._rowId}
                 data-status={status}
                 className={cn(
-                  "border-b border-slate-800/60 transition-all duration-200",
-                  "hover:bg-slate-800/20",
+                  "border-b border-line transition-all duration-200",
+                  "hover:bg-surface-muted",
                   ROW_STATUS_CLASSES[status]
                 )}
               >
@@ -137,14 +137,14 @@ export default function SimulatorSnapshotTable({
                       className={cn(
                         "px-3 py-2 font-mono whitespace-nowrap",
                         isHiddenCol
-                          ? "text-slate-700 opacity-30"
-                          : "text-slate-300",
+                          ? "text-ink-muted opacity-30"
+                          : "text-ink-secondary",
                         isNullIntroduced &&
                           "bg-amber-500/15 text-amber-300 rounded"
                       )}
                     >
                       {isHiddenCol ? (
-                        <span className="italic text-slate-700">—</span>
+                        <span className="italic text-ink-muted">—</span>
                       ) : value === null || value === undefined ? (
                         <span
                           className={cn(
@@ -178,7 +178,7 @@ export default function SimulatorSnapshotTable({
                       </span>
                     )}
                     {rowDiff?.reason && status !== "unchanged" && (
-                      <span className="ml-2 text-[10px] text-slate-500 italic">
+                      <span className="ml-2 text-[10px] text-ink-muted italic">
                         {rowDiff.reason}
                       </span>
                     )}

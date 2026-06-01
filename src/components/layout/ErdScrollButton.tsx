@@ -24,11 +24,7 @@ export default function ErdScrollButton({
       size="sm"
       onClick={scrollToErd}
       aria-label="Scroll to Entity Relationship Diagram"
-      className={cn(
-        "border-amber-500/25 bg-amber-500/10 font-bold text-yellow-400 shadow-amber-950/20",
-        "hover:border-amber-400/40 hover:bg-amber-500/15 hover:text-yellow-300",
-        className
-      )}
+      className={cn("font-semibold text-accent-ink", className)}
     >
       View ERD
     </Button>

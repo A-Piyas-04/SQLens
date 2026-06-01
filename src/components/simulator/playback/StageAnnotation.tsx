@@ -53,14 +53,14 @@ function buildDiffSummary(diff: StageDiff, stageType: SimulatorStageType): strin
 }
 
 const STAGE_ACCENT: Record<SimulatorStageType, { border: string; dot: string }> = {
-  FROM:     { border: "border-l-blue-500/60",   dot: "bg-blue-400"   },
-  JOIN:     { border: "border-l-purple-500/60", dot: "bg-purple-400" },
-  WHERE:    { border: "border-l-amber-500/60",  dot: "bg-amber-400"  },
-  GROUP_BY: { border: "border-l-violet-500/60", dot: "bg-violet-400" },
-  HAVING:   { border: "border-l-orange-500/60", dot: "bg-orange-400" },
-  SELECT:   { border: "border-l-emerald-500/60",dot: "bg-emerald-400"},
-  ORDER_BY: { border: "border-l-sky-500/60",    dot: "bg-sky-400"    },
-  LIMIT:    { border: "border-l-rose-500/60",   dot: "bg-rose-400"   },
+  FROM:     { border: "border-l-stone-600", dot: "bg-stone-600" },
+  JOIN:     { border: "border-l-orange-700", dot: "bg-orange-700" },
+  WHERE:    { border: "border-l-amber-700", dot: "bg-amber-700" },
+  GROUP_BY: { border: "border-l-rose-700", dot: "bg-rose-700" },
+  HAVING:   { border: "border-l-orange-800", dot: "bg-orange-800" },
+  SELECT:   { border: "border-l-emerald-700", dot: "bg-emerald-700" },
+  ORDER_BY: { border: "border-l-teal-700", dot: "bg-teal-700" },
+  LIMIT:    { border: "border-l-red-700", dot: "bg-red-700" },
 };
 
 export default function StageAnnotation({ snapshot, diff, animationKey }: Props) {
@@ -82,7 +82,7 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
       className={cn(
         // Floating card — positioned by PlaybackStage's wrapper
         "absolute bottom-5 right-5 z-20",
-        "w-72 rounded-xl border border-slate-700/60 border-l-2 bg-slate-900/90 shadow-xl shadow-black/40 backdrop-blur-md",
+        "w-72 rounded-sm border border-line border-l-2 bg-surface-raised/90 shadow-xl shadow-black/40 ",
         "animate-fade-in-up",
         accent.border
       )}
@@ -93,7 +93,7 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
       <button
         aria-label="Dismiss explanation"
         onClick={() => setVisible(false)}
-        className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-700/60 hover:text-slate-300"
+        className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-sm text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink-secondary"
       >
         <X className="size-3" aria-hidden />
       </button>
@@ -102,17 +102,17 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
         {/* Stage label dot */}
         <div className="mb-1.5 flex items-center gap-1.5">
           <span className={cn("size-1.5 rounded-full", accent.dot)} aria-hidden />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
             {snapshot.label}
           </span>
         </div>
 
-        <p className="text-sm font-medium leading-snug text-slate-200">
+        <p className="text-sm font-medium leading-snug text-ink">
           {snapshot.annotation}
         </p>
 
         {diffSummary && (
-          <p className="mt-1.5 text-xs text-slate-400">{diffSummary}</p>
+          <p className="mt-1.5 text-xs text-ink-muted">{diffSummary}</p>
         )}
       </div>
     </div>

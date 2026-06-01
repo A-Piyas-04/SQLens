@@ -106,15 +106,15 @@ export default function SimulatorPanel({ query, selectedText, db }: Props) {
 function IdleState() {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-      <div className="rounded-full border border-slate-700/60 bg-slate-800/40 p-3">
-        <Cpu className="size-5 text-slate-500" aria-hidden />
+      <div className="rounded-full border border-line bg-surface-muted p-3">
+        <Cpu className="size-5 text-ink-muted" aria-hidden />
       </div>
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-ink-muted">
         Click{" "}
-        <strong className="text-slate-300">Simulate Query</strong> to step
+        <strong className="text-ink-secondary">Simulate Query</strong> to step
         through each logical execution stage.
       </p>
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-ink-muted">
         Supports SELECT · FROM · JOIN · WHERE · GROUP BY · HAVING · ORDER BY · LIMIT
       </p>
     </div>
@@ -124,8 +124,8 @@ function IdleState() {
 function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
-      <Loader2 className="size-6 animate-spin text-slate-500" aria-hidden />
-      <p className="text-sm text-slate-400">Running stage snapshots…</p>
+      <Loader2 className="size-6 animate-spin text-ink-muted" aria-hidden />
+      <p className="text-sm text-ink-muted">Running stage snapshots…</p>
     </div>
   );
 }
@@ -135,7 +135,7 @@ type ErrorStateProps = { message: string; sql: string };
 function ErrorState({ message, sql }: ErrorStateProps) {
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/8 px-4 py-3">
+      <div className="flex items-start gap-3 rounded-sm border border-amber-500/20 bg-amber-500/8 px-4 py-3">
         <AlertTriangle
           className="mt-0.5 size-4 shrink-0 text-amber-400"
           aria-hidden
@@ -161,7 +161,7 @@ function SuccessState({ snapshots, diffs, isSelection, originalSql }: SuccessSta
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-400">
+          <span className="text-xs font-medium text-ink-muted">
             {snapshots.length} execution{" "}
             {snapshots.length === 1 ? "stage" : "stages"}
           </span>
@@ -207,14 +207,14 @@ function SqlPreview({ sql }: SqlPreviewProps) {
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-lg border border-slate-700/50 bg-slate-950/60 px-3 py-2"
+        "flex items-start gap-2 rounded-sm border border-line bg-surface-inset px-3 py-2"
       )}
     >
       <Info
-        className="mt-0.5 size-3.5 shrink-0 text-slate-600"
+        className="mt-0.5 size-3.5 shrink-0 text-ink-muted"
         aria-hidden
       />
-      <p className="break-all font-mono text-[11px] leading-relaxed text-slate-500">
+      <p className="break-all font-mono text-[11px] leading-relaxed text-ink-muted">
         {preview}
       </p>
     </div>

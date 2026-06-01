@@ -64,7 +64,7 @@ export default function AiSqlGeneratorPopover({
       {isOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px]"
+          className="fixed inset-0 z-40 bg-surface-inset "
           aria-label="Close AI SQL generator"
           onClick={onToggle}
         />
@@ -75,21 +75,21 @@ export default function AiSqlGeneratorPopover({
           className={cn(
             "practice-radial-panel absolute right-0 top-full z-50 mt-2",
             "w-[min(calc(100vw-2rem),320px)]",
-            "rounded-xl border border-slate-700/80 bg-slate-900/95 p-4",
-            "shadow-2xl shadow-slate-950/60 backdrop-blur-md"
+            "rounded-sm border border-line bg-surface-elevated p-4",
+            "shadow-md"
           )}
         >
-          <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+          <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-2">
             <div className="flex min-w-0 items-center gap-2">
               <AiSqlIcon size={22} className="shrink-0" />
-              <h2 className="truncate text-sm font-semibold text-slate-100">
+              <h2 className="truncate text-sm font-semibold text-ink">
                 AI SQL Generator
               </h2>
             </div>
             <button
               type="button"
               onClick={onToggle}
-              className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+              className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
               aria-label="Close AI SQL generator"
             >
               <X className="size-4" aria-hidden />
@@ -98,7 +98,7 @@ export default function AiSqlGeneratorPopover({
 
           <div className="space-y-3">
             <label className="block">
-              <span className="mb-1.5 block text-xs font-medium text-slate-400">
+              <span className="mb-1.5 block text-xs font-medium text-ink-muted">
                 Describe the query you want
               </span>
               <textarea
@@ -107,7 +107,7 @@ export default function AiSqlGeneratorPopover({
                 placeholder="e.g. Show students with GPA above 3.5"
                 rows={3}
                 disabled={disabled || isLoading}
-                className="w-full resize-none rounded-lg border border-slate-700/80 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:opacity-50"
+                className="w-full resize-none rounded-sm border border-line bg-surface-inset px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
               />
             </label>
 
@@ -128,7 +128,7 @@ export default function AiSqlGeneratorPopover({
                 {error}
               </p>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-ink-muted">
                 SQL is inserted into the editor. Review and run manually.
               </p>
             )}

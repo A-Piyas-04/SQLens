@@ -65,11 +65,11 @@ export default function QueryToolbar({
 
       <p className="text-xs">
         {hasSelection ? (
-          <span className="text-amber-400/80">
+          <span className="text-accent-ink">
             ● Selection active — only selected SQL will run
           </span>
         ) : (
-          <span className="text-slate-600">
+          <span className="text-ink-muted">
             Ctrl+Enter to run · select SQL to run only that part
           </span>
         )}
@@ -83,11 +83,11 @@ export function QueryToolbarHint({ hasSelection }: { hasSelection: boolean }) {
   return (
     <p className="mt-2 text-xs">
       {hasSelection ? (
-        <span className="text-amber-400/80">
+        <span className="text-accent-ink">
           ● Selection active — only selected SQL will run
         </span>
       ) : (
-        <span className="text-slate-600">
+        <span className="text-ink-muted">
           Ctrl+Enter to run · select SQL to run only that part
         </span>
       )}

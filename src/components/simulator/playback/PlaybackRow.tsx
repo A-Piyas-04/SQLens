@@ -7,21 +7,21 @@ import type { TransitionPhase } from "../../../hooks/useSimulatorPlayback";
 const ROW_HEIGHT_PX = 36;
 
 const GROUP_BORDER: Record<number, string> = {
-  0: "border-l-emerald-500",
-  1: "border-l-violet-500",
-  2: "border-l-sky-500",
-  3: "border-l-amber-500",
-  4: "border-l-rose-500",
-  5: "border-l-teal-500",
+  0: "border-l-emerald-700",
+  1: "border-l-orange-700",
+  2: "border-l-teal-700",
+  3: "border-l-amber-700",
+  4: "border-l-rose-700",
+  5: "border-l-stone-600",
 };
 
 const GROUP_BG: Record<number, string> = {
-  0: "bg-emerald-500/10",
-  1: "bg-violet-500/10",
-  2: "bg-sky-500/10",
-  3: "bg-amber-500/10",
-  4: "bg-rose-500/10",
-  5: "bg-teal-500/10",
+  0: "bg-emerald-100",
+  1: "bg-orange-100",
+  2: "bg-teal-100",
+  3: "bg-amber-100",
+  4: "bg-rose-100",
+  5: "bg-stone-100",
 };
 
 type Props = {
@@ -52,14 +52,14 @@ const ROW_BG: Record<RowStatus, string> = {
   unchanged: "",
   removed: "data-[status=removed]:opacity-25 data-[status=removed]:bg-red-500/8",
   added: "data-[status=added]:bg-emerald-500/8",
-  reordered: "data-[status=reordered]:border-l-2 data-[status=reordered]:border-l-sky-500/60",
+  reordered: "data-[status=reordered]:border-l-2 data-[status=reordered]:border-l-teal-700",
   "null-introduced": "data-[status=null-introduced]:bg-amber-500/5",
 };
 
 const STATUS_BADGE: Partial<Record<RowStatus, { label: string; cls: string }>> = {
   removed: { label: "filtered", cls: "border-red-500/30 bg-red-500/10 text-red-400" },
   added: { label: "matched", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" },
-  reordered: { label: "reordered", cls: "border-sky-500/30 bg-sky-500/10 text-sky-400" },
+  reordered: { label: "reordered", cls: "border-teal-300 bg-teal-100 text-teal-800" },
   "null-introduced": { label: "null row", cls: "border-amber-500/30 bg-amber-500/10 text-amber-400" },
 };
 
@@ -113,7 +113,7 @@ const PlaybackRow = memo(function PlaybackRow({
       data-status={transitionPhase === "settled" || transitionPhase === "idle" ? status : "unchanged"}
       style={rowStyle}
       className={cn(
-        "relative border-b border-slate-800/50 transition-colors",
+        "relative border-b border-line/50 transition-colors",
         ROW_BG[status],
         isCondemned && transitionPhase === "departing" && "pb-row-condemned",
         isCondemned && transitionPhase === "transforming" && animateEject && "pb-row-eject pb-row-collapsing",
@@ -131,7 +131,7 @@ const PlaybackRow = memo(function PlaybackRow({
     >
       {showRowId && (
         <td
-          className="w-6 border-r border-slate-800/40 px-1 py-2 text-center font-mono text-[9px] text-slate-600"
+          className="w-6 border-r border-line/40 px-1 py-2 text-center font-mono text-[9px] text-ink-muted"
           style={{
             borderLeftColor: `hsl(${(Number(row._rowId.replace(/\D/g, "")) % 8) * 45} 70% 50% / 0.45)`,
           }}
@@ -156,8 +156,8 @@ const PlaybackRow = memo(function PlaybackRow({
               "px-3 py-2 font-mono text-xs whitespace-nowrap",
               showCondemnedIcon && "relative",
               isHidden && transitionPhase !== "departing" && transitionPhase !== "transforming"
-                ? "opacity-20 text-slate-600"
-                : "text-slate-300",
+                ? "opacity-20 text-ink-muted"
+                : "text-ink-secondary",
               isHidden &&
                 (transitionPhase === "departing" || transitionPhase === "transforming") &&
                 "pb-col-dropped-data opacity-25",
@@ -174,7 +174,7 @@ const PlaybackRow = memo(function PlaybackRow({
                 String(value)
               )
             ) : isHidden ? (
-              <span className="italic text-slate-700">—</span>
+              <span className="italic text-ink-muted">—</span>
             ) : value === null || value === undefined ? (
               <span
                 className={cn(
@@ -219,7 +219,7 @@ const PlaybackRow = memo(function PlaybackRow({
           {rowDiff?.reason &&
             status !== "unchanged" &&
             (transitionPhase === "settled" || transitionPhase === "idle") && (
-              <span className="pb-badge ml-2 text-[10px] italic text-slate-500">
+              <span className="pb-badge ml-2 text-[10px] italic text-ink-muted">
                 {rowDiff.reason}
               </span>
             )}

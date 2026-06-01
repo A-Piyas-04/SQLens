@@ -54,7 +54,7 @@ export default function ErdViewer({ tables }: Props) {
 
   if (tables.length === 0) {
     return (
-      <div className="flex h-44 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700/60 bg-slate-900/40 text-slate-500">
+      <div className="flex h-44 flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-line bg-surface-raised text-ink-muted">
         <GitFork className="size-5 opacity-40" aria-hidden />
         <p className="text-sm">No tables yet — create some to see the ERD.</p>
       </div>
@@ -64,7 +64,7 @@ export default function ErdViewer({ tables }: Props) {
   return (
     <div
       ref={containerRef}
-      className="h-[540px] overflow-hidden rounded-lg border border-slate-700/60"
+      className="h-[540px] overflow-hidden rounded-sm border border-line"
     >
       <ReactFlow
         nodes={nodes}
@@ -77,10 +77,10 @@ export default function ErdViewer({ tables }: Props) {
         minZoom={0.15}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
-        className="bg-slate-950"
+        className="bg-surface"
       >
         <Background
-          color="#1e293b"
+          color="var(--color-line-strong)"
           gap={20}
           size={1}
           variant={BackgroundVariant.Dots}
@@ -95,12 +95,12 @@ export default function ErdViewer({ tables }: Props) {
         />
 
         <MiniMap
-          nodeColor="#1e3a5f"
-          maskColor="rgba(2, 6, 23, 0.75)"
+          nodeColor="var(--color-accent)"
+          maskColor="rgba(28, 25, 22, 0.12)"
           style={{
-            background: "#0f172a",
-            border: "1px solid rgb(30 41 59 / 0.8)",
-            borderRadius: "8px",
+            background: "var(--color-bg-subtle)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "4px",
           }}
         />
 

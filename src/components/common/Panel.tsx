@@ -27,23 +27,21 @@ export default function Panel({
       id={id}
       data-tour={dataTour}
       className={cn(
-        "rounded-xl border border-slate-800/70 bg-slate-900/55 backdrop-blur-md",
-        "shadow-lg shadow-slate-950/35 ring-1 ring-white/[0.03]",
-        "transition-all duration-200 ease-out",
-        interactive &&
-          "hover:border-slate-700/80 hover:bg-slate-900/75 hover:shadow-xl hover:shadow-slate-950/45",
+        "rounded-sm border border-line bg-surface-inset",
+        "transition-colors duration-150 ease-out",
+        interactive && "hover:border-line-strong hover:bg-surface-raised",
         className
       )}
     >
       {(title || action) && (
-        <header className="flex items-center justify-between gap-3 border-b border-slate-800/70 bg-slate-950/20 px-4 py-3.5">
+        <header className="flex items-center justify-between gap-3 border-b border-line bg-surface-raised px-4 py-3.5">
           {title ? (
             <div className="flex min-w-0 items-center gap-2.5">
               <span
-                className="h-4 w-0.5 shrink-0 rounded-full bg-gradient-to-b from-blue-400 to-blue-600/70"
+                className="h-4 w-1 shrink-0 rounded-sm bg-accent"
                 aria-hidden
               />
-              <h2 className="truncate text-sm font-semibold tracking-wide text-slate-100">
+              <h2 className="font-display truncate text-sm font-semibold tracking-wide text-ink">
                 {title}
               </h2>
             </div>

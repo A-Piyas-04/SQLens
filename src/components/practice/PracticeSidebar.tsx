@@ -46,7 +46,7 @@ export default function PracticeSidebar({
       />
 
       {activeCategory ? (
-        <div className="min-h-0 flex-1 overflow-y-auto border-t border-slate-800/60 pt-4 scrollbar-thin">
+        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line pt-4 scrollbar-thin">
           <PracticeCategoryContent
             categoryId={activeCategory}
             isLoading={isLoading}

@@ -96,7 +96,7 @@ export default function App() {
         onClearLocalData={handleClearLocalData}
       />
 
-      <div className="h-px shrink-0 bg-slate-800/60" aria-hidden />
+      <div className="h-px shrink-0 bg-line" aria-hidden />
 
       <PracticeSidebar
         tables={workspace.tables}
@@ -114,13 +114,9 @@ export default function App() {
 
   return (
     <AppBootGate db={db}>
-    <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-white">
+    <div className="relative z-[1] min-h-screen overflow-x-hidden bg-surface text-ink">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-950/30 via-slate-950 to-slate-950"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:linear-gradient(rgba(148,163,184,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.04)_1px,transparent_1px)] [background-size:48px_48px]"
+        className="pointer-events-none absolute inset-0 [background-image:linear-gradient(var(--color-line)_1px,transparent_1px),linear-gradient(90deg,var(--color-line)_1px,transparent_1px)] [background-size:48px_48px] opacity-40"
         aria-hidden
       />
 

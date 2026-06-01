@@ -107,15 +107,15 @@ export default function ProjectSwitcher({
         }}
         className={cn(
           "flex w-full items-center justify-between gap-2",
-          "rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2",
-          "text-sm text-slate-200 transition-colors",
-          "hover:border-slate-600/70 hover:bg-slate-800/80",
-          isOpen && "border-blue-500/40 bg-slate-800/80"
+          "rounded-sm border border-line bg-surface-muted px-3 py-2",
+          "text-sm text-ink transition-colors",
+          "hover:border-line-strong/70 hover:bg-surface-muted",
+          isOpen && "border-accent bg-surface-muted"
         )}
       >
         <div className="flex min-w-0 items-center gap-3">
           <IconTile>
-            <ProjectFolderIcon size={26} className="text-blue-300" />
+            <ProjectFolderIcon size={26} className="text-accent" />
           </IconTile>
           <span className="truncate font-medium">
             {activeProject?.name ?? "No project"}
@@ -123,7 +123,7 @@ export default function ProjectSwitcher({
         </div>
         <ChevronDown
           className={cn(
-            "size-3.5 shrink-0 text-slate-400 transition-transform duration-150",
+            "size-3.5 shrink-0 text-ink-muted transition-transform duration-150",
             isOpen && "rotate-180"
           )}
           aria-hidden
@@ -135,8 +135,8 @@ export default function ProjectSwitcher({
         <div
           className={cn(
             "absolute left-0 right-0 top-full z-50 mt-1",
-            "overflow-hidden rounded-lg border border-slate-700/60 bg-slate-900",
-            "shadow-xl shadow-slate-950/60"
+            "overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-md",
+            "shadow-sm"
           )}
         >
           {/* Project list */}
@@ -153,9 +153,9 @@ export default function ProjectSwitcher({
                       "group flex min-h-[36px] items-center gap-2 px-3 py-1.5 text-sm",
                       !isRenaming &&
                         !isConfirmingDelete &&
-                        "cursor-pointer hover:bg-slate-800/60",
-                      isActive && !isRenaming && "bg-blue-950/30 text-blue-200",
-                      !isActive && !isRenaming && "text-slate-300"
+                        "cursor-pointer hover:bg-surface-muted",
+                      isActive && !isRenaming && "bg-accent-muted text-accent-ink",
+                      !isActive && !isRenaming && "text-ink-secondary"
                     )}
                     onClick={() => handleSwitchProject(project.id)}
                   >
@@ -169,9 +169,9 @@ export default function ProjectSwitcher({
                         onBlur={commitRenameIfPending}
                         onClick={(e) => e.stopPropagation()}
                         className={cn(
-                          "flex-1 rounded border border-blue-500/50 bg-slate-700/60",
-                          "px-2 py-0.5 text-sm text-slate-100 outline-none",
-                          "focus:border-blue-400/70 focus:ring-1 focus:ring-blue-500/30"
+                          "flex-1 rounded border border-accent bg-surface-muted",
+                          "px-2 py-0.5 text-sm text-ink outline-none",
+                          "focus:border-accent focus:ring-1 focus:ring-accent"
                         )}
                       />
                     ) : isConfirmingDelete ? (
@@ -194,7 +194,7 @@ export default function ProjectSwitcher({
                             e.stopPropagation();
                             setConfirmDeleteId(null);
                           }}
-                          className="shrink-0 rounded bg-slate-700/50 px-2 py-0.5 text-xs text-slate-400 hover:bg-slate-700/80"
+                          className="shrink-0 rounded bg-surface-muted px-2 py-0.5 text-xs text-ink-muted hover:bg-surface-muted"
                         >
                           Cancel
                         </button>
@@ -206,7 +206,7 @@ export default function ProjectSwitcher({
                           className={cn(
                             "size-1.5 shrink-0 rounded-full transition-opacity",
                             isActive
-                              ? "bg-blue-400 opacity-100"
+                              ? "bg-accent opacity-100"
                               : "opacity-0"
                           )}
                           aria-hidden
@@ -226,7 +226,7 @@ export default function ProjectSwitcher({
                               e.stopPropagation();
                               startRename(project);
                             }}
-                            className="rounded p-1 text-slate-500 hover:bg-slate-700 hover:text-slate-200"
+                            className="rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
                             title="Rename"
                           >
                             <Pencil className="size-3" aria-hidden />
@@ -237,7 +237,7 @@ export default function ProjectSwitcher({
                                 e.stopPropagation();
                                 handleDeleteClick(project.id);
                               }}
-                              className="rounded p-1 text-slate-500 hover:bg-red-950/50 hover:text-red-400"
+                              className="rounded p-1 text-ink-muted hover:bg-red-950/50 hover:text-red-400"
                               title="Delete"
                             >
                               <Trash2 className="size-3" aria-hidden />
@@ -253,7 +253,7 @@ export default function ProjectSwitcher({
           </ul>
 
           {/* New project footer */}
-          <div className="border-t border-slate-700/60 p-1.5">
+          <div className="border-t border-line p-1.5">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -261,7 +261,7 @@ export default function ProjectSwitcher({
               }}
               className={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
-                "text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-200"
+                "text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
               )}
             >
               <Plus className="size-4 shrink-0" aria-hidden />

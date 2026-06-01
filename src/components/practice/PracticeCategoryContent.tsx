@@ -31,7 +31,7 @@ export default function PracticeCategoryContent({
   if (categoryId === "samples") {
     return (
       <div className={cn("space-y-2", compact && "max-h-[min(60vh,420px)] overflow-y-auto scrollbar-thin")}>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-muted">
           Replaces the current project database with a ready-made schema and seed data.
         </p>
         <ul className="space-y-2">
@@ -44,8 +44,8 @@ export default function PracticeCategoryContent({
                 onClick={() => onLoadSampleDatabase(sample.id)}
                 className="h-auto w-full flex-col items-start gap-1 py-2 text-left"
               >
-                <span className="font-medium text-slate-100">{sample.name}</span>
-                <span className="text-xs font-normal text-slate-400">
+                <span className="font-medium text-ink">{sample.name}</span>
+                <span className="text-xs font-normal text-ink-muted">
                   {sample.description}
                 </span>
               </Button>
@@ -59,14 +59,14 @@ export default function PracticeCategoryContent({
   if (categoryId === "templates") {
     return (
       <div className={cn("space-y-3", compact && "max-h-[min(60vh,420px)] overflow-y-auto scrollbar-thin")}>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-muted">
           Load a practice query into the editor. Adapt table names to your schema.
         </p>
         {TEMPLATE_CATEGORIES.map((category) => {
           const templates = QUERY_TEMPLATES.filter((t) => t.category === category);
           return (
             <div key={category} className="space-y-1.5">
-              <h3 className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              <h3 className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
                 {category}
               </h3>
               <ul className="space-y-1">
@@ -75,7 +75,7 @@ export default function PracticeCategoryContent({
                     <button
                       type="button"
                       onClick={() => onLoadQuery(template.sql)}
-                      className="w-full rounded-md px-2 py-1.5 text-left text-xs text-slate-300 transition-colors hover:bg-slate-800/70 hover:text-slate-100"
+                      className="w-full rounded-sm px-2 py-1.5 text-left text-xs text-ink-secondary transition-colors hover:bg-surface-muted hover:text-ink"
                     >
                       {template.title}
                     </button>
@@ -92,7 +92,7 @@ export default function PracticeCategoryContent({
   if (categoryId === "snippets") {
     return (
       <div className="space-y-2">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-muted">
           Inserts at the cursor. Add a leading space in the editor if needed.
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -102,9 +102,9 @@ export default function PracticeCategoryContent({
               type="button"
               onClick={() => onInsertSnippet(snippet.sql)}
               className={cn(
-                "rounded-md border border-slate-700/80 bg-slate-800/50 px-2 py-1",
-                "font-mono text-[11px] text-slate-300",
-                "transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-slate-100"
+                "rounded-sm border border-line bg-surface-muted px-2 py-1",
+                "font-mono text-[11px] text-ink-secondary",
+                "transition-colors hover:border-line-strong hover:bg-surface-muted hover:text-ink"
               )}
               title={snippet.sql}
             >
@@ -118,7 +118,7 @@ export default function PracticeCategoryContent({
 
   return (
     <div className={cn("space-y-2", compact && "max-h-[min(60vh,420px)] overflow-y-auto scrollbar-thin")}>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-ink-muted">
         Loads the sample database, runs the query, and prepares results for visualization.
       </p>
       <ul className="space-y-2">
@@ -131,8 +131,8 @@ export default function PracticeCategoryContent({
               onClick={() => onApplyVisualizationPreset(preset.id)}
               className="h-auto w-full flex-col items-start gap-1 py-2 text-left"
             >
-              <span className="font-medium text-slate-200">{preset.title}</span>
-              <span className="text-xs font-normal text-slate-500">
+              <span className="font-medium text-ink">{preset.title}</span>
+              <span className="text-xs font-normal text-ink-muted">
                 {preset.description}
               </span>
             </Button>

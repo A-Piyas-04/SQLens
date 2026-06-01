@@ -22,11 +22,11 @@ export default function QueryHistory({ items, onSelect }: Props) {
               type="button"
               onClick={() => onSelect(item)}
               className={cn(
-                "block w-full truncate rounded-lg border border-slate-800/80",
-                "bg-slate-950/70 p-3 text-left text-sm text-slate-300",
+                "block w-full truncate rounded-sm border border-line",
+                "bg-surface-muted p-3 text-left text-sm text-ink-secondary",
                 "transition-all duration-200 ease-out",
-                "hover:border-slate-600/80 hover:bg-slate-800/80 hover:text-white",
-                "hover:-translate-y-px hover:shadow-md hover:shadow-slate-950/40",
+                "hover:border-line-strong hover:bg-surface-muted hover:text-ink",
+                "hover:border-line-strong",
                 "active:scale-[0.99] active:translate-y-0"
               )}
             >

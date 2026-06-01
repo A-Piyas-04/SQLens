@@ -19,8 +19,8 @@ export default function PracticeNavList({
   onSelectCategory,
 }: Props) {
   return (
-    <nav className="border-t border-slate-800/60 pt-4" aria-label="Practice tools">
-      <ul className="divide-y divide-slate-800/60">
+    <nav className="border-t border-line pt-4" aria-label="Practice tools">
+      <ul className="divide-y divide-line">
         {PRACTICE_CATEGORIES.map((category) => {
           const isActive = activeCategory === category.id;
           const Icon = category.icon;
@@ -34,8 +34,8 @@ export default function PracticeNavList({
                 }
                 className={cn(
                   "flex w-full items-center justify-between gap-2 py-3 text-left",
-                  "transition-colors hover:bg-slate-800/30",
-                  isActive && "bg-slate-800/20"
+                  "transition-colors hover:bg-surface-muted",
+                  isActive && "bg-surface-muted"
                 )}
                 aria-expanded={isActive}
               >
@@ -43,13 +43,13 @@ export default function PracticeNavList({
                   <IconTile>
                     <Icon size={SIDEBAR_ICON_SIZE} />
                   </IconTile>
-                  <span className="truncate text-sm font-semibold text-slate-100">
+                  <span className="truncate text-sm font-semibold text-ink">
                     {category.title}
                   </span>
                 </span>
                 <ChevronDown
                   className={cn(
-                    "size-4 shrink-0 text-slate-500 transition-transform duration-200",
+                    "size-4 shrink-0 text-ink-muted transition-transform duration-200",
                     isActive && "rotate-180"
                   )}
                   aria-hidden

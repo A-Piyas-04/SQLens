@@ -1,23 +1,136 @@
 @import "tailwindcss";
 
+/* ── Cold Precision design tokens ───────────────────────────────────────── */
+:root {
+  /* Layer 1 — page (off-white, never pure white) */
+  --color-bg: #f4f1ec;
+  /* Layer 2 — cards, sidebars, panels (~10% darker than page) */
+  --color-bg-subtle: #e8e4dc;
+  /* Layer 3 — modals, dropdowns (~8% lighter than page, floats above cards) */
+  --color-bg-elevated: #f6f4ef;
+  /* Layer 4 — nested wells, table chrome, hovers (~6% darker than card) */
+  --color-bg-well: #e0dbd1;
+  /* Borders ~15% darker than card surface */
+  --color-border: #cfc9bc;
+  --color-border-strong: #b5aea0;
+  --color-text: #1c1916;
+  --color-text-muted: #5c574f;
+  /* Full saturation — buttons, links, small controls only */
+  --color-accent: #0d6b63;
+  --color-accent-hover: #0a554f;
+  /* Desaturated — large fills (headers, badge backgrounds) */
+  --color-accent-muted: #d6e0de;
+  --color-accent-soft: #cad6d4;
+  --color-accent-ink: #0a554f;
+  --color-danger: #a61c1c;
+  --color-success: #166534;
+  --color-danger-surface: #efe4e4;
+  --color-success-surface: #e2ebe5;
+  /* ERD — muted warm/cool tints (not saturated yellow/mint) */
+  --color-erd-pk-bg: #ebe4d6;
+  --color-erd-pk-ink: #5c4a32;
+  --color-erd-pk-badge: #7a5c3a;
+  --color-erd-fk-bg: #dde8e5;
+  --color-erd-fk-ink: #2a4a44;
+  --color-erd-fk-badge: #0a554f;
+  /* Join matching — lines & matched rows */
+  --color-join-matched: #0d6b63;
+  --color-join-matched-bg: #d6e0de;
+  --color-join-matched-border: #a8c4bf;
+  --color-join-null: #8a6d3b;
+  --color-join-null-bg: #ebe4d6;
+  --radius-ui: 4px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-elevate: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
 @theme {
-  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: "Epilogue", ui-sans-serif, sans-serif;
+  --font-display: "Syne", var(--font-sans);
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-surface: var(--color-bg);
+  --color-surface-raised: var(--color-bg-subtle);
+  --color-surface-elevated: var(--color-bg-elevated);
+  --color-surface-muted: var(--color-bg-well);
+  --color-surface-inset: var(--color-bg-subtle);
+  --color-ink: var(--color-text);
+  --color-ink-secondary: #322e28;
+  --color-ink-muted: var(--color-text-muted);
+  --color-line: var(--color-border);
+  --color-line-strong: var(--color-border-strong);
+  --color-accent: var(--color-accent);
+  --color-accent-muted: var(--color-accent-muted);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-ink: var(--color-accent-ink);
+  --color-danger-surface: var(--color-danger-surface);
+  --color-danger-ink: var(--color-danger);
+  --color-success-surface: var(--color-success-surface);
+  --color-success-ink: var(--color-success);
+  --color-erd-pk-bg: var(--color-erd-pk-bg);
+  --color-erd-pk-ink: var(--color-erd-pk-ink);
+  --color-erd-fk-bg: var(--color-erd-fk-bg);
+  --color-erd-fk-ink: var(--color-erd-fk-ink);
+  --color-join-matched: var(--color-join-matched);
+  --color-join-matched-bg: var(--color-join-matched-bg);
+  --color-join-matched-border: var(--color-join-matched-border);
+  --color-join-null: var(--color-join-null);
+  --color-join-null-bg: var(--color-join-null-bg);
+
+  --shadow-sm: var(--shadow-card);
+  --shadow-md: var(--shadow-elevate);
+
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+}
+
+/* Card-like surfaces: subtle depth without harsh edges */
+:where(
+  section.border-line.bg-surface-inset,
+  header.border-line.bg-surface-inset,
+  aside.border-line.bg-surface-raised,
+  .bg-surface-inset.border-line,
+  .bg-surface-raised.border-line
+) {
+  box-shadow: var(--shadow-card);
 }
 
 body {
   margin: 0;
-  background: #020617;
-  color: white;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 ::selection {
-  background: rgb(59 130 246 / 0.35);
-  color: white;
+  background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  color: var(--color-text);
 }
 
 /* Content reveal animations */
@@ -110,8 +223,8 @@ body {
 /* App boot splash */
 .app-boot-grid {
   background-image:
-    linear-gradient(rgb(148 163 184 / 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(148 163 184 / 0.05) 1px, transparent 1px);
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
   background-size: 40px 40px;
   mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
 }
@@ -136,7 +249,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgb(255 255 255 / 0.35),
+    rgb(255 255 255 / 0.5),
     transparent
   );
   animation: app-boot-shimmer 1.6s ease-in-out infinite;
@@ -161,11 +274,11 @@ body {
 @keyframes app-boot-logo-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(59 130 246 / 0.15);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 18%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 0 10px rgb(59 130 246 / 0);
+    box-shadow: 0 0 0 8px transparent;
   }
 }
 
@@ -207,7 +320,7 @@ body {
   }
 }
 
-/* Onboarding tour — opacity only (transform breaks fixed positioning) */
+/* Onboarding tour */
 .onboarding-tooltip {
   transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -220,46 +333,14 @@ body {
     height 0.25s ease;
 }
 
-/* Onboarding step cards — animated gradient borders */
-.onboarding-featured-card-glow-blue,
-.onboarding-featured-card-glow-purple {
-  background-size: 200% 200%;
-  animation: onboarding-featured-border 4s ease infinite;
+.onboarding-featured-card-accent {
+  background: var(--color-accent);
 }
 
-.onboarding-featured-card-glow-blue {
-  background: linear-gradient(
-    135deg,
-    rgb(56 189 248 / 0.55),
-    rgb(59 130 246 / 0.4),
-    rgb(125 211 252 / 0.45)
-  );
-}
-
-.onboarding-featured-card-glow-purple {
-  background: linear-gradient(
-    135deg,
-    rgb(168 85 247 / 0.55),
-    rgb(59 130 246 / 0.35),
-    rgb(139 92 246 / 0.5)
-  );
-}
-
-@keyframes onboarding-featured-border {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-/* Thin scrollbar for sidebar */
+/* Thin scrollbar */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgb(51 65 85 / 0.8) transparent;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -267,15 +348,15 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgb(51 65 85 / 0.8);
-  border-radius: 9999px;
+  background-color: var(--color-line-strong);
+  border-radius: var(--radius-sm);
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(71 85 105 / 0.9);
+  background-color: var(--color-ink-muted);
 }
 
-/* Practice radial menu — hub CCW spin + inward shuttle arc */
+/* Practice radial menu */
 @keyframes practice-orbit-shuttle {
   from {
     opacity: 0;
@@ -311,41 +392,33 @@ body {
 
 /* === Playback === */
 
-/*
- * Row removed: holds full opacity briefly, flashes red, then dims gracefully.
- * The hold at 15% gives the eye time to register which rows are leaving.
- */
 @keyframes pb-row-removed {
   0%   { opacity: 1; background-color: transparent; }
-  15%  { opacity: 1; background-color: rgb(239 68 68 / 0.18); }
-  40%  { opacity: 0.7; background-color: rgb(239 68 68 / 0.10); }
-  100% { opacity: 0.22; background-color: transparent; filter: blur(0.3px); }
+  15%  { opacity: 1; background-color: color-mix(in srgb, var(--color-danger) 14%, transparent); }
+  40%  { opacity: 0.7; background-color: color-mix(in srgb, var(--color-danger) 8%, transparent); }
+  100% { opacity: 0.35; background-color: transparent; filter: blur(0.3px); }
 }
 
-/* Row added: springs in from the left with a slight overshoot feel */
 @keyframes pb-row-added {
   0%   { opacity: 0; transform: translateX(-14px); }
   60%  { opacity: 1; transform: translateX(2px); }
   100% { opacity: 1; transform: translateX(0); }
 }
 
-/* NULL cell introduced: amber pulse — peak at 35%, settles to soft amber */
 @keyframes pb-cell-null {
   0%   { background-color: transparent; }
-  20%  { background-color: rgb(245 158 11 / 0.08); }
-  35%  { background-color: rgb(245 158 11 / 0.36); }
-  65%  { background-color: rgb(245 158 11 / 0.22); }
-  100% { background-color: rgb(245 158 11 / 0.13); }
+  20%  { background-color: rgb(180 83 9 / 0.08); }
+  35%  { background-color: rgb(180 83 9 / 0.22); }
+  65%  { background-color: rgb(180 83 9 / 0.14); }
+  100% { background-color: rgb(180 83 9 / 0.1); }
 }
 
-/* Reason badge: gentle slide + fade in, delayed so the row settles first */
 @keyframes pb-badge-in {
   0%   { opacity: 0; transform: translateX(-8px); }
   60%  { opacity: 1; transform: translateX(1px); }
   100% { opacity: 1; transform: translateX(0); }
 }
 
-/* JOIN: straight persistent arrow draw (tuple → tuple) */
 @keyframes pb-join-arrow-draw {
   from {
     stroke-dashoffset: var(--arrow-length, 200px);
@@ -370,7 +443,6 @@ body {
   animation: pb-join-arrow-null-draw 420ms ease-out forwards;
 }
 
-/* JOIN scan cursor: dwells briefly at the top, sweeps, then fades at bottom */
 @keyframes pb-scan-cursor {
   0%   { top: 0%;   opacity: 0; }
   5%   { top: 0%;   opacity: 1; }
@@ -378,20 +450,17 @@ body {
   100% { top: 100%; opacity: 0; }
 }
 
-/* Progress bar drain — linear so it feels like a real clock */
 @keyframes pb-progress-drain {
   from { width: 100%; }
   to   { width: 0%; }
 }
 
-/* Left-table row staggered reveal */
 @keyframes pb-row-reveal {
   0%   { opacity: 0; transform: translateX(-8px); }
   65%  { opacity: 1; transform: translateX(1px); }
   100% { opacity: 1; transform: translateX(0); }
 }
 
-/* Result rows rise up into view */
 @keyframes pb-result-fade-up {
   0%   { opacity: 0; transform: translateY(10px); }
   60%  { opacity: 1; transform: translateY(-1px); }
@@ -400,8 +469,8 @@ body {
 
 @keyframes pb-row-remove {
   0% { opacity: 1; transform: scaleX(1); background-color: transparent; }
-  20% { background-color: rgb(239 68 68 / 0.22); }
-  100% { opacity: 0; transform: scaleX(0); background-color: rgb(239 68 68 / 0.14); }
+  20% { background-color: color-mix(in srgb, var(--color-danger) 18%, transparent); }
+  100% { opacity: 0; transform: scaleX(0); background-color: color-mix(in srgb, var(--color-danger) 10%, transparent); }
 }
 
 @keyframes pb-row-enter {
@@ -415,7 +484,7 @@ body {
 }
 
 @keyframes pb-glow-flash {
-  0% { background-color: rgb(56 189 248 / 0.22); }
+  0% { background-color: color-mix(in srgb, var(--color-accent) 18%, transparent); }
   100% { background-color: transparent; }
 }
 
@@ -430,12 +499,6 @@ body {
   100% { transform: scale(1); }
 }
 
-/* ── .pb-table scoped rules: fire on tbody remount (key prop change) ──── */
-
-/*
- * Per-row stagger: each row sets --pb-row-delay via inline style.
- * Rows at index 0 start immediately; each subsequent row waits 55ms longer.
- */
 .pb-table tr[data-status="removed"] {
   animation: pb-row-removed var(--pb-anim-ms, 600ms) cubic-bezier(0.4, 0, 0.2, 1) forwards;
   animation-delay: var(--pb-row-delay, 0ms);
@@ -471,8 +534,8 @@ body {
 }
 
 .cm-active-clause {
-  border-radius: 4px;
-  background-color: rgb(251 191 36 / 0.2);
+  border-radius: var(--radius-sm);
+  background-color: rgb(180 83 9 / 0.15);
 }
 
 .pb-table tr[data-status="added"] {
@@ -485,13 +548,11 @@ body {
   animation-delay: var(--pb-row-delay, 0ms);
 }
 
-/* Reason badge: appears after the row's own animation has started */
 .pb-badge {
   animation: pb-badge-in 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--pb-row-delay, 0ms) + 220ms);
 }
 
-/* JOIN left-table row stagger: each row uses --pb-row-index */
 .pb-join-left-row {
   animation: pb-row-reveal 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--pb-row-index, 0) * 110ms);
@@ -502,13 +563,11 @@ body {
   animation-delay: calc(var(--pb-row-index, 0) * 110ms);
 }
 
-/* JOIN result row stagger */
 .pb-join-result-row {
   animation: pb-result-fade-up 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--pb-row-index, 0) * 90ms + 160ms);
 }
 
-/* ── Reduced motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .pb-table tr[data-status],
   .pb-table [data-null-introduced="true"],
@@ -525,26 +584,26 @@ body {
   .pb-table td[data-will-collapse="true"] { animation: none !important; transition: none !important; }
 }
 
-/* React Flow dark theme overrides */
+/* React Flow */
 .react-flow__viewport svg {
   overflow: visible;
 }
 
 .react-flow__controls {
-  --xy-controls-button-background-color: #1e293b;
-  --xy-controls-button-background-color-hover: #334155;
-  --xy-controls-button-border-color: #334155;
-  --xy-controls-button-color: #94a3b8;
-  --xy-controls-button-color-hover: #e2e8f0;
+  --xy-controls-button-background-color: var(--color-bg-subtle);
+  --xy-controls-button-background-color-hover: var(--color-surface-muted);
+  --xy-controls-button-border-color: var(--color-border);
+  --xy-controls-button-color: var(--color-text-muted);
+  --xy-controls-button-color-hover: var(--color-text);
   box-shadow: none;
-  border: 1px solid rgb(51 65 85 / 0.6);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 
 .react-flow__controls-button {
   border: none !important;
-  border-bottom: 1px solid rgb(51 65 85 / 0.4) !important;
+  border-bottom: 1px solid var(--color-border) !important;
 }
 
 .react-flow__controls-button:last-child {
@@ -552,7 +611,7 @@ body {
 }
 
 .react-flow__minimap {
-  --xy-minimap-background-color: #0f172a;
+  --xy-minimap-background-color: var(--color-bg-subtle);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -587,22 +646,17 @@ body {
 
   .onboarding-tooltip,
   .onboarding-spotlight,
-  .onboarding-featured-card-glow-blue,
-  .onboarding-featured-card-glow-purple {
+  .onboarding-featured-card-accent {
     transition: none !important;
     animation: none !important;
   }
 }
 
-/* ================================================================
-   SIMULATOR PLAYBACK — STAGE TRANSITION ANIMATIONS
-   All durations use CSS custom properties set on .pb-stage-wrapper
-   ================================================================ */
-
+/* Simulator playback stage transitions */
 @keyframes pb-row-condemned {
   0%, 100% { background-color: transparent; }
-  25%, 75% { background-color: rgb(127 29 29 / 0.5); }
-  50%     { background-color: rgb(127 29 29 / 0.8); }
+  25%, 75% { background-color: color-mix(in srgb, var(--color-danger) 22%, transparent); }
+  50%     { background-color: color-mix(in srgb, var(--color-danger) 32%, transparent); }
 }
 
 @keyframes pb-row-eject {
@@ -611,8 +665,8 @@ body {
 }
 
 @keyframes pb-row-survived {
-  0%   { box-shadow: inset 3px 0 0 #10b981; }
-  60%  { box-shadow: inset 3px 0 0 #10b981; }
+  0%   { box-shadow: inset 3px 0 0 var(--color-success); }
+  60%  { box-shadow: inset 3px 0 0 var(--color-success); }
   100% { box-shadow: inset 3px 0 0 transparent; }
 }
 
@@ -622,14 +676,14 @@ body {
 }
 
 @keyframes pb-row-sliding {
-  0%   { background-color: rgb(56 189 248 / 0.0); }
-  30%  { background-color: rgb(56 189 248 / 0.15); }
-  100% { background-color: rgb(56 189 248 / 0.0); }
+  0%   { background-color: color-mix(in srgb, var(--color-accent) 0%, transparent); }
+  30%  { background-color: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+  100% { background-color: color-mix(in srgb, var(--color-accent) 0%, transparent); }
 }
 
 @keyframes pb-key-pulse {
   0%, 100% { background-color: transparent; }
-  50%     { background-color: rgb(245 158 11 / 0.25); }
+  50%     { background-color: rgb(180 83 9 / 0.18); }
 }
 
 @keyframes pb-scan-beam {
@@ -715,7 +769,7 @@ body {
 }
 
 .pb-col-dropped-header {
-  color: rgb(248 113 113) !important;
+  color: var(--color-danger) !important;
   position: relative;
 }
 
@@ -726,7 +780,7 @@ body {
   top: 50%;
   height: 1px;
   width: 0;
-  background: rgb(248 113 113);
+  background: var(--color-danger);
   animation: pb-strike-draw var(--pb-act1-ms, 280ms) ease-out forwards;
 }
 
@@ -757,21 +811,21 @@ body {
 }
 
 @keyframes pb-col-survived {
-  0% { background-color: rgb(52 211 153 / 0.2); }
+  0% { background-color: color-mix(in srgb, var(--color-success) 18%, transparent); }
   100% { background-color: transparent; }
 }
 
 .pb-order-col-highlight {
-  background-color: rgb(186 230 253 / 0.2);
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 
 .pb-order-col-post {
-  color: rgb(186 230 253);
+  color: var(--color-accent);
   animation: pb-order-post-fade 600ms ease-out forwards;
 }
 
 @keyframes pb-order-post-fade {
-  0% { color: rgb(186 230 253); }
+  0% { color: var(--color-accent); }
   100% { color: inherit; }
 }
 
@@ -798,12 +852,12 @@ body {
 }
 
 @keyframes pb-result-flash {
-  0% { background-color: rgb(16 185 129 / 0.25); }
+  0% { background-color: color-mix(in srgb, var(--color-success) 22%, transparent); }
   100% { background-color: transparent; }
 }
 
 @keyframes pb-result-flash-amber {
-  0% { background-color: rgb(245 158 11 / 0.2); }
+  0% { background-color: rgb(180 83 9 / 0.14); }
   100% { background-color: transparent; }
 }
 

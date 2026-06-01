@@ -112,7 +112,7 @@ export default function JoinArrowOverlay({
           refY="3"
           orient="auto"
         >
-          <path d="M0,0 L0,6 L6,3 z" fill="#34d399" fillOpacity="0.85" />
+          <path d="M0,0 L0,6 L6,3 z" fill="var(--color-join-matched)" fillOpacity="0.9" />
         </marker>
         <marker
           id={nullMarkerId}
@@ -122,7 +122,7 @@ export default function JoinArrowOverlay({
           refY="3"
           orient="auto"
         >
-          <path d="M0,0 L0,6 L6,3 z" fill="#fbbf24" fillOpacity="0.7" />
+          <path d="M0,0 L0,6 L6,3 z" fill="var(--color-join-null)" fillOpacity="0.75" />
         </marker>
       </defs>
 
@@ -133,7 +133,7 @@ export default function JoinArrowOverlay({
           y1={arrow.y1}
           x2={arrow.x2}
           y2={arrow.y2}
-          stroke={arrow.isNull ? "#fbbf24" : "#34d399"}
+          stroke={arrow.isNull ? "var(--color-join-null)" : "var(--color-join-matched)"}
           strokeWidth={1.25}
           strokeOpacity={arrow.drawing ? 0.9 : 0.58}
           strokeLinecap="round"

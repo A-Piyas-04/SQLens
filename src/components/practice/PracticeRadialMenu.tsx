@@ -93,7 +93,7 @@ export default function PracticeRadialMenu({
       {isOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-[2px]"
+          className="fixed inset-0 z-40 bg-surface-inset "
           aria-label="Close practice menu"
           onClick={() => {
             onSelectCategory(null);
@@ -110,22 +110,22 @@ export default function PracticeRadialMenu({
             className={cn(
               "practice-radial-panel absolute z-50",
               "w-[min(calc(100vw-5.5rem),280px)]",
-              "rounded-xl border border-slate-700/80 bg-slate-900/95 p-4",
-              "shadow-2xl shadow-slate-950/60 backdrop-blur-md",
+              "rounded-sm border border-line bg-surface-elevated p-4",
+              "shadow-md",
               "right-0 top-[4.75rem] sm:right-[calc(100%+0.75rem)] sm:top-0"
             )}
           >
-            <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+            <div className="mb-3 flex items-center justify-between gap-2 border-b border-line pb-2">
               <div className="flex min-w-0 items-center gap-2">
                 <activeMeta.icon size={22} className="shrink-0" />
-                <h2 className="truncate text-sm font-semibold text-slate-100">
+                <h2 className="truncate text-sm font-semibold text-ink">
                   {activeMeta.title}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => onSelectCategory(null)}
-                className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+                className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
                 aria-label="Back to categories"
               >
                 <X className="size-4" aria-hidden />
@@ -177,7 +177,7 @@ export default function PracticeRadialMenu({
                         className={cn(
                           "max-w-[8.5rem] truncate text-right text-xs font-medium leading-tight",
                           "drop-shadow-[0_1px_2px_rgba(2,6,23,0.9)]",
-                          isActive ? "text-blue-200" : "text-slate-200"
+                          isActive ? "text-accent-ink" : "text-ink"
                         )}
                       >
                         {category.title}
@@ -186,8 +186,8 @@ export default function PracticeRadialMenu({
                         className={cn(
                           "flex size-12 shrink-0 items-center justify-center rounded-full border shadow-lg transition-colors duration-200",
                           isActive
-                            ? "border-blue-400/70 bg-blue-600/90 text-white shadow-blue-950/50"
-                            : "border-slate-600/80 bg-slate-800/95 text-blue-300 shadow-slate-950/50 group-hover:border-blue-500/50 group-hover:bg-slate-700"
+                            ? "border-accent bg-accent text-white"
+                            : "border-line-strong bg-surface-muted text-accent  group-hover:border-accent group-hover:bg-surface-muted"
                         )}
                       >
                         <Icon size={24} />

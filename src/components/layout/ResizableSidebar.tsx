@@ -24,11 +24,11 @@ export default function ResizableSidebar({
       <aside
         data-tour="workspace-sidebar"
         className={cn(
-          "h-[calc(100vh-8rem)] overflow-hidden rounded-xl",
-          "border border-slate-800/70 bg-slate-900/55 backdrop-blur-md",
-          "shadow-xl shadow-slate-950/40 ring-1 ring-white/[0.03]",
+          "h-[calc(100vh-8rem)] overflow-hidden rounded-sm",
+          "border border-line bg-surface-raised ",
+          "shadow-sm",
           "transition-shadow duration-200",
-          isResizing && "shadow-2xl shadow-blue-950/30 ring-1 ring-blue-500/25"
+          isResizing && "shadow-sm ring-2 ring-accent"
         )}
       >
         <div className="h-full overflow-y-auto p-4 scrollbar-thin">
@@ -48,13 +48,13 @@ export default function ResizableSidebar({
         <span
           className={cn(
             "flex h-16 w-1.5 items-center justify-center rounded-full",
-            "bg-slate-700/50 transition-all duration-200",
-            "group-hover:h-24 group-hover:bg-blue-500/70",
-            isResizing && "h-24 bg-blue-400"
+            "bg-surface-muted transition-all duration-200",
+            "group-hover:h-24 group-hover:bg-accent",
+            isResizing && "h-24 bg-accent"
           )}
         >
           <GripVertical
-            className="size-3 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100"
+            className="size-3 text-ink-muted opacity-0 transition-opacity group-hover:opacity-100"
             aria-hidden
           />
         </span>

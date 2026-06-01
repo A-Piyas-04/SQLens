@@ -12,8 +12,8 @@ export function IconTile({ children, className }: Props) {
   return (
     <span
       className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-lg",
-        "border border-slate-700/50 bg-slate-800/55",
+        "flex size-10 shrink-0 items-center justify-center rounded-sm",
+        "border border-line bg-surface-raised text-ink-secondary",
         className
       )}
     >

@@ -57,7 +57,7 @@ export default function PlaybackControls({
   };
 
   return (
-    <div className="flex flex-col gap-0 border-t border-slate-700/50 bg-slate-900/80">
+    <div className="flex flex-col gap-0 border-t border-line bg-surface-raised">
       <div
         className="grid gap-1 px-3 pt-2"
         style={{ gridTemplateColumns: `repeat(${Math.max(totalStages, 1)}, minmax(0, 1fr))` }}
@@ -73,7 +73,7 @@ export default function PlaybackControls({
                 ? segmentColor
                 : index === activeIndex
                   ? cn(segmentColor, "animate-pulse")
-                  : "bg-slate-700/70"
+                  : "bg-surface-muted/70"
             )}
           />
         );})}
@@ -86,10 +86,10 @@ export default function PlaybackControls({
           disabled={isFirst || isTransitioning}
           onClick={() => navigate(activeIndex - 1)}
           className={cn(
-            "flex size-8 items-center justify-center rounded-md border transition-colors",
+            "flex size-8 items-center justify-center rounded-sm border transition-colors",
             isFirst
-              ? "border-slate-800 text-slate-700 cursor-default"
-              : "border-slate-700/60 bg-slate-800/50 text-slate-300 hover:bg-slate-700/60"
+              ? "border-line text-ink-muted cursor-default"
+              : "border-line bg-surface-muted text-ink-secondary hover:bg-surface-muted"
           )}
         >
           <ChevronLeft className="size-4" aria-hidden />
@@ -99,7 +99,7 @@ export default function PlaybackControls({
         <button
           aria-label={isPlaying ? "Pause" : "Play"}
           onClick={togglePlay}
-          className="flex size-9 items-center justify-center rounded-md border border-sky-500/40 bg-sky-500/15 text-sky-300 transition-colors hover:bg-sky-500/25 hover:text-sky-200"
+          className="flex size-9 items-center justify-center rounded-sm border border-accent bg-accent-muted text-accent-ink transition-colors hover:bg-accent-muted hover:text-accent-ink"
         >
           {isPlaying ? (
             <Pause className="size-4" aria-hidden />
@@ -112,7 +112,7 @@ export default function PlaybackControls({
         <button
           aria-label="Toggle step mode"
           onClick={toggleStepMode}
-          className="flex size-8 items-center justify-center rounded-md border border-slate-700/60 bg-slate-800/50 text-slate-400 transition-colors hover:bg-slate-700/60 hover:text-slate-300"
+          className="flex size-8 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink-secondary"
         >
           {stepMode ? <Play className="size-3.5" aria-hidden /> : <FastForward className="size-3.5" aria-hidden />}
         </button>
@@ -123,29 +123,29 @@ export default function PlaybackControls({
           disabled={isLast || isTransitioning}
           onClick={() => navigate(activeIndex + 1)}
           className={cn(
-            "flex size-8 items-center justify-center rounded-md border transition-colors",
+            "flex size-8 items-center justify-center rounded-sm border transition-colors",
             isLast
-              ? "border-slate-800 text-slate-700 cursor-default"
-              : "border-slate-700/60 bg-slate-800/50 text-slate-300 hover:bg-slate-700/60"
+              ? "border-line text-ink-muted cursor-default"
+              : "border-line bg-surface-muted text-ink-secondary hover:bg-surface-muted"
           )}
         >
           <ChevronRight className="size-4" aria-hidden />
         </button>
 
         {/* Stage counter */}
-        <span className="ml-1 inline-flex items-center gap-1 text-xs tabular-nums text-slate-500">
+        <span className="ml-1 inline-flex items-center gap-1 text-xs tabular-nums text-ink-muted">
           <span className={cn("inline-block size-2 rounded-full", stageColor.dot)} />
           Stage{" "}
-          <span className="font-semibold text-slate-300">{activeIndex + 1}</span>
+          <span className="font-semibold text-ink-secondary">{activeIndex + 1}</span>
           {" "}of{" "}
-          <span className="font-semibold text-slate-300">{totalStages}</span>:{" "}
-          <span className="font-semibold text-slate-300">{activeStageType}</span>
+          <span className="font-semibold text-ink-secondary">{totalStages}</span>:{" "}
+          <span className="font-semibold text-ink-secondary">{activeStageType}</span>
         </span>
 
         {/* Speed selector */}
         <div className="ml-auto flex items-center gap-1">
-          <span className="mr-1 text-[10px] text-slate-500">Speed</span>
-          <div className="flex rounded-md border border-slate-700/50 overflow-hidden">
+          <span className="mr-1 text-[10px] text-ink-muted">Speed</span>
+          <div className="flex rounded-sm border border-line overflow-hidden">
             {SPEEDS.map((s) => (
               <button
                 key={s}
@@ -155,8 +155,8 @@ export default function PlaybackControls({
                 className={cn(
                   "px-2.5 py-1.5 text-[11px] font-medium transition-colors",
                   speed === s
-                    ? "bg-sky-500/20 text-sky-300"
-                    : "bg-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-800/60"
+                    ? "bg-accent-muted text-accent-ink"
+                    : "bg-transparent text-ink-muted hover:text-ink-secondary hover:bg-surface-muted"
                 )}
               >
                 {speedLabels[s]}

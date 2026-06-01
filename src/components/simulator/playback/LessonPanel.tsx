@@ -39,53 +39,53 @@ export default function LessonPanel({
   }, [counts.added, counts.removed, snapshot.stageType]);
 
   return (
-    <aside className={cn("flex h-full flex-col overflow-y-auto border-l border-slate-700/50 bg-slate-900/30", accent.border)}>
-      <div className="border-b border-slate-700/50 p-4">
+    <aside className={cn("flex h-full flex-col overflow-y-auto border-l border-line bg-surface-raised", accent.border)}>
+      <div className="border-b border-line p-4">
         <div className="mb-1 flex items-center gap-2">
           <Icon className={cn("size-5", colors.icon)} aria-hidden />
           <p className={cn("text-xs font-semibold uppercase tracking-wider", colors.icon)}>{snapshot.stageType}</p>
         </div>
-        <p className="text-xs text-slate-400">{STAGE_SUBTITLES[snapshot.stageType]}</p>
+        <p className="text-xs text-ink-muted">{STAGE_SUBTITLES[snapshot.stageType]}</p>
       </div>
 
       <section className="space-y-4 p-4">
         <div>
-          <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">What Happened</h4>
-          <p className="text-sm leading-relaxed text-slate-200">{snapshot.annotation}</p>
+          <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">What Happened</h4>
+          <p className="text-sm leading-relaxed text-ink">{snapshot.annotation}</p>
         </div>
 
         <div>
-          <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Row Changes</h4>
-          <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+          <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Row Changes</h4>
+          <div className="mb-2 flex items-center justify-between text-xs text-ink-secondary">
             <span>Before: {beforeCount}</span>
-            <span className="pb-count-update font-semibold text-slate-100">After: {afterCount}</span>
+            <span className="pb-count-update font-semibold text-ink">After: {afterCount}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+          <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
             <div className="h-full bg-emerald-500/70" style={{ width: `${keptRatio}%` }} />
             {removedRatio > 0 && <div className="h-full -mt-2 bg-rose-500/60" style={{ width: `${removedRatio}%`, marginLeft: `${keptRatio}%` }} />}
           </div>
-          <p className={cn("mt-2 text-xs", counts.added > 0 ? "text-emerald-300" : counts.removed > 0 ? "text-rose-300" : "text-slate-500")}>
+          <p className={cn("mt-2 text-xs", counts.added > 0 ? "text-emerald-300" : counts.removed > 0 ? "text-rose-300" : "text-ink-muted")}>
             {rowChangeLabel}
           </p>
         </div>
 
         <details open className="group">
-          <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
             What To Notice
           </summary>
-          <ul className="mt-2 space-y-1.5 text-xs text-slate-300">
+          <ul className="mt-2 space-y-1.5 text-xs text-ink-secondary">
             {STAGE_HINTS[snapshot.stageType].map((hint) => (
               <li key={hint} className="leading-relaxed">• {hint}</li>
             ))}
           </ul>
         </details>
 
-        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-700/60 bg-slate-800/30 px-3 py-2 text-xs text-slate-300">
+        <label className="flex cursor-pointer items-center gap-2 rounded-sm border border-line bg-surface-muted px-3 py-2 text-xs text-ink-secondary">
           <input
             type="checkbox"
             checked={showRowIds}
             onChange={(event) => onToggleRowIds(event.target.checked)}
-            className="rounded border-slate-600 bg-slate-900 text-sky-400"
+            className="rounded border-line-strong bg-surface-raised text-accent"
           />
           Show row IDs
         </label>

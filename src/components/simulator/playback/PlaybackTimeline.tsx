@@ -33,14 +33,14 @@ const STAGE_COLORS: Record<SimulatorStageType, {
   iconActive:string;
   dot:       string;
 }> = {
-  FROM:     { active: "bg-blue-500/15 border-l-2 border-l-blue-400 text-blue-200",    completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-blue-400",    dot: "bg-blue-400" },
-  JOIN:     { active: "bg-purple-500/15 border-l-2 border-l-purple-400 text-purple-200", completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-purple-400",  dot: "bg-purple-400" },
-  WHERE:    { active: "bg-amber-500/15 border-l-2 border-l-amber-400 text-amber-200",  completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-amber-400",   dot: "bg-amber-400" },
-  GROUP_BY: { active: "bg-violet-500/15 border-l-2 border-l-violet-400 text-violet-200", completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-violet-400", dot: "bg-violet-400" },
-  HAVING:   { active: "bg-orange-500/15 border-l-2 border-l-orange-400 text-orange-200", completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-orange-400", dot: "bg-orange-400" },
-  SELECT:   { active: "bg-emerald-500/15 border-l-2 border-l-emerald-400 text-emerald-200", completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-emerald-400", dot: "bg-emerald-400" },
-  ORDER_BY: { active: "bg-sky-500/15 border-l-2 border-l-sky-400 text-sky-200",        completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-sky-400",     dot: "bg-sky-400" },
-  LIMIT:    { active: "bg-rose-500/15 border-l-2 border-l-rose-400 text-rose-200",     completed: "text-slate-400", pending: "text-slate-600", iconActive: "text-rose-400",    dot: "bg-rose-400" },
+  FROM:     { active: "bg-stone-100 border-l-2 border-l-stone-600 text-stone-900", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-stone-700", dot: "bg-stone-600" },
+  JOIN:     { active: "bg-orange-100 border-l-2 border-l-orange-700 text-orange-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-800", dot: "bg-orange-700" },
+  WHERE:    { active: "bg-amber-100 border-l-2 border-l-amber-700 text-amber-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-amber-800", dot: "bg-amber-700" },
+  GROUP_BY: { active: "bg-rose-100 border-l-2 border-l-rose-700 text-rose-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-rose-800", dot: "bg-rose-700" },
+  HAVING:   { active: "bg-orange-50 border-l-2 border-l-orange-800 text-orange-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-900", dot: "bg-orange-800" },
+  SELECT:   { active: "bg-emerald-100 border-l-2 border-l-emerald-700 text-emerald-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-emerald-800", dot: "bg-emerald-700" },
+  ORDER_BY: { active: "bg-teal-100 border-l-2 border-l-teal-700 text-teal-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-teal-800", dot: "bg-teal-700" },
+  LIMIT:    { active: "bg-red-100 border-l-2 border-l-red-700 text-red-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-red-800", dot: "bg-red-700" },
 };
 
 type Props = {
@@ -53,9 +53,9 @@ type Props = {
 
 export default function PlaybackTimeline({ snapshots, activeIndex, navigate, onNavigate }: Props) {
   return (
-    <aside className="flex w-48 shrink-0 flex-col border-r border-slate-700/50 bg-slate-900/50 overflow-y-auto">
-      <div className="px-3 py-3 border-b border-slate-700/40">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+    <aside className="flex w-48 shrink-0 flex-col border-r border-line bg-surface-raised overflow-y-auto">
+      <div className="px-3 py-3 border-b border-line">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted">
           Execution Plan
         </p>
       </div>
@@ -75,18 +75,18 @@ export default function PlaybackTimeline({ snapshots, activeIndex, navigate, onN
               className={cn(
                 "group relative flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors duration-150",
                 isActive    && colors.active,
-                isCompleted && cn("hover:bg-slate-800/60", colors.completed),
-                isPending   && cn("hover:bg-slate-800/40", colors.pending)
+                isCompleted && cn("hover:bg-surface-muted", colors.completed),
+                isPending   && cn("hover:bg-surface-muted", colors.pending)
               )}
               aria-current={isActive ? "step" : undefined}
             >
               {/* Icon slot */}
               <span className={cn(
                 "flex size-5 shrink-0 items-center justify-center",
-                isActive    ? colors.iconActive : isCompleted ? "text-slate-500" : "text-slate-700"
+                isActive    ? colors.iconActive : isCompleted ? "text-ink-muted" : "text-ink-muted"
               )}>
                 {isCompleted ? (
-                  <Check className="size-3.5 text-slate-500" aria-hidden />
+                  <Check className="size-3.5 text-ink-muted" aria-hidden />
                 ) : (
                   <Icon className="size-3.5" aria-hidden />
                 )}
@@ -96,11 +96,11 @@ export default function PlaybackTimeline({ snapshots, activeIndex, navigate, onN
               <span className="flex flex-1 flex-col min-w-0">
                 <span className={cn(
                   "text-xs font-medium leading-tight truncate",
-                  isActive ? "" : isCompleted ? "text-slate-500" : "text-slate-600"
+                  isActive ? "" : isCompleted ? "text-ink-muted" : "text-ink-muted"
                 )}>
                   {snap.label}
                 </span>
-                <span className="text-[10px] leading-tight text-slate-600">
+                <span className="text-[10px] leading-tight text-ink-muted">
                   {snap.rowCount} row{snap.rowCount !== 1 ? "s" : ""}
                 </span>
               </span>

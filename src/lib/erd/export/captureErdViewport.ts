@@ -7,7 +7,7 @@ import {
 import { toPng, toSvg } from "html-to-image";
 
 const EXPORT_PADDING = 80;
-const BACKGROUND_COLOR = "#020617";
+const BACKGROUND_COLOR = "#f4f1ec";
 const MIN_ZOOM = 0.15;
 const MAX_ZOOM = 2;
 

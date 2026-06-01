@@ -95,7 +95,7 @@ export default function OnboardingTour({
         <OnboardingSpotlightOverlay rect={rect} accent={accent} />
       ) : (
         <div
-          className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] pointer-events-auto"
+          className="absolute inset-0 bg-surface-inset  pointer-events-auto"
           aria-hidden
         />
       )}

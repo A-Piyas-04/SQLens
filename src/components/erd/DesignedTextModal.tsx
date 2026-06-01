@@ -42,7 +42,7 @@ export default function DesignedTextModal({ text, onClose }: Props) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-surface/70 "
         aria-label="Close designed text"
         onClick={onClose}
       />
@@ -54,18 +54,18 @@ export default function DesignedTextModal({ text, onClose }: Props) {
         className={cn(
           "relative z-10 flex w-full max-w-3xl flex-col",
           "max-h-[min(90vh,720px)] overflow-hidden",
-          "rounded-xl border border-slate-700/80 bg-slate-900 shadow-2xl shadow-slate-950/60"
+          "rounded-sm border border-line bg-surface-elevated shadow-md"
         )}
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-800/80 px-4 py-3 sm:px-5">
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <div className="min-w-0 pr-2">
             <h2
               id="designed-text-modal-title"
-              className="text-sm font-semibold text-slate-100 sm:text-base"
+              className="text-sm font-semibold text-ink sm:text-base"
             >
               Designed Text
             </h2>
-            <p className="mt-0.5 text-xs text-slate-400">
+            <p className="mt-0.5 text-xs text-ink-muted">
               Paste into AI chat — no image or PDF needed
             </p>
           </div>
@@ -73,9 +73,9 @@ export default function DesignedTextModal({ text, onClose }: Props) {
             type="button"
             onClick={onClose}
             className={cn(
-              "shrink-0 rounded-lg p-2 text-slate-400",
-              "transition-colors hover:bg-slate-800 hover:text-slate-100",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
+              "shrink-0 rounded-sm p-2 text-ink-muted",
+              "transition-colors hover:bg-surface-muted hover:text-ink",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             )}
             aria-label="Close"
           >
@@ -86,7 +86,7 @@ export default function DesignedTextModal({ text, onClose }: Props) {
         <div className="min-h-0 flex-1 overflow-auto px-4 py-3 sm:px-5">
           <pre
             className={cn(
-              "whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-slate-200",
+              "whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-ink",
               "sm:text-sm"
             )}
           >
@@ -94,7 +94,7 @@ export default function DesignedTextModal({ text, onClose }: Props) {
           </pre>
         </div>
 
-        <footer className="shrink-0 border-t border-slate-800/80 bg-slate-900/95 px-4 py-4 sm:px-5">
+        <footer className="shrink-0 border-t border-line bg-surface-raised px-4 py-4 sm:px-5">
           <Button
             variant="primary"
             size="md"

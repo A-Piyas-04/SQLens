@@ -61,52 +61,35 @@ export default function OnboardingStepCard({
     <div
       className={cn(
         "onboarding-tooltip onboarding-featured-card relative z-[201] w-full overflow-hidden",
-        "max-w-[min(100%,32rem)] rounded-2xl p-[1px]",
-        "shadow-2xl",
+        "max-w-[min(100%,32rem)] rounded-sm p-[1px]",
+        "shadow-md",
         theme.shadow,
         layoutReady ? "opacity-100" : "opacity-0"
       )}
     >
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 rounded-2xl",
+          "pointer-events-none absolute inset-0 rounded-sm",
           theme.glowClass
         )}
         aria-hidden
       />
 
-      <div className="relative rounded-2xl bg-slate-950/95 backdrop-blur-md">
+      <div className="relative rounded-sm bg-surface-elevated">
         <div
           className={cn(
             "relative overflow-hidden border-b px-6 pb-5 pt-6 sm:px-7",
             theme.heroBorder,
-            theme.heroGradient,
-            "bg-gradient-to-br"
+            theme.heroGradient
           )}
         >
-          <div
-            className={cn(
-              "pointer-events-none absolute -right-8 -top-8 size-32 rounded-full blur-2xl",
-              theme.orbRight
-            )}
-            aria-hidden
-          />
-          <div
-            className={cn(
-              "pointer-events-none absolute -left-4 bottom-0 size-24 rounded-full blur-2xl",
-              theme.orbLeft
-            )}
-            aria-hidden
-          />
-
           <div className="relative flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "flex size-12 shrink-0 items-center justify-center rounded-xl border bg-gradient-to-br shadow-lg",
+                  "flex size-12 shrink-0 items-center justify-center rounded-sm border",
                   theme.iconBorder,
-                  theme.iconGradient,
-                  theme.iconShadow
+                  theme.iconGradient
                 )}
               >
                 <Icon className={cn("size-6", theme.iconText)} aria-hidden />
@@ -137,7 +120,7 @@ export default function OnboardingStepCard({
                     "h-1.5 rounded-full transition-all",
                     i === stepIndex
                       ? cn("w-4", theme.progressActive)
-                      : "w-1.5 bg-slate-700"
+                      : "w-1.5 bg-surface-muted"
                   )}
                 />
               ))}
@@ -147,7 +130,7 @@ export default function OnboardingStepCard({
           <h2
             id="onboarding-tour-title"
             className={cn(
-              "relative mt-4 bg-gradient-to-r bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-[1.65rem]",
+              "font-display relative mt-4 text-2xl font-bold tracking-tight sm:text-[1.65rem]",
               theme.titleGradient
             )}
           >
@@ -158,7 +141,7 @@ export default function OnboardingStepCard({
         <div className="px-6 py-5 sm:px-7 sm:py-6">
           <p
             id="onboarding-tour-body"
-            className="text-base leading-relaxed text-slate-300"
+            className="text-base leading-relaxed text-ink-secondary"
           >
             {step.body}
           </p>
@@ -166,10 +149,10 @@ export default function OnboardingStepCard({
           {step.highlights && step.highlights.length > 0 ? (
             <ul className="mt-5 space-y-3">
               {step.highlights.map((line) => (
-                <li key={line} className="flex gap-3 text-sm text-slate-300">
+                <li key={line} className="flex gap-3 text-sm text-ink-secondary">
                   <span
                     className={cn(
-                      "mt-1.5 size-1.5 shrink-0 rounded-full bg-gradient-to-r",
+                      "mt-1.5 size-1.5 shrink-0 rounded-full",
                       theme.bulletGradient
                     )}
                     aria-hidden
@@ -180,11 +163,11 @@ export default function OnboardingStepCard({
             </ul>
           ) : null}
 
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800/80 pt-5">
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
             <button
               type="button"
               onClick={onSkip}
-              className="text-sm text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
+              className="text-sm text-ink-muted underline-offset-2 hover:text-ink-secondary hover:underline"
             >
               Skip tour
             </button>

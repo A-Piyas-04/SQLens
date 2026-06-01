@@ -28,7 +28,7 @@ export default function WorkspaceLayout({
       <div className="lg:hidden">
         <aside
           data-tour="workspace-sidebar"
-          className="rounded-xl border border-slate-800/70 bg-slate-900/55 p-4 shadow-xl shadow-slate-950/35 ring-1 ring-white/[0.03] backdrop-blur-md"
+          className="rounded-sm border border-line bg-surface-raised p-4 shadow-sm"
         >
           {sidebar}
         </aside>

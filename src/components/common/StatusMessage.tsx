@@ -11,10 +11,8 @@ type Props = {
 };
 
 const styles: Record<Variant, string> = {
-  error:
-    "border-red-800/60 bg-gradient-to-r from-red-950/55 to-slate-950/40 text-red-100",
-  success:
-    "border-emerald-800/60 bg-gradient-to-r from-emerald-950/45 to-slate-950/40 text-emerald-100",
+  error: "border-danger-ink bg-danger-surface text-danger-ink",
+  success: "border-success-ink bg-success-surface text-success-ink",
 };
 
 export default function StatusMessage({ variant, message }: Props) {
@@ -22,8 +20,7 @@ export default function StatusMessage({ variant, message }: Props) {
     <AnimatedReveal>
       <div
         className={cn(
-          "flex items-start gap-3 rounded-xl border p-4 text-sm",
-          "shadow-lg shadow-slate-950/25 backdrop-blur-sm",
+          "flex items-start gap-3 rounded-sm border p-4 text-sm",
           styles[variant]
         )}
         role="status"

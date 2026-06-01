@@ -84,26 +84,26 @@ function KeyTable({
       }}
     >
       <div className="mb-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
           {title}
         </p>
-        <p className="text-[10px] text-slate-600">{subtitle}</p>
+        <p className="text-[10px] text-ink-muted">{subtitle}</p>
       </div>
 
       <div
         className={cn(
-          "overflow-hidden rounded-lg border",
+          "overflow-hidden rounded-sm border",
           activeRowId && side === "left"
-            ? "border-emerald-500/40 shadow-[0_0_24px_-6px_rgba(16,185,129,0.35)]"
-            : "border-slate-700/50"
+            ? "border-join-matched-border"
+            : "border-line"
         )}
       >
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-800/90">
+            <tr className="bg-surface-muted">
               <th
                 className={cn(
-                  "border-b border-b-sky-500/40 bg-sky-500/10 px-3 py-2 text-left font-semibold text-sky-300",
+                  "border-b border-b-accent bg-accent-muted px-3 py-2 text-left font-semibold text-accent-ink",
                   pulseHeader && "pb-key-pulse"
                 )}
               >
@@ -123,9 +123,9 @@ function KeyTable({
                 <tr
                   key={row._rowId}
                   className={cn(
-                    "border-b border-slate-800/50 transition-all duration-200",
-                    active && "bg-emerald-500/25 ring-1 ring-inset ring-emerald-400/50",
-                    !active && matched && "bg-emerald-500/10",
+                    "border-b border-line/50 transition-all duration-200",
+                    active && "bg-join-matched-bg ring-1 ring-inset ring-join-matched-border",
+                    !active && matched && "bg-join-matched-bg/60",
                     !active && !matched && pending && "opacity-50",
                     !active && !matched && !pending && "opacity-30"
                   )}
@@ -137,26 +137,26 @@ function KeyTable({
                     }}
                     className={cn(
                       "relative px-3 py-2 font-mono",
-                      active || matched ? "font-semibold text-sky-100" : "text-slate-500",
-                      val === null && "italic text-amber-400"
+                      active || matched ? "font-semibold text-ink" : "text-ink-muted",
+                      val === null && "italic text-join-null"
                     )}
                   >
                     {val === null ? "NULL" : val !== undefined ? String(val) : "—"}
                     {count > 1 && matched && (
-                      <span className="ml-2 rounded-full bg-emerald-500/20 px-1.5 text-[9px] text-emerald-300">
+                      <span className="ml-2 rounded-sm border border-join-matched-border bg-join-matched-bg px-1.5 text-[9px] text-accent-ink">
                         ×{count}
                       </span>
                     )}
                     {active && side === "left" && (
                       <span
                         className={cn(
-                          "absolute top-1/2 -translate-y-1/2 size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]",
+                          "absolute top-1/2 -translate-y-1/2 size-2 rounded-full bg-accent",
                           side === "left" ? "-right-3" : "-left-3"
                         )}
                       />
                     )}
                     {active && side === "right" && (
-                      <span className="absolute -left-3 top-1/2 size-2 -translate-y-1/2 rounded-full bg-teal-400 shadow-[0_0_8px_#2dd4bf]" />
+                      <span className="absolute -left-3 top-1/2 size-2 -translate-y-1/2 rounded-full bg-accent" />
                     )}
                   </td>
                 </tr>
@@ -164,7 +164,7 @@ function KeyTable({
             })}
             {overflow > 0 && (
               <tr>
-                <td className="px-3 py-2 text-center text-[10px] italic text-slate-600">
+                <td className="px-3 py-2 text-center text-[10px] italic text-ink-muted">
                   +{overflow} more rows
                 </td>
               </tr>
@@ -469,19 +469,19 @@ export default function JoinPlaybackCanvas({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/50 px-4 py-2.5">
-        <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 text-[11px] font-semibold text-purple-300">
+      <div className="flex flex-wrap items-center gap-2 rounded-sm border border-line bg-surface-raised px-4 py-2.5">
+        <span className="rounded-sm border border-orange-300 bg-orange-100 px-2.5 py-1 text-[11px] font-semibold text-orange-900">
           {joinType}
         </span>
         {joinLayerTotal > 1 && (
-          <span className="rounded-md border border-slate-600/50 bg-slate-800/80 px-2 py-1 text-[10px] text-slate-400">
+          <span className="rounded-sm border border-line-strong bg-surface-muted px-2 py-1 text-[10px] text-ink-muted">
             Layer {panelKeys.joinLayer} of {panelKeys.joinLayerTotal}
           </span>
         )}
         {panelKeys.display ? (
-          <span className="font-mono text-[11px] text-slate-300">
-            <span className="text-slate-500">ON </span>
-            <span className="text-sky-300">{panelKeys.display}</span>
+          <span className="font-mono text-[11px] text-ink-secondary">
+            <span className="text-ink-muted">ON </span>
+            <span className="text-accent-ink">{panelKeys.display}</span>
           </span>
         ) : null}
       </div>
@@ -496,9 +496,9 @@ export default function JoinPlaybackCanvas({
       >
         {phase === "idle" ? (
           <>
-            <div className="h-32 animate-pulse rounded-lg bg-slate-800/40" />
-            <div className="h-32 animate-pulse rounded-lg bg-slate-800/25" />
-            <div className="h-32 animate-pulse rounded-lg bg-slate-800/40" />
+            <div className="h-32 animate-pulse rounded-sm bg-surface-muted" />
+            <div className="h-32 animate-pulse rounded-sm bg-surface-muted" />
+            <div className="h-32 animate-pulse rounded-sm bg-surface-muted" />
           </>
         ) : (
           <>
@@ -520,7 +520,7 @@ export default function JoinPlaybackCanvas({
             <JoinMatchBridge link={activeLink} />
 
             {rightRows.length === 0 ? (
-              <div className="rounded-lg border border-slate-700/30 bg-slate-800/20 px-3 py-8 text-center text-[11px] italic text-slate-600">
+              <div className="rounded-sm border border-line bg-surface-muted px-3 py-8 text-center text-[11px] italic text-ink-muted">
                 Right table unavailable
               </div>
             ) : (
@@ -555,7 +555,7 @@ export default function JoinPlaybackCanvas({
       </div>
 
       {summaryFlash && skippedStepCount > 0 && (
-        <p className="text-center text-[10px] italic text-slate-500">
+        <p className="text-center text-[10px] italic text-ink-muted">
           +{skippedStepCount} more matched row{skippedStepCount !== 1 ? "s" : ""} in the
           result below
         </p>
@@ -570,16 +570,16 @@ export default function JoinPlaybackCanvas({
           }}
         >
           <div className="mb-3 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-700/40" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <div className="h-px flex-1 bg-surface-muted/40" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
               Intermediate result — {joinedRows.length} rows
             </span>
-            <div className="h-px flex-1 bg-slate-700/40" />
+            <div className="h-px flex-1 bg-surface-muted/40" />
           </div>
 
-          <div className="max-h-[300px] overflow-auto rounded-lg border border-slate-700/50">
+          <div className="max-h-[300px] overflow-auto rounded-sm border border-line">
             <table className="w-full border-collapse text-xs">
-              <thead className="sticky top-0 bg-slate-800/95 backdrop-blur-sm">
+              <thead className="sticky top-0 bg-surface-muted ">
                 <tr>
                   {resultColumns.map(({ key, label }) => (
                     <th
@@ -587,8 +587,8 @@ export default function JoinPlaybackCanvas({
                       className={cn(
                         "border-b px-3 py-2 text-left font-semibold whitespace-nowrap",
                         key === panelKeys.leftKey || key === panelKeys.rightKey
-                          ? "border-b-sky-500/40 bg-sky-500/8 text-sky-300"
-                          : "border-b-slate-700/60 text-slate-300"
+                          ? "border-b-accent bg-accent-muted text-accent-ink"
+                          : "border-b-line text-ink-secondary"
                       )}
                     >
                       {label}
@@ -600,7 +600,7 @@ export default function JoinPlaybackCanvas({
                 {joinedRows.map((row, i) => (
                   <tr
                     key={row._rowId}
-                    className="pb-join-result-row border-b border-slate-800/40"
+                    className="pb-join-result-row border-b border-line/40"
                     style={{ animationDelay: `${i * 45}ms` } as CSSProperties}
                   >
                     {resultColumns.map(({ key }) => (
@@ -609,9 +609,9 @@ export default function JoinPlaybackCanvas({
                         className={cn(
                           "px-3 py-1.5 font-mono whitespace-nowrap",
                           key === panelKeys.leftKey || key === panelKeys.rightKey
-                            ? "font-semibold text-sky-300"
-                            : "text-slate-300",
-                          row[key] === null && "italic text-amber-400"
+                            ? "font-semibold text-accent-ink"
+                            : "text-ink-secondary",
+                          row[key] === null && "italic text-join-null"
                         )}
                       >
                         {row[key] === null ? "NULL" : String(row[key])}
@@ -625,7 +625,7 @@ export default function JoinPlaybackCanvas({
         </div>
       )}
 
-      <p className="text-[10px] text-slate-600">
+      <p className="text-[10px] text-ink-muted">
         Arrows stay visible through the intermediate result; lines clear on the next query.
       </p>
     </div>

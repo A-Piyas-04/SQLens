@@ -13,18 +13,18 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white shadow-md shadow-blue-950/45 hover:shadow-blue-900/55 border border-blue-400/35 ring-1 ring-white/10",
+    "bg-accent text-white border border-accent hover:bg-accent-ink hover:border-accent-ink hover:text-white",
   secondary:
-    "bg-slate-800/90 hover:bg-slate-700/90 text-slate-100 border border-slate-700/80 hover:border-slate-600 shadow-sm shadow-slate-950/35 ring-1 ring-white/[0.03]",
+    "bg-surface-raised text-ink border border-line hover:bg-surface-muted hover:border-line-strong",
   ghost:
-    "bg-transparent hover:bg-slate-800/70 text-slate-300 hover:text-white border border-transparent hover:border-slate-700/60",
+    "bg-transparent text-ink-secondary hover:text-ink border border-transparent hover:border-line hover:bg-surface-muted",
   danger:
-    "bg-slate-800/90 hover:bg-red-950/80 text-slate-200 hover:text-red-200 border border-slate-700/80 hover:border-red-800/60",
+    "bg-danger-surface text-danger-ink border border-line hover:bg-red-100 hover:border-danger-ink",
 };
 
 const sizeStyles: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-xs rounded-md",
-  md: "px-5 py-2.5 text-sm rounded-lg",
+  sm: "px-3 py-1.5 text-xs rounded-sm",
+  md: "px-5 py-2.5 text-sm rounded-sm",
 };
 
 export default function Button({
@@ -38,10 +38,9 @@ export default function Button({
     <button
       className={cn(
         "inline-flex items-center justify-center gap-2 font-medium",
-        "transition-all duration-200 ease-out",
-        "hover:-translate-y-px active:translate-y-0 active:scale-[0.97]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:active:scale-100",
+        "transition-colors duration-150 ease-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
         variantStyles[variant],
         sizeStyles[size],
         className

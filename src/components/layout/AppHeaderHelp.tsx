@@ -46,23 +46,23 @@ export default function AppHeaderHelp({ onStartTour }: Props) {
           isOpen && headerActionButtonOpenClass
         )}
       >
-        <HelpTourIcon size={HEADER_ACTION_ICON_SIZE} className="text-sky-300" />
+        <HelpTourIcon size={HEADER_ACTION_ICON_SIZE} className="text-accent-ink" />
       </button>
 
       {isOpen ? (
         <div
           className={cn(
             "absolute right-0 top-full z-50 mt-1.5 min-w-[12rem]",
-            "overflow-hidden rounded-lg border border-slate-700/60 bg-slate-900",
-            "shadow-xl shadow-slate-950/60"
+            "overflow-hidden rounded-sm border border-line bg-surface-elevated",
+            "shadow-md"
           )}
         >
           <button
             type="button"
             onClick={handleStartTour}
             className={cn(
-              "flex w-full px-3 py-2.5 text-left text-sm text-slate-200",
-              "transition-colors hover:bg-slate-800/60"
+              "flex w-full px-3 py-2.5 text-left text-sm text-ink",
+              "transition-colors hover:bg-surface-muted"
             )}
           >
             Take the tour again

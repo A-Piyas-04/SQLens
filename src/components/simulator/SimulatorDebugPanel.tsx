@@ -26,31 +26,31 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
   if (!snapshot) return null;
 
   return (
-    <div className="rounded-lg border border-slate-700/40">
+    <div className="rounded-sm border border-line">
       {/* Toggle row */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-800/30"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-surface-muted"
         aria-expanded={open}
       >
         {open ? (
-          <ChevronDown className="size-3.5 text-slate-600" aria-hidden />
+          <ChevronDown className="size-3.5 text-ink-muted" aria-hidden />
         ) : (
-          <ChevronRight className="size-3.5 text-slate-600" aria-hidden />
+          <ChevronRight className="size-3.5 text-ink-muted" aria-hidden />
         )}
-        <Bug className="size-3.5 text-slate-600" aria-hidden />
-        <span className="text-[11px] font-medium text-slate-500">
+        <Bug className="size-3.5 text-ink-muted" aria-hidden />
+        <span className="text-[11px] font-medium text-ink-muted">
           Debug inspector
         </span>
-        <span className="ml-auto text-[10px] text-slate-700">
+        <span className="ml-auto text-[10px] text-ink-muted">
           {snapshots.length} stage{snapshots.length !== 1 ? "s" : ""}
         </span>
       </button>
 
       {open && (
-        <div className="border-t border-slate-700/40">
+        <div className="border-t border-line">
           {/* Stage selector */}
-          <div className="flex gap-1 border-b border-slate-700/40 px-3 py-2">
+          <div className="flex gap-1 border-b border-line px-3 py-2">
             {snapshots.map((s, i) => (
               <button
                 key={s.stageId}
@@ -58,8 +58,8 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
                 className={cn(
                   "rounded px-2 py-0.5 text-[10px] font-mono transition-colors",
                   activeStage === i
-                    ? "bg-slate-700 text-slate-200"
-                    : "text-slate-500 hover:text-slate-300"
+                    ? "bg-surface-muted text-ink"
+                    : "text-ink-muted hover:text-ink-secondary"
                 )}
               >
                 {s.label}
@@ -68,7 +68,7 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
           </div>
 
           {/* Tab bar */}
-          <div className="flex gap-1 border-b border-slate-700/40 px-3 py-2">
+          <div className="flex gap-1 border-b border-line px-3 py-2">
             {(["sql", "rowids", "diff"] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -76,8 +76,8 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
                 className={cn(
                   "rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
                   tab === t
-                    ? "bg-slate-700/60 text-slate-200"
-                    : "text-slate-600 hover:text-slate-400"
+                    ? "bg-surface-muted text-ink"
+                    : "text-ink-muted hover:text-ink-muted"
                 )}
               >
                 {t === "rowids" ? "Row IDs" : t === "diff" ? "Diff" : "SQL"}
@@ -97,10 +97,10 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
               <table className="w-full border-collapse text-[11px]">
                 <thead>
                   <tr>
-                    <th className="border-b border-slate-700/40 pb-1 text-left font-mono text-slate-500">
+                    <th className="border-b border-line pb-1 text-left font-mono text-ink-muted">
                       _rowId
                     </th>
-                    <th className="border-b border-slate-700/40 pb-1 text-left font-mono text-slate-500 pl-4">
+                    <th className="border-b border-line pb-1 text-left font-mono text-ink-muted pl-4">
                       values (preview)
                     </th>
                   </tr>
@@ -113,9 +113,9 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
                       .map(([k, v]) => `${k}=${v === null ? "NULL" : String(v)}`)
                       .join(", ");
                     return (
-                      <tr key={row._rowId} className="border-b border-slate-800/40">
-                        <td className="py-1 font-mono text-sky-400">{row._rowId}</td>
-                        <td className="py-1 pl-4 font-mono text-slate-400 truncate max-w-[200px]">
+                      <tr key={row._rowId} className="border-b border-line/40">
+                        <td className="py-1 font-mono text-accent">{row._rowId}</td>
+                        <td className="py-1 pl-4 font-mono text-ink-muted truncate max-w-[200px]">
                           {preview}
                         </td>
                       </tr>
@@ -129,30 +129,30 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
               diff ? (
                 <div className="space-y-3">
                   <div>
-                    <p className="mb-1 text-[10px] font-medium text-slate-500 uppercase">
+                    <p className="mb-1 text-[10px] font-medium text-ink-muted uppercase">
                       Row diffs ({diff.rowDiffs.length})
                     </p>
                     <table className="w-full border-collapse text-[11px]">
                       <thead>
                         <tr>
-                          <th className="border-b border-slate-700/40 pb-1 text-left font-mono text-slate-500">rowId</th>
-                          <th className="border-b border-slate-700/40 pb-1 text-left font-mono text-slate-500 pl-3">status</th>
-                          <th className="border-b border-slate-700/40 pb-1 text-left font-mono text-slate-500 pl-3">reason</th>
+                          <th className="border-b border-line pb-1 text-left font-mono text-ink-muted">rowId</th>
+                          <th className="border-b border-line pb-1 text-left font-mono text-ink-muted pl-3">status</th>
+                          <th className="border-b border-line pb-1 text-left font-mono text-ink-muted pl-3">reason</th>
                         </tr>
                       </thead>
                       <tbody>
                         {diff.rowDiffs.map((d) => (
-                          <tr key={d.rowId} className="border-b border-slate-800/40">
-                            <td className="py-1 font-mono text-sky-400">{d.rowId}</td>
-                            <td className="py-1 pl-3 font-mono text-slate-300">{d.status}</td>
-                            <td className="py-1 pl-3 text-slate-500 max-w-[200px] truncate">{d.reason ?? "—"}</td>
+                          <tr key={d.rowId} className="border-b border-line/40">
+                            <td className="py-1 font-mono text-accent">{d.rowId}</td>
+                            <td className="py-1 pl-3 font-mono text-ink-secondary">{d.status}</td>
+                            <td className="py-1 pl-3 text-ink-muted max-w-[200px] truncate">{d.reason ?? "—"}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                   <div>
-                    <p className="mb-1 text-[10px] font-medium text-slate-500 uppercase">
+                    <p className="mb-1 text-[10px] font-medium text-ink-muted uppercase">
                       Column diffs ({diff.columnDiffs.length})
                     </p>
                     <div className="flex flex-wrap gap-1">
@@ -163,7 +163,7 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
                             "rounded border px-1.5 py-0.5 text-[10px] font-mono",
                             c.status === "hidden"
                               ? "border-red-500/30 text-red-400"
-                              : "border-slate-700/40 text-slate-400"
+                              : "border-line text-ink-muted"
                           )}
                         >
                           {c.column}
@@ -174,7 +174,7 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] italic text-slate-600">
+                <p className="text-[11px] italic text-ink-muted">
                   No diff — this is the first stage.
                 </p>
               )

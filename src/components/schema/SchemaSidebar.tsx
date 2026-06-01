@@ -18,9 +18,9 @@ export default function SchemaSidebar({ tables, onRefresh }: Props) {
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <IconTile>
-            <SchemaTablesIcon size={26} className="text-blue-300" />
+            <SchemaTablesIcon size={26} className="text-accent" />
           </IconTile>
-          <h2 className="font-semibold text-slate-100">Schema</h2>
+          <h2 className="font-semibold text-ink">Schema</h2>
         </div>
 
         <Button variant="ghost" size="sm" onClick={onRefresh}>
@@ -30,7 +30,7 @@ export default function SchemaSidebar({ tables, onRefresh }: Props) {
       </div>
 
       {tables.length === 0 ? (
-        <p className="text-sm text-slate-400">No tables yet</p>
+        <p className="text-sm text-ink-muted">No tables yet</p>
       ) : (
         <div className="space-y-3">
           {tables.map((table) => (

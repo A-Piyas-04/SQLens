@@ -104,13 +104,13 @@ function RowPill({ label, matched, isNullRow = false, side, innerRef }: RowPillP
     <div
       ref={innerRef}
       className={cn(
-        "flex min-w-[100px] max-w-[160px] items-center rounded-md border px-2.5 py-1.5 text-[11px] font-mono leading-none transition-colors duration-200",
+        "flex min-w-[100px] max-w-[160px] items-center rounded-sm border px-2.5 py-1.5 text-[11px] font-mono leading-none transition-colors duration-200",
         side === "left" ? "justify-end text-right" : "justify-start text-left",
         isNullRow
-          ? "border-amber-500/30 bg-amber-500/8 text-amber-400"
+          ? "border-line-strong bg-join-null-bg text-join-null"
           : matched
-            ? "border-emerald-500/30 bg-emerald-500/8 text-emerald-300"
-            : "border-slate-700/50 bg-slate-800/50 text-slate-400"
+            ? "border-join-matched-border bg-join-matched-bg text-accent-ink"
+            : "border-line bg-surface-muted text-ink-muted"
       )}
     >
       <span className="truncate">{label}</span>
@@ -184,14 +184,14 @@ export default function SimulatorJoinCanvas({
   const isLeftJoin = joinType.toUpperCase().includes("LEFT");
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-700/40 bg-slate-900/30 p-4">
+    <div className="mt-4 rounded-sm border border-line bg-surface-raised p-4">
       {/* Header */}
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+        <span className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide">
           {joinType} row matching
         </span>
         {isLeftJoin && (
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400">
+          <span className="rounded-sm border border-line-strong bg-join-null-bg px-2 py-0.5 text-[10px] text-join-null">
             unmatched rows produce NULLs
           </span>
         )}
@@ -204,7 +204,7 @@ export default function SimulatorJoinCanvas({
       >
         {/* Left table */}
         <div className="flex flex-col gap-1.5">
-          <p className="mb-1 text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+          <p className="mb-1 text-[10px] font-medium text-ink-muted uppercase tracking-wide">
             left table
           </p>
           {leftRows.map((row) => (
@@ -233,9 +233,9 @@ export default function SimulatorJoinCanvas({
               y1={line.y1}
               x2={line.x2}
               y2={line.y2}
-              stroke={line.isNullRow ? "#f59e0b" : "#10b981"}
+              stroke={line.isNullRow ? "var(--color-join-null)" : "var(--color-join-matched)"}
               strokeWidth={1.5}
-              strokeOpacity={line.isNullRow ? 0.5 : 0.7}
+              strokeOpacity={line.isNullRow ? 0.55 : 0.85}
               strokeDasharray={line.isNullRow ? "4 3" : undefined}
             />
           ))}
@@ -243,7 +243,7 @@ export default function SimulatorJoinCanvas({
 
         {/* Right table */}
         <div className="flex flex-col gap-1.5">
-          <p className="mb-1 text-[10px] font-medium text-slate-500 uppercase tracking-wide">
+          <p className="mb-1 text-[10px] font-medium text-ink-muted uppercase tracking-wide">
             right table
           </p>
           {rightRows.map((row) => (
@@ -259,7 +259,7 @@ export default function SimulatorJoinCanvas({
             />
           ))}
           {isLeftJoin && rightRows.length === 0 && (
-            <span className="text-[11px] italic text-slate-600">
+            <span className="text-[11px] italic text-ink-muted">
               (no right rows)
             </span>
           )}
@@ -267,23 +267,23 @@ export default function SimulatorJoinCanvas({
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex items-center gap-4 text-[10px] text-slate-500">
+      <div className="mt-3 flex items-center gap-4 text-[10px] text-ink-muted">
         <span className="flex items-center gap-1.5">
           <svg width="16" height="4" className="overflow-visible">
-            <line x1="0" y1="2" x2="16" y2="2" stroke="#10b981" strokeWidth="1.5" strokeOpacity="0.7" />
+            <line x1="0" y1="2" x2="16" y2="2" stroke="var(--color-join-matched)" strokeWidth="1.5" strokeOpacity="0.85" />
           </svg>
           matched
         </span>
         {isLeftJoin && (
           <span className="flex items-center gap-1.5">
             <svg width="16" height="4" className="overflow-visible">
-              <line x1="0" y1="2" x2="16" y2="2" stroke="#f59e0b" strokeWidth="1.5" strokeOpacity="0.5" strokeDasharray="4 3" />
+              <line x1="0" y1="2" x2="16" y2="2" stroke="var(--color-join-null)" strokeWidth="1.5" strokeOpacity="0.55" strokeDasharray="4 3" />
             </svg>
             no match (NULL)
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-2 rounded-full border border-slate-600 bg-slate-800" />
+          <span className="inline-block size-2 rounded-full border border-line-strong bg-surface-muted" />
           unmatched
         </span>
       </div>

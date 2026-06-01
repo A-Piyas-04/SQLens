@@ -237,7 +237,7 @@ const PlaybackTable = memo(function PlaybackTable({
 
   if (rows.length === 0 && transitionPhase !== "transforming") {
     return (
-      <p className="py-8 text-center text-sm text-slate-500">No rows at this stage.</p>
+      <p className="py-8 text-center text-sm text-ink-muted">No rows at this stage.</p>
     );
   }
 
@@ -249,37 +249,37 @@ const PlaybackTable = memo(function PlaybackTable({
   return (
     <div
       className={cn(
-        "max-h-[calc(100vh-280px)] overflow-auto rounded-lg border border-slate-700/50",
+        "max-h-[calc(100vh-280px)] overflow-auto rounded-sm border border-line",
         tableEntering && "pb-table-from-enter"
       )}
     >
       {isFilterStage && (
-        <div className="flex items-center justify-between border-b border-slate-700/50 bg-slate-800/60 px-3 py-1.5 text-[10px] text-slate-500">
+        <div className="flex items-center justify-between border-b border-line bg-surface-muted px-3 py-1.5 text-[10px] text-ink-muted">
           <span>Rows</span>
           <span className="tabular-nums">
-            <span className={showCountPulse ? "line-through text-slate-600" : ""}>
+            <span className={showCountPulse ? "line-through text-ink-muted" : ""}>
               {showCountPulse ? prevRowCount : targetRowCount}
             </span>
             {showCountPulse && (
               <>
                 {" → "}
-                <span className="pb-count-update font-semibold text-slate-200">
+                <span className="pb-count-update font-semibold text-ink">
                   {targetRowCount}
                 </span>
               </>
             )}
             {!showCountPulse && (
-              <span className="font-semibold text-slate-300">{targetRowCount}</span>
+              <span className="font-semibold text-ink-secondary">{targetRowCount}</span>
             )}
           </span>
         </div>
       )}
 
       <table className="pb-table w-full border-collapse text-xs">
-        <thead className="sticky top-0 z-10 bg-slate-800/95 backdrop-blur-sm">
+        <thead className="sticky top-0 z-10 bg-surface-muted ">
           <tr>
             {showRowIds && (
-              <th className="border-b border-slate-700/80 px-2 py-2.5 text-left font-semibold text-slate-500">
+              <th className="border-b border-line px-2 py-2.5 text-left font-semibold text-ink-muted">
                 id
               </th>
             )}
@@ -300,9 +300,9 @@ const PlaybackTable = memo(function PlaybackTable({
                 <th
                   key={col}
                   className={cn(
-                    "border-b border-slate-700/80 px-3 py-2.5 text-left font-semibold whitespace-nowrap",
-                    isDropped && transitionPhase === "idle" && "text-slate-600 line-through opacity-50",
-                    !isDropped && "text-slate-300",
+                    "border-b border-line px-3 py-2.5 text-left font-semibold whitespace-nowrap",
+                    isDropped && transitionPhase === "idle" && "text-ink-muted line-through opacity-50",
+                    !isDropped && "text-ink-secondary",
                     colDeparting && "pb-col-dropped-header",
                     colCollapsing && "pb-col-collapsing",
                     colSurvived && "pb-col-survived"
@@ -318,7 +318,7 @@ const PlaybackTable = memo(function PlaybackTable({
               );
             })}
             {showReason && (
-              <th className="border-b border-slate-700/80 px-3 py-2.5 text-left font-semibold text-slate-600 whitespace-nowrap">
+              <th className="border-b border-line px-3 py-2.5 text-left font-semibold text-ink-muted whitespace-nowrap">
                 change
               </th>
             )}
@@ -329,10 +329,10 @@ const PlaybackTable = memo(function PlaybackTable({
           {virtualMain.map((vrow, idx) => {
             if (vrow === "ellipsis") {
               return (
-                <tr key="ellipsis" className="border-b border-slate-800/30">
+                <tr key="ellipsis" className="border-b border-line/30">
                   <td
                     colSpan={visibleCols.length + (showReason ? 1 : 0) + (showRowIds ? 1 : 0)}
-                    className="px-3 py-2 text-center text-xs text-slate-600 italic tracking-wider"
+                    className="px-3 py-2 text-center text-xs text-ink-muted italic tracking-wider"
                   >
                     ┄ ┄ ┄ &nbsp;{hiddenCount(filterMainRows)} rows not shown&nbsp; ┄ ┄ ┄
                   </td>
@@ -391,7 +391,7 @@ const PlaybackTable = memo(function PlaybackTable({
             <tr>
               <td
                 colSpan={visibleCols.length + (showReason ? 1 : 0) + (showRowIds ? 1 : 0)}
-                className="bg-slate-900/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-rose-400/80"
+                className="bg-surface-raised px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-rose-400/80"
               >
                 LIMIT {limitValue ?? targetRowCount}
               </td>
