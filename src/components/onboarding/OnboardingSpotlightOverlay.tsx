@@ -1,27 +1,26 @@
+import type { OnboardingAccent } from "../../constants/onboardingSteps";
 import { cn } from "../../lib/utils/cn";
 import type { SpotlightRect } from "./useSpotlightRect";
+import { isFeaturedTourStep } from "./onboardingThemes";
 
 const PANEL_CLASS = "onboarding-scrim absolute pointer-events-auto";
-
-import type { OnboardingAccent } from "../../constants/onboardingSteps";
 
 type Props = {
   rect: SpotlightRect;
   accent?: OnboardingAccent;
-};
-
-const RING_CLASS: Record<OnboardingAccent, string> = {
-  blue: "ring-2 ring-accent",
-  purple: "ring-2 ring-accent",
+  stepId?: string;
 };
 
 /**
  * Dims everything except the spotlight hole so the target stays sharp.
+ * Guide card uses rounded-lg + fill; highlight uses dashed outline so they read differently.
  */
 export default function OnboardingSpotlightOverlay({
   rect,
   accent = "blue",
+  stepId,
 }: Props) {
+  const featured = stepId ? isFeaturedTourStep({ id: stepId }) : accent === "purple";
   const { top, left, width, height } = rect;
   const right = left + width;
   const bottom = top + height;
@@ -61,8 +60,10 @@ export default function OnboardingSpotlightOverlay({
 
       <div
         className={cn(
-          "onboarding-spotlight pointer-events-none absolute rounded-sm border-2 border-accent motion-reduce:transition-none",
-          RING_CLASS[accent]
+          "onboarding-spotlight pointer-events-none absolute motion-reduce:transition-none",
+          featured
+            ? "onboarding-spotlight--featured rounded-md"
+            : "onboarding-spotlight--target rounded-sm"
         )}
         style={{ top, left, width, height }}
         aria-hidden

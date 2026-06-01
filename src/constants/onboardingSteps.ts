@@ -91,8 +91,14 @@ export function getOnboardingTargetSelector(target: string): string {
 /** Padding from viewport edges when deciding if a tour target is “on screen”. */
 export const TOUR_VIEWPORT_MARGIN = 48;
 
-/** Minimum visible px (width and height) to count as on screen (handles very tall panels). */
 const TOUR_MIN_VISIBLE_PX = 72;
+const TOUR_MIN_VISIBLE_FLOOR_PX = 20;
+
+/** How much of an axis must be visible (adapts to small header controls). */
+function requiredVisiblePx(visible: number, total: number): boolean {
+  const required = Math.min(TOUR_MIN_VISIBLE_PX, Math.max(TOUR_MIN_VISIBLE_FLOOR_PX, total * 0.5));
+  return visible >= required;
+}
 
 export function isTourTargetInViewport(
   el: Element,
@@ -114,7 +120,7 @@ export function isTourTargetInViewport(
   const visibleWidth = visibleRight - visibleLeft;
   const visibleHeight = visibleBottom - visibleTop;
 
-  return visibleWidth >= TOUR_MIN_VISIBLE_PX && visibleHeight >= TOUR_MIN_VISIBLE_PX;
+  return requiredVisiblePx(visibleWidth, rect.width) && requiredVisiblePx(visibleHeight, rect.height);
 }
 
 function tourScrollBehavior(): ScrollBehavior {
@@ -138,7 +144,7 @@ export function findVisibleTourTarget(target: string): Element | null {
   return fallback;
 }
 
-/** Scroll the page (and nested scroll containers) until the tour target is visible. */
+/** Scroll nested containers / page until the tour target is visible. No-op if already on screen. */
 export function ensureTourTargetVisible(target: string): Promise<void> {
   const el = findVisibleTourTarget(target);
   if (!el || isTourTargetInViewport(el)) {
@@ -146,12 +152,17 @@ export function ensureTourTargetVisible(target: string): Promise<void> {
   }
 
   const targetEl = el;
+  const behavior = tourScrollBehavior();
 
   targetEl.scrollIntoView({
-    behavior: tourScrollBehavior(),
-    block: "center",
+    behavior,
+    block: "nearest",
     inline: "nearest",
   });
+
+  if (behavior === "auto") {
+    return Promise.resolve();
+  }
 
   return new Promise((resolve) => {
     let settled = false;
@@ -164,7 +175,7 @@ export function ensureTourTargetVisible(target: string): Promise<void> {
     };
 
     let frame = 0;
-    const maxFrames = 90;
+    const maxFrames = 45;
 
     function tick() {
       frame += 1;
@@ -177,6 +188,6 @@ export function ensureTourTargetVisible(target: string): Promise<void> {
 
     window.addEventListener("scrollend", done, { once: true });
     requestAnimationFrame(tick);
-    const timer = window.setTimeout(done, 900);
+    const timer = window.setTimeout(done, 450);
   });
 }

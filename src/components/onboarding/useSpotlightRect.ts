@@ -39,7 +39,6 @@ export function useSpotlightRect(target: string | undefined, stepIndex: number) 
     }
 
     measure();
-    const raf = requestAnimationFrame(measure);
 
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
@@ -49,7 +48,6 @@ export function useSpotlightRect(target: string | undefined, stepIndex: number) 
     nodes.forEach((node) => observer.observe(node));
 
     return () => {
-      cancelAnimationFrame(raf);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
       observer.disconnect();

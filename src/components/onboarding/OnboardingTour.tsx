@@ -34,37 +34,21 @@ export default function OnboardingTour({
   onSkip,
 }: Props) {
   const rect = useSpotlightRect(isActive ? step.target : undefined, stepIndex);
-  const [layoutReady, setLayoutReady] = useState(false);
+  const [cardReady, setCardReady] = useState(false);
 
   const accent = getStepAccent(step);
   const showSpotlight = Boolean(step.target && rect);
 
   useEffect(() => {
     if (!isActive) {
-      setLayoutReady(false);
+      setCardReady(false);
       return;
     }
 
-    let cancelled = false;
-    setLayoutReady(false);
+    setCardReady(true);
 
-    async function prepareStepLayout() {
-      if (step.target) {
-        await ensureTourTargetVisible(step.target);
-      }
-      if (cancelled) return;
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!cancelled) setLayoutReady(true);
-        });
-      });
-    }
-
-    void prepareStepLayout();
-    return () => {
-      cancelled = true;
-    };
+    if (!step.target) return;
+    void ensureTourTargetVisible(step.target);
   }, [isActive, stepIndex, step.target]);
 
   useEffect(() => {
@@ -95,7 +79,7 @@ export default function OnboardingTour({
     totalSteps,
     isFirst,
     isLast,
-    layoutReady,
+    layoutReady: cardReady,
     onNext,
     onBack,
     onSkip,
@@ -109,8 +93,8 @@ export default function OnboardingTour({
       aria-labelledby="onboarding-tour-title"
       aria-describedby="onboarding-tour-body"
     >
-      {showSpotlight && layoutReady && rect ? (
-        <OnboardingSpotlightOverlay rect={rect} accent={accent} />
+      {showSpotlight && rect ? (
+        <OnboardingSpotlightOverlay rect={rect} accent={accent} stepId={step.id} />
       ) : (
         <div
           className="onboarding-scrim absolute inset-0 pointer-events-auto"
