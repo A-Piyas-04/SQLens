@@ -170,6 +170,17 @@ function throwAfterAllModelsFailed(attempts: ModelAttempt[]): never {
   throw new Error("AI request failed. Please try again.");
 }
 
+const PLACEHOLDER_GEMINI_KEYS = new Set([
+  "your_google_ai_studio_key",
+  "your_key",
+  "your_gemini_api_key",
+]);
+
+export function isPlaceholderGeminiKey(key: string | undefined): boolean {
+  if (!key?.trim()) return false;
+  return PLACEHOLDER_GEMINI_KEYS.has(key.trim().toLowerCase());
+}
+
 let client: GoogleGenerativeAI | null = null;
 
 function getClient(): GoogleGenerativeAI {
@@ -177,6 +188,12 @@ function getClient(): GoogleGenerativeAI {
 
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY in backend/.env");
+  }
+
+  if (isPlaceholderGeminiKey(apiKey)) {
+    throw new Error(
+      "Placeholder GEMINI_API_KEY in backend/.env — replace it with a key from https://aistudio.google.com/apikey"
+    );
   }
 
   if (!client) {

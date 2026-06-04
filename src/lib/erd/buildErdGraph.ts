@@ -1,6 +1,7 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
 
 import type { SchemaTable } from "../db/schema";
+import { layoutErdGraph } from "./layoutErdGraph";
 
 export type ErdTableNodeData = {
   table: SchemaTable;
@@ -9,15 +10,12 @@ export type ErdTableNodeData = {
 
 type ErdNode = Node<ErdTableNodeData, "erdTable">;
 
-const NODE_WIDTH = 248;
+export const NODE_WIDTH = 248;
 const HEADER_H = 44;
 const ROW_H = 30;
 const PADDING_V = 8;
-const H_GAP = 90;
-const V_GAP = 56;
-const COLS_PER_ROW = 3;
 
-function nodeHeight(columnCount: number): number {
+export function nodeHeight(columnCount: number): number {
   return HEADER_H + columnCount * ROW_H + PADDING_V;
 }
 
@@ -27,32 +25,12 @@ export function buildErdGraph(tables: SchemaTable[]): {
 } {
   if (tables.length === 0) return { nodes: [], edges: [] };
 
-  const rowCount = Math.ceil(tables.length / COLS_PER_ROW);
-  const rowHeights: number[] = Array.from({ length: rowCount }, () => 0);
-
-  tables.forEach((table, i) => {
-    const row = Math.floor(i / COLS_PER_ROW);
-    rowHeights[row] = Math.max(rowHeights[row], nodeHeight(table.columns.length));
-  });
-
-  const rowOffsets: number[] = [0];
-  for (let r = 1; r < rowCount; r++) {
-    rowOffsets[r] = rowOffsets[r - 1] + rowHeights[r - 1] + V_GAP;
-  }
-
-  const nodes: ErdNode[] = tables.map((table, i) => {
-    const row = Math.floor(i / COLS_PER_ROW);
-    const col = i % COLS_PER_ROW;
-    return {
-      id: table.table_name,
-      type: "erdTable",
-      position: {
-        x: col * (NODE_WIDTH + H_GAP),
-        y: rowOffsets[row],
-      },
-      data: { table },
-    };
-  });
+  const nodes: ErdNode[] = tables.map((table) => ({
+    id: table.table_name,
+    type: "erdTable",
+    position: { x: 0, y: 0 },
+    data: { table },
+  }));
 
   const edges: Edge[] = [];
   const seen = new Set<string>();
@@ -85,5 +63,5 @@ export function buildErdGraph(tables: SchemaTable[]): {
     });
   });
 
-  return { nodes, edges };
+  return layoutErdGraph(nodes, edges);
 }

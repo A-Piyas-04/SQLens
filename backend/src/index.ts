@@ -5,7 +5,7 @@ import "dotenv/config";
 
 import aiRoutes from "./routes/aiRoutes";
 import { aiRateLimit } from "./middleware/aiRateLimit";
-import { resolveModelChain } from "./services/gemini";
+import { isPlaceholderGeminiKey, resolveModelChain } from "./services/gemini";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -62,11 +62,15 @@ app.get("/health", (_req, res) => {
 app.use("/api", aiRateLimit, aiRoutes);
 
 app.listen(PORT, () => {
-  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   console.log(`SQLens backend running on port ${PORT}`);
-  if (!hasGeminiKey) {
+  if (!apiKey) {
     console.warn(
       "[sqlens] GEMINI_API_KEY is missing — SQL Assistant requests will fail until backend/.env is configured."
+    );
+  } else if (isPlaceholderGeminiKey(apiKey)) {
+    console.warn(
+      "[sqlens] GEMINI_API_KEY is still the .env.example placeholder — get a free key at https://aistudio.google.com/apikey and restart this backend."
     );
   } else {
     console.info(`[sqlens] Gemini model chain: ${resolveModelChain().join(" → ")}`);

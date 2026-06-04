@@ -122,10 +122,13 @@ function sendAiError(
     return;
   }
 
-  if (message.includes("Missing GEMINI_API_KEY")) {
+  if (
+    message.includes("Missing GEMINI_API_KEY") ||
+    message.includes("Placeholder GEMINI_API_KEY")
+  ) {
     res.status(503).json({
       error:
-        "AI is not configured. Add GEMINI_API_KEY to backend/.env and restart Docker (docker compose up --build).",
+        "AI is not configured. Set GEMINI_API_KEY in backend/.env (free key: https://aistudio.google.com/apikey), then restart the backend.",
     });
     return;
   }
@@ -133,7 +136,7 @@ function sendAiError(
   if (message.includes("Invalid GEMINI_API_KEY")) {
     res.status(503).json({
       error:
-        "Gemini rejected the API key. Check GEMINI_API_KEY in backend/.env (Google AI Studio), then restart Docker.",
+        "Gemini rejected the API key. Verify GEMINI_API_KEY in backend/.env at Google AI Studio, then restart the backend.",
     });
     return;
   }

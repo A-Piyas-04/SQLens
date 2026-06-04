@@ -13,28 +13,31 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
 
   return (
     <div className="min-w-[248px] overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-sm">
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{ background: "var(--color-accent)", border: "none", width: 8, height: 8 }}
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={{ background: "var(--color-accent)", border: "none", width: 8, height: 8 }}
-      />
-      <Handle
-        type="source"
-        id="bottom"
-        position={Position.Bottom}
-        style={{ background: "var(--color-accent)", border: "none", width: 8, height: 8 }}
-      />
-      <Handle
-        type="target"
-        id="top"
-        position={Position.Top}
-        style={{ background: "var(--color-accent)", border: "none", width: 8, height: 8 }}
-      />
+      {(
+        [
+          ["source", "source-right", Position.Right],
+          ["source", "source-left", Position.Left],
+          ["source", "source-bottom", Position.Bottom],
+          ["source", "source-top", Position.Top],
+          ["target", "target-left", Position.Left],
+          ["target", "target-right", Position.Right],
+          ["target", "target-bottom", Position.Bottom],
+          ["target", "target-top", Position.Top],
+        ] as const
+      ).map(([type, id, position]) => (
+        <Handle
+          key={id}
+          type={type}
+          id={id}
+          position={position}
+          style={{
+            background: "var(--color-accent)",
+            border: "none",
+            width: 8,
+            height: 8,
+          }}
+        />
+      ))}
 
       <div className="flex items-center gap-2 border-b border-line bg-accent-soft px-3 py-2.5">
         <div className="size-2 shrink-0 rounded-full bg-accent" aria-hidden />
