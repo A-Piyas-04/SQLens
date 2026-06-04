@@ -50,6 +50,28 @@ describe("sanitizeGuidance", () => {
     expect(() => sanitizeGuidance(bad)).toThrow(GUIDANCE_SQL_REJECTED_MESSAGE);
   });
 
+  it("allows guidance that mentions Select and from in separate fields", () => {
+    const guidance = sanitizeGuidance(
+      JSON.stringify({
+        summary: "Link students to courses through enrollments.",
+        problemBreakdown: [
+          "Select the course information for these filtered students.",
+        ],
+        techniques: [
+          {
+            name: "INNER JOIN",
+            whenToUse:
+              "Use INNER JOIN to combine rows from two tables based on a matching column.",
+          },
+        ],
+        tablesAndColumns: ["students, enrollments, courses"],
+        pitfalls: ["Forgetting the enrollments bridge table."],
+      })
+    );
+
+    expect(guidance.problemBreakdown[0]).toContain("Select the course");
+  });
+
   it("rejects markdown SQL fences in raw response", () => {
     const raw = '```sql\nSELECT * FROM students;\n```';
     expect(() => sanitizeGuidance(raw)).toThrow(GUIDANCE_SQL_REJECTED_MESSAGE);

@@ -14,8 +14,33 @@ export type SqlGuidance = {
 
 const MARKDOWN_FENCE = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i;
 
-const RUNNABLE_SQL_PATTERN =
-  /\b(SELECT|INSERT|UPDATE|DELETE|WITH)\b[\s\S]*\bFROM\b/i;
+/** Max chars between a SQL verb and FROM — avoids false positives across JSON fields. */
+const SQL_FRAGMENT_MAX_GAP = 120;
+
+const SELECT_FROM_PATTERN = new RegExp(
+  `\\bSELECT\\b[\\s\\S]{0,${SQL_FRAGMENT_MAX_GAP}}\\bFROM\\b`,
+  "i"
+);
+
+const DELETE_FROM_PATTERN = new RegExp(
+  `\\bDELETE\\b[\\s\\S]{0,${SQL_FRAGMENT_MAX_GAP}}\\bFROM\\b`,
+  "i"
+);
+
+const INSERT_INTO_PATTERN = new RegExp(
+  `\\bINSERT\\b[\\s\\S]{0,${SQL_FRAGMENT_MAX_GAP}}\\bINTO\\b`,
+  "i"
+);
+
+const UPDATE_SET_PATTERN = new RegExp(
+  `\\bUPDATE\\b[\\s\\S]{0,${SQL_FRAGMENT_MAX_GAP}}\\bSET\\b`,
+  "i"
+);
+
+const WITH_AS_PATTERN = new RegExp(
+  `\\bWITH\\b[\\s\\S]{0,${SQL_FRAGMENT_MAX_GAP}}\\bAS\\b`,
+  "i"
+);
 
 const SQL_FENCE_PATTERN = /```(?:sql)?\s*[\s\S]*?```/i;
 
@@ -38,7 +63,11 @@ export function containsRunnableSql(text: string): boolean {
   const normalized = text.trim();
   if (!normalized) return false;
   if (SQL_FENCE_PATTERN.test(normalized)) return true;
-  if (RUNNABLE_SQL_PATTERN.test(normalized)) return true;
+  if (SELECT_FROM_PATTERN.test(normalized)) return true;
+  if (DELETE_FROM_PATTERN.test(normalized)) return true;
+  if (INSERT_INTO_PATTERN.test(normalized)) return true;
+  if (UPDATE_SET_PATTERN.test(normalized)) return true;
+  if (WITH_AS_PATTERN.test(normalized)) return true;
   if (STATEMENT_LIKE_PATTERN.test(normalized)) return true;
   return false;
 }
@@ -103,11 +132,12 @@ function parseStringArray(value: unknown, field: string): string[] {
 }
 
 export function sanitizeGuidance(raw: string): SqlGuidance {
-  const jsonText = stripMarkdownFences(raw);
-
-  if (containsRunnableSql(jsonText)) {
+  const trimmed = raw.trim();
+  if (SQL_FENCE_PATTERN.test(trimmed)) {
     throw new Error(GUIDANCE_SQL_REJECTED_MESSAGE);
   }
+
+  const jsonText = stripMarkdownFences(raw);
 
   let parsed: unknown;
   try {
