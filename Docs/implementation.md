@@ -33,6 +33,7 @@
 - Run **real PostgreSQL** in the browser (no database server for query execution).
 - Inspect schema, results, and an interactive **ERD** (inline workspace panel or fullscreen `/erd` view).
 - Load **sample databases** and templates for fast practice.
+- Work through the **LeetCode SQL 50** study plan at `/practice/sql50` (50 real LeetCode problems, auto-graded).
 - Optionally use an **AI SQL assistant** that suggests concepts (not runnable SQL in the editor).
 - **Simulate** `SELECT` query execution stage-by-stage with snapshots, diffs, and animated playback.
 
@@ -89,7 +90,7 @@ SQLens/
 ├── .env.example               # VITE_API_URL, VITE_API_PROXY_TARGET
 │
 ├── src/                       # Entire React application (incl. pages/ErdFullscreenPage for /erd)
-├── api/                       # Vercel serverless handlers (production AI)
+├── api/                       # Vercel serverless handlers (production AI + SQL50 coaching)
 ├── backend/                   # Standalone Express AI server (local/Docker)
 └── Docs/                      # Project documentation
     ├── implementation.md      # This file
@@ -168,7 +169,8 @@ Central state hooks:
 src/
 ├── App.tsx, main.tsx, index.css
 ├── pages/
-│   └── ErdFullscreenPage.tsx    # Standalone /erd route — fullscreen diagram for one project
+│   ├── ErdFullscreenPage.tsx    # Standalone /erd route — fullscreen diagram for one project
+│   └── Sql50PracticePage.tsx    # Standalone /practice/sql50 — LeetCode SQL 50 workspace
 ├── constants/
 │   ├── layout.ts              # Sidebar min/max/default width
 │   ├── practiceCategories.ts  # Practice hub category IDs and labels
@@ -193,6 +195,7 @@ src/
 │   ├── db/                    # PGlite registry, runQuery, schema introspection
 │   ├── erd/                   # Graph builder, dagre layout, designed text, export, fullscreen URL
 │   ├── projects/              # Project CRUD + localStorage
+│   ├── practice/              # Generic practice engine (grading, progress, scoring, URL sync)
 │   ├── simulator/             # Parse → pipeline → snapshots → diffs
 │   ├── sql/                   # assertSafeSql, simplifyError, splitSqlStatements
 │   ├── onboarding/            # Tour completion store
@@ -211,7 +214,19 @@ src/
     ├── results/               # ResultTable
     ├── schema/                # SchemaSidebar, SchemaTableCard
     └── simulator/             # Panel, snapshot viewer, JOIN canvas, playback modal, debug
+├── features/
+│   └── sql50/                 # SQL 50 practice (layout, hooks, LeetCode dataset, modals)
+│       ├── components/        # Sql50PageLayout, Sql50LeftSidebar, Sql50ActionBar, …
+│       ├── data/sql50/
+│       │   ├── leetcode50/    # Canonical 50 LeetCode problems (7 category files)
+│       │   └── index.ts       # SQL50_PROBLEMS pack export
+│       ├── hooks/             # useSql50, useSubmissionEngine, useSql50Simulation, …
+│       └── services/          # progressStore, submissionEngine wrappers
 ```
+
+Legacy `features/sql50/data/sql50/problems/` files may remain on disk but are **not** imported; the pack reads from `leetcode50/` only.
+
+Main workspace entry: `AppHeader` promo slot → `Sql50HeaderButton` links to `/practice/sql50`.
 
 ### 4.5 Key user flows (frontend)
 
@@ -238,10 +253,12 @@ src/
 3. `requestSqlGuidance(prompt, schema)` → `POST /api/sql-guidance`.
 4. Response rendered as read-only cards (summary, breakdown, techniques, pitfalls). **No SQL is inserted into the editor.**
 
-**Simulate query**
+**Simulate query (main workspace)**
 
 1. `SimulatorPanel` calls `generateSnapshots({ sql, db })` from `src/lib/simulator`.
 2. On success: stage pills, diff-aware tables, optional JOIN canvas, debug panel, **Play Simulation** opens lazy-loaded `SimulatorPlaybackModal`.
+
+**SQL 50 practice** — see [§10.3](#103-practice-sql-50-practicesql50).
 
 ### 4.6 UI primitives and styling
 
@@ -333,11 +350,12 @@ backend/
 ├── .env.example
 └── src/
     ├── index.ts               # Express app, CORS, helmet, health, mount /api + rate limit
-    ├── routes/aiRoutes.ts     # POST /sql-guidance, POST /generate-sql
+    ├── routes/aiRoutes.ts     # POST /sql-guidance, /generate-sql, /sql50-coaching
     ├── services/gemini.ts     # resolveModelChain, generateWithGemini, quota/model errors
     ├── middleware/aiRateLimit.ts
     ├── prompts/
-    │   ├── sqlGuidancePrompt.ts   # Active tutor prompt
+    │   ├── sqlGuidancePrompt.ts   # Active tutor prompt (main workspace)
+    │   ├── sql50CoachingPrompt.ts # SQL 50 coach prompt
     │   └── sqlPrompt.ts           # Legacy SQL generation prompt
     └── utils/
         ├── sanitizeGuidance.ts
@@ -358,6 +376,7 @@ backend/
 |-------|------|----------|--------|
 | `POST /api/sql-guidance` | `prompt` (required), `schema` (optional string) | `{ guidance }` | prompt ≤ 2000 chars, schema ≤ 4000 chars |
 | `POST /api/generate-sql` | `prompt` | `{ sql }` | prompt ≤ 2000 chars |
+| `POST /api/sql50-coaching` | `problemTitle`, `problemDescription`, `userPrompt`, optional `schema`, `topics`, `unlockedHints`, `lastError` | `{ guidance }` | Problem-aware tutor for SQL 50; same sanitization as sql-guidance |
 
 Error handling maps quota (429), model unavailable (503), validation (400), missing key (503), network (503/502) to JSON `{ error: string }`.
 
@@ -392,9 +411,11 @@ For **production on Vercel**, the frontend static build is deployed with **serve
 | File | Route (Vercel) | Purpose |
 |------|----------------|---------|
 | `api/sql-guidance.ts` | `POST /api/sql-guidance` | Primary AI handler |
+| `api/sql50-coaching.ts` | `POST /api/sql50-coaching` | SQL 50 problem-aware AI coach |
 | `api/generate-sql.ts` | `POST /api/generate-sql` | Legacy SQL generation |
 | `api/_lib/gemini.ts` | — | Shared Gemini client (parallel to backend service) |
-| `api/_lib/buildSqlGuidancePrompt.ts` | — | Prompt builder |
+| `api/_lib/buildSqlGuidancePrompt.ts` | — | Prompt builder (main workspace) |
+| `api/_lib/buildSql50CoachingPrompt.ts` | — | Prompt builder (SQL 50 coach) |
 | `api/_lib/sanitizeGuidance.ts` | — | Output validation |
 | `api/_lib/rateLimit.ts` | — | IP rate limit for serverless |
 | `api/_lib/sqlGuidanceTypes.ts` | — | Shared types |
@@ -575,21 +596,122 @@ Loading a sample DB: `execSqlScript` → refresh schema → optionally set edito
 
 ### 10.3 Practice SQL 50 (`/practice/sql50`)
 
-Standalone learning route — does not modify the main workspace flow.
+Standalone LeetCode-style workspace — does **not** modify the main project workspace. Entry from **`Sql50HeaderButton`** in `AppHeader` or direct URL with optional `?problem={slug}`.
+
+#### Architecture
 
 | Layer | Location | Role |
 |-------|----------|------|
-| Page | `src/pages/Sql50PracticePage.tsx` | Orchestrates editor, results, simulator, sidebar |
-| Feature module | `src/features/sql50/` | UI components, hooks, 50-problem dataset |
-| Generic engine | `src/lib/practice/` | Result-set grading, progress store, scoring (extensible to future packs) |
-| Dedicated DB | `getDatabase("practice-sql50")` | Isolated PGlite instance (`idb://sqlens-practice-sql50`) |
-| AI coach | `POST /api/sql50-coaching` | Tutor-only coaching with stricter prompts + `sanitizeGuidance` |
+| Page | `src/pages/Sql50PracticePage.tsx` | Orchestrates layout, modals, keyboard shortcuts |
+| Feature module | `src/features/sql50/` | UI, hooks, progress, LeetCode dataset |
+| Generic engine | `src/lib/practice/` | Shared types, result-set grading, progress store, scoring, URL sync |
+| Dedicated DB | `getDatabase("practice-sql50")` | Isolated PGlite (`idb://sqlens-practice-sql50`) |
+| AI coach | `POST /api/sql50-coaching` | Tutor-only coaching via `AiCoachPanel` + `sanitizeGuidance` |
 
-**Grading:** Never compares SQL strings. Runs user query and `expectedOutputSql`, compares columns / row count / values (order-insensitive multiset).
+#### Problem dataset (LeetCode SQL 50)
 
-**Progress (localStorage):** `sqlens-practice-progress-sql50`, `sqlens-practice-active-sql50` — cleared via `clearAllLocalData()`.
+All **50 official LeetCode SQL 50 study-plan problems** in order, PostgreSQL-adapted for PGlite:
 
-**Keyboard shortcuts:** `Mod-Enter` run, `Mod-Shift-Enter` submit, `[` / `]` prev/next problem, `Mod-b` bookmark.
+| File under `leetcode50/` | Category | Count |
+|--------------------------|----------|-------|
+| `select.ts` | Select | 5 |
+| `basic-joins.ts` | Basic Joins | 9 |
+| `basic-aggregate.ts` | Basic Aggregate Functions | 8 |
+| `sorting.ts` | Sorting and Grouping | 7 |
+| `advanced-select.ts` | Advanced Select and Joins | 7 |
+| `subqueries.ts` | Subqueries | 7 |
+| `advanced-string.ts` | Advanced String / Regex / Clause | 7 |
+
+Each `PracticeProblem` (`src/lib/practice/types.ts`) includes:
+
+- `id` (1–50 study-plan order), `leetcodeId` (LeetCode problem number), `slug`, `title`, `difficulty`, `topics`
+- `description` — one-line summary shown in the workbench
+- `statement` — full LeetCode-style text (schema, examples, constraints) for the problem modal
+- `schemaSql`, `seedSql`, `expectedOutputSql` (with `ORDER BY` for deterministic grading)
+- `hints` (3), `explanation`, `officialSolution`
+
+Exported as `SQL50_PROBLEMS` from `src/features/sql50/data/sql50/index.ts`.
+
+#### Page layout (desktop)
+
+Three-column **`h-dvh`** shell via `Sql50PageLayout` + `AppBootGate className="h-dvh"`:
+
+```
+Header (title, progress, back to workspace)
+├── Left 260px — Sql50LeftSidebar
+│   └── Tabs: Problems | Schema (one full-height scroll region per tab)
+├── Center flex-1 — Sql50Workbench
+│   ├── Problem strip (ProblemHeader: LeetCode #, difficulty, title, nav, bookmark)
+│   ├── Short description + link to full statement
+│   ├── Sql50EditorPanel (~240px, titleless SqlEditor)
+│   ├── Sql50ActionBar (Play Simulation · Run · Submit · Reset DB)
+│   └── Sql50ResultsPanel (min 30vh, always visible)
+└── Right 280px — Progress, Hints, Reveal Solution, AI Coach
+```
+
+**Mobile (`< lg`):** center workbench full width; sticky bottom tab bar **Problems | Schema | Help**.
+
+There is **no inline simulator panel** on this page. **Play Simulation** (enabled after a successful run) calls `generateSnapshots` via `useSql50Simulation` and opens fullscreen `SimulatorPlaybackModal` through `Sql50SimulationModal`.
+
+#### Key components
+
+| Component | Role |
+|-----------|------|
+| `Sql50LeftSidebar` | Problems/Schema tabs; embeds `ProblemSidebar` + `SchemaSidebar` |
+| `ProblemSidebar` | Search, difficulty pills, favorites, collapsible topic filter |
+| `ProblemStatementModal` | Full LeetCode statement; portal to `document.body`, dismissible (×, Close, Escape, backdrop) |
+| `SolutionModal` | Official solution + visualize |
+| `Sql50ActionBar` | Action hierarchy: secondary Play Sim → primary Run → secondary Submit → ghost Reset |
+| `Sql50ResultsPanel` | Labeled results region with `ResultTable` empty state |
+| `SubmissionResultPanel` | Wrong answer / accepted feedback |
+| `ProgressPanel`, `HintPanel`, `AiCoachPanel` | Right sidebar help |
+
+#### Hooks
+
+| Hook | Role |
+|------|------|
+| `useSql50` | Active problem, query draft, run/reset, schema, URL slug sync |
+| `useSubmissionEngine` | Submit vs expected output; scoring on accept |
+| `useProblemProgress` | localStorage progress, bookmarks, analytics |
+| `useSql50Simulation` | Snapshot generation + modal state for playback |
+
+#### Grading and scoring
+
+- **Never compares SQL strings.** Runs user query and `expectedOutputSql`, compares columns / row count / cell values via `compareResultSets` (order-insensitive multiset; column names case-insensitive).
+- **Score** (`computeScore`): penalizes hints used, failed attempts, viewing solution before solve.
+- **Submit** vs **Run Query**: Run shows results only; Submit grades against expected output.
+
+#### Progress (localStorage)
+
+| Key | Contents |
+|-----|----------|
+| `sqlens-practice-progress-sql50` | Per-problem: solved, attempts, hints, bookmark, best score, draft SQL |
+| `sqlens-practice-active-sql50` | Last active problem slug |
+
+Cleared via `clearAllLocalData()` in `projectStore.ts`.
+
+#### Keyboard shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Enter` | Run query |
+| `Ctrl+Shift+Enter` | Submit |
+| `[` / `]` | Previous / next problem |
+| `Ctrl+b` | Toggle bookmark |
+
+#### Generic practice engine (`src/lib/practice/`)
+
+Reusable for future problem packs:
+
+| Module | Role |
+|--------|------|
+| `types.ts` | `PracticeProblem`, progress, submission types |
+| `compareResultSets.ts` | Result-set equality for grading |
+| `submissionEngine.ts` | `gradeSubmission(db, userSql, expectedSql)` |
+| `problemLoader.ts` | Reset DB, apply schema + seed per problem |
+| `progressStore.ts` | Pack-scoped localStorage CRUD |
+| `scoring.ts` | Best-score computation |
+| `practiceUrl.ts` | `?problem=` slug sync |
 
 ---
 
@@ -676,10 +798,14 @@ Frontend volume-mounts repo; `node_modules` anonymous volume. Backend reads `bac
 | `src/lib/sql/__tests__/splitSqlStatements.test.ts` | SQL semicolon splitting (strings, comments) |
 | `src/lib/onboarding/__tests__/onboardingStore.test.ts` | Onboarding persistence |
 | `src/constants/__tests__/onboardingSteps.test.ts` | Tour step config |
+| `src/lib/practice/__tests__/compareResultSets.test.ts` | Practice result-set comparison |
+| `src/lib/practice/__tests__/scoring.test.ts` | Practice score computation |
+| `src/features/sql50/data/__tests__/manifest.test.ts` | SQL50 pack manifest (50 problems, unique ids/slugs/leetcodeIds) |
+| `src/features/sql50/data/__tests__/sql-validation.test.ts` | PGlite validation of all 50 problems (schema, seed, official solution) |
 | `src/components/simulator/playback/join/__tests__/joinPlaybackModel.test.ts` | JOIN playback model |
 | `api/_lib/__tests__/sanitizeGuidance.test.ts` | Guidance sanitization (serverless lib) |
 
-Run: `npm test`.
+Run: `npm test` (Vitest; includes simulator, ERD, practice engine, and full SQL50 PGlite validation suite).
 
 ---
 
@@ -734,8 +860,10 @@ Same Gemini and rate-limit variables as backend; used by `api/sql-guidance.ts` a
 | Project isolation | PGlite `idb://` + `projectStore` | Browser + IndexedDB |
 | Query history & drafts | `localStorage` | Browser |
 | Practice samples | Static TS data + `execSqlScript` | Browser |
+| SQL 50 (LeetCode) | `features/sql50` + `lib/practice` + dedicated PGlite | Browser |
 | Simulator | `node-sql-parser` + PGlite + React UI | Browser |
 | AI guidance | Gemini via Express **or** Vercel `api/` | Server |
+| SQL 50 AI coach | `POST /api/sql50-coaching` | Server |
 | Legacy AI SQL gen | `POST /api/generate-sql` | Server (deprecated in UI) |
 
 SQLens is therefore a **thick client** for database work, with a **thin, optional AI API** layer for tutoring—not a traditional three-tier app with a remote SQL server.

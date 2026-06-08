@@ -142,7 +142,9 @@ export default function Sql50PracticePage() {
     setAcceptedScore(null);
     clearSimulationError();
     setStatementOpen(false);
-  }, [workspace.activeProblem.id, clearResult, clearSimulationError]);
+    // Only reset when the active problem changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace.activeProblem.id]);
 
   useEffect(() => {
     if (!workspace.isLoadingProblem) {
@@ -253,15 +255,13 @@ export default function Sql50PracticePage() {
                     embedded
                     description={workspace.activeProblem.description}
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto px-0 py-0 text-xs font-medium text-accent-ink hover:bg-transparent hover:underline"
+                    className="text-left text-xs font-medium text-accent-ink hover:underline"
                     onClick={() => setStatementOpen(true)}
                   >
                     View full problem statement →
-                  </Button>
+                  </button>
                 </>
               )}
               {workspace.loadError ? (

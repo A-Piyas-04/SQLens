@@ -1,5 +1,6 @@
 import { ExternalLink, X } from "lucide-react";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 import Button from "../../../components/common/Button";
 import { cn } from "../../../lib/utils/cn";
@@ -31,23 +32,33 @@ export default function ProblemStatementModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const leetcodeUrl = `https://leetcode.com/problems/${problem.slug}/`;
 
-  return (
+  return createPortal(
     <>
       <button
         type="button"
-        className="fixed inset-0 z-50 bg-surface-inset/80"
+        className="fixed inset-0 z-[200] bg-surface-inset/80"
         aria-label="Close problem statement"
         onClick={onClose}
       />
       <div
-        className="fixed left-1/2 top-1/2 z-50 flex max-h-[min(90vh,42rem)] w-[min(calc(100vw-2rem),44rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-lg"
+        className="fixed left-1/2 top-1/2 z-[201] flex max-h-[min(90vh,42rem)] w-[min(calc(100vw-2rem),44rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby="problem-statement-modal-title"
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
@@ -90,7 +101,7 @@ export default function ProblemStatementModal({
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
-          <div className="prose-sm max-w-none whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
+          <div className="max-w-none whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
             {problem.statement}
           </div>
         </div>
@@ -110,6 +121,7 @@ export default function ProblemStatementModal({
           </Button>
         </footer>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
