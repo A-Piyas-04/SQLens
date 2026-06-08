@@ -31,7 +31,7 @@
 **SQLens** is a browser-native PostgreSQL playground for learning and experimenting with SQL. Users can:
 
 - Run **real PostgreSQL** in the browser (no database server for query execution).
-- Inspect schema, results, and an interactive **ERD**.
+- Inspect schema, results, and an interactive **ERD** (inline workspace panel or fullscreen `/erd` view).
 - Load **sample databases** and templates for fast practice.
 - Optionally use an **AI SQL assistant** that suggests concepts (not runnable SQL in the editor).
 - **Simulate** `SELECT` query execution stage-by-stage with snapshots, diffs, and animated playback.
@@ -88,7 +88,7 @@ SQLens/
 ├── Dockerfile                 # Frontend dev container (Node 20)
 ├── .env.example               # VITE_API_URL, VITE_API_PROXY_TARGET
 │
-├── src/                       # Entire React application
+├── src/                       # Entire React application (incl. pages/ErdFullscreenPage for /erd)
 ├── api/                       # Vercel serverless handlers (production AI)
 ├── backend/                   # Standalone Express AI server (local/Docker)
 └── Docs/                      # Project documentation
@@ -112,7 +112,10 @@ The frontend is a **single-page application (SPA)** that:
 4. Calls **`/api/sql-guidance`** when the user opens the AI assistant (same-origin or via `VITE_API_URL`).
 5. Persists non-database state in **localStorage** (projects, drafts, history, onboarding, simulator prefs).
 
-Entry point: `src/main.tsx` → `StrictMode` → `App.tsx`.
+Entry point: `src/main.tsx` → `StrictMode` → route switch:
+
+- **`/`** (default) → `App.tsx` — full workspace
+- **`/erd`** → `ErdFullscreenPage.tsx` — dedicated fullscreen ERD for one project (`?project={id}`)
 
 ### 4.2 Technology stack
 
@@ -127,6 +130,7 @@ Entry point: `src/main.tsx` → `StrictMode` → `App.tsx`.
 | **CodeMirror** | `@uiw/react-codemirror` ^4.25, `@codemirror/lang-sql` ^6.10 | SQL editor, syntax highlighting, selection tracking, `Mod-Enter` run |
 | **PGlite** | `@electric-sql/pglite` ^0.4.5 | In-browser PostgreSQL (WASM) |
 | **React Flow** | `@xyflow/react` ^12.10 | ERD graph (nodes, edges, controls, minimap) |
+| **Dagre** | `@dagrejs/dagre` ^3.0 | ERD automatic layout (ranked graph, connected components) |
 | **html-to-image** | ^1.11.11 | ERD PNG/SVG export (pinned; newer versions have export bugs) |
 | **jspdf** | ^4.2.1 | ERD PDF export (embeds captured PNG) |
 | **node-sql-parser** | ^5.4.0 | Simulator: SQL → AST (PostgreSQL dialect) |
@@ -146,7 +150,8 @@ Fonts (Google Fonts in `index.html`): **Syne** (display), **Epilogue** (UI), **I
 | Boot | `AppBootGate` + `useAppBootReady` — waits for PGlite ready, splash skeleton |
 | Header | `AppHeader`, `PracticeRadialMenu`, `AiSqlGeneratorPopover`, tour restart |
 | Sidebar | `WorkspaceLayout` + `ResizableSidebar` — `ProjectSwitcher`, `PracticeSidebar` (includes `SchemaSidebar`) |
-| Main | `SqlEditor`, `QueryToolbar`, `ErdScrollButton`, `LoadingBanner`, `StatusMessage`, `ResultTable`, `SimulatorPanel`, `QueryHistory`, `ErdViewer` |
+| Main | `SqlEditor`, `QueryToolbar`, `ErdScrollButton`, `LoadingBanner`, `StatusMessage`, `ResultTable`, `SimulatorPanel`, `QueryHistory`, `ErdViewer` (+ `ErdMaximizeButton` when `projectId` is set) |
+| Fullscreen ERD | `ErdFullscreenPage` at `/erd?project={id}` — `ErdViewer` with `fullscreen`, schema refresh on tab focus |
 | Overlay | `OnboardingTour` |
 
 Central state hooks:
@@ -161,6 +166,8 @@ Central state hooks:
 ```
 src/
 ├── App.tsx, main.tsx, index.css
+├── pages/
+│   └── ErdFullscreenPage.tsx    # Standalone /erd route — fullscreen diagram for one project
 ├── constants/
 │   ├── layout.ts              # Sidebar min/max/default width
 │   ├── practiceCategories.ts  # Practice hub category IDs and labels
@@ -183,17 +190,17 @@ src/
 ├── lib/
 │   ├── api/                   # AI client, schema formatting, SqlGuidance types
 │   ├── db/                    # PGlite registry, runQuery, schema introspection
-│   ├── erd/                   # Graph builder, designed text, export helpers
+│   ├── erd/                   # Graph builder, dagre layout, designed text, export, fullscreen URL
 │   ├── projects/              # Project CRUD + localStorage
 │   ├── simulator/             # Parse → pipeline → snapshots → diffs
-│   ├── sql/                   # assertSafeSql, simplifyError
+│   ├── sql/                   # assertSafeSql, simplifyError, splitSqlStatements
 │   ├── onboarding/            # Tour completion store
 │   └── utils/                 # cn, viewTransition wrapper
 └── components/
     ├── ai/                    # AiSqlGeneratorPopover
     ├── common/                # Button, Panel, StatusMessage, Skeleton, AnimatedReveal
     ├── editor/                # SqlEditor (CodeMirror ref API: insertAtCursor, onRun)
-    ├── erd/                   # ErdViewer, ErdTableNode, ErdExportMenu, DesignedTextModal
+    ├── erd/                   # ErdViewer, ErdTableNode, ErdExportMenu, ErdMaximizeButton, DesignedTextModal
     ├── features/              # QueryToolbar, QueryHistory
     ├── icons/                 # Brand and practice icons
     ├── layout/                # Header, workspace, boot gate, loading banner
@@ -211,8 +218,8 @@ src/
 
 1. User edits SQL in `SqlEditor` or selects a fragment.
 2. `Ctrl+Enter` / **Run Query** / **Run Selection** → `useSqlWorkspace.handleRunQuery`.
-3. `runQuery(db, sql)` executes against PGlite; errors passed through `simplifySqlError`.
-4. On success: `ResultTable` rows, optional success message, history append, `getSchema` refresh for sidebar + ERD.
+3. `runQuery(db, sql)` splits on semicolons (`splitSqlStatements`), executes each statement in order against PGlite; errors passed through `simplifySqlError`.
+4. On success: `ResultTable` shows rows from the **last** statement that returned data; multi-statement runs get a combined success message; history append; `getSchema` refresh for sidebar + ERD.
 
 **Switch project**
 
@@ -262,9 +269,11 @@ Each project gets an isolated database: schema, data, and simulator stage querie
 
 | Function | Behavior |
 |----------|----------|
-| `runQuery(db, sql)` | `db.query(sql)` → rows + success/error message |
+| `runQuery(db, sql)` | `splitSqlStatements(sql)` → sequential `db.query` per statement; stops on first error; returns last result set (or success message for DDL-only scripts) |
 | `execSqlScript(db, sql)` | `db.exec(sql)` for multi-statement DDL/seed (sample DB load) |
 | `resetDatabase(db)` | Drops and recreates `public` schema |
+
+**Multi-statement execution:** `src/lib/sql/splitSqlStatements.ts` splits on `;` outside single-quoted strings, double-quoted identifiers, and `--` / `/* */` comments. Used by `runQuery` so users can paste several statements in the editor and run them in one action.
 
 ### 5.3 Schema introspection (`src/lib/db/schema.ts`)
 
@@ -280,6 +289,7 @@ Used by: schema sidebar, ERD graph, AI schema formatting, simulator (indirectly 
 ### 5.4 SQL safety helpers (`src/lib/sql/`)
 
 - **`simplifyError.ts`** — Maps common PostgreSQL errors to short user-facing messages (FK violations, missing relation/column, syntax).
+- **`splitSqlStatements.ts`** — Safe semicolon splitting for multi-statement editor runs (see §5.2).
 - **`assertSafeSql.ts`** — Used for legacy/generated SQL paths; blocks destructive patterns when AI used to return SQL (deprecated path).
 
 ---
@@ -473,20 +483,70 @@ Hooks: **`useSimulatorPlayback`** (play/pause/speed/autoplay), **`useFlipAnimati
 
 ## 9. Entity Relationship Diagram (ERD)
 
-### 9.1 Implementation
+### 9.1 Overview
 
-| Layer | File(s) | Technology |
-|-------|---------|------------|
-| Graph build | `src/lib/erd/buildErdGraph.ts` | `@xyflow/react` nodes/edges, grid layout |
-| Custom node | `src/components/erd/ErdTableNode.tsx` | Table header, columns, PK/FK badges |
-| Canvas | `src/components/erd/ErdViewer.tsx` | Background, Controls, MiniMap, fitView on schema change |
+The ERD is a live React Flow graph built from `SchemaTable[]` (same `information_schema` data as the schema sidebar). It supports inline viewing in the workspace, a dedicated fullscreen route, export, and non-overlapping FK edge routing tuned for larger schemas (~20 tables).
+
+### 9.2 File map
+
+| Layer | File(s) | Role |
+|-------|---------|------|
+| Graph build | `src/lib/erd/buildErdGraph.ts` | `SchemaTable[]` → React Flow `Node[]` / `Edge[]`; FK edges carry `ErdEdgeData` (`sourceColumn`, `targetColumn`); delegates layout |
+| Layout & routing | `src/lib/erd/layoutErdGraph.ts` | Dagre auto-layout, connected-component placement, column-aligned handles, per-handle lane offsets |
+| Custom node | `src/components/erd/ErdTableNode.tsx` | Table header, column rows (PK/FK/UQ badges), per-column handles on all four sides |
+| Canvas | `src/components/erd/ErdViewer.tsx` | Background, Controls, MiniMap, `fitView` on schema change; `fullscreen` prop for height |
+| Fullscreen entry | `src/components/erd/ErdMaximizeButton.tsx` | Opens `/erd?project={id}` in a new tab |
+| Fullscreen page | `src/pages/ErdFullscreenPage.tsx` | Standalone `/erd` route; loads project DB, refreshes schema on tab focus |
+| Fullscreen URL | `src/lib/erd/erdFullscreenUrl.ts` | `buildErdFullscreenUrl`, `resolveErdProjectId` |
 | Export menu | `src/components/erd/ErdExportMenu.tsx` | PNG, SVG, PDF, Designed Text |
 | Capture | `src/lib/erd/export/captureErdViewport.ts` | `html-to-image` + React Flow bounds |
 | PDF | `src/lib/erd/export/exportErdPdf.ts` | `jspdf` |
 | Designed text | `src/lib/erd/buildDesignedText.ts` | ASCII schema for LLM paste |
 | Modal | `src/components/erd/DesignedTextModal.tsx` | Copy entire text |
 
-Data source: `workspace.tables` from `getSchema(db)` — same introspection as schema sidebar.
+### 9.3 Graph build pipeline
+
+```
+getSchema(db) → SchemaTable[]
+  → buildErdGraph(tables)
+      1. One erdTable node per table (id = table_name)
+      2. One smoothstep edge per FK (deduped by table.column → ref.column)
+      3. layoutErdGraph(nodes, edges)
+  → ErdViewer renders nodes + edges
+```
+
+**Node sizing:** fixed width `NODE_WIDTH` (248px); height from column count (`HEADER_H` + `ROW_H` × columns + padding).
+
+### 9.4 Layout (`layoutErdGraph.ts`)
+
+Uses **`@dagrejs/dagre`** with `rankdir: "TB"` (top-to-bottom). Referenced tables are ranked **above** referencing tables (parent above child). Spacing (`nodesep`, `ranksep`, margins) **scales with table count** so larger schemas get more room.
+
+Disconnected FK subgraphs are laid out separately and placed **side by side** with a component gap (`COMPONENT_GAP`).
+
+### 9.5 Edge routing (non-overlapping lines)
+
+Designed to stay readable with many tables and hub-and-spoke FK patterns:
+
+1. **Column-aligned handles** — Each FK edge connects at the FK column row on the source table and the referenced column row on the target (`source-{side}-col-{name}` / `target-{side}-col-{name}`). Side (`top` / `right` / `bottom` / `left`) is chosen from relative node positions.
+2. **Per-handle lane offsets** — Edges sharing the same source handle or target handle are spread with `pathOptions.offset` on React Flow `smoothstep` edges. Lane spacing tightens slightly when many edges share one handle.
+3. **Parallel FKs** — Multiple FK columns between the same two tables use distinct column handles and lane offsets.
+
+`ErdTableNode` renders invisible fallback center handles for compatibility; routing prefers column handles.
+
+### 9.6 Fullscreen route
+
+| Piece | Behavior |
+|-------|----------|
+| Route | `/erd` or `/erd/` (pathname check in `main.tsx`; SPA rewrite via `vercel.json`) |
+| Query | `?project={projectId}` — falls back to active project or default project |
+| Open | `ErdMaximizeButton` on inline canvas (top-left panel) → `window.open` |
+| Refresh | `ErdFullscreenPage` re-fetches schema when the tab becomes visible again |
+
+### 9.7 Export
+
+Visual exports (PNG / SVG / PDF) capture the current viewport via `html-to-image`, excluding controls and minimap. **Designed Text** opens a modal with structured ASCII schema for pasting into AI chat.
+
+Data source: `workspace.tables` in the main app; `getSchema(db)` on the fullscreen page.
 
 ---
 
@@ -589,7 +649,10 @@ Frontend volume-mounts repo; `node_modules` anonymous volume. Backend reads `bac
 |-----------|------|
 | `src/lib/simulator/__tests__/simulator.test.ts` | Simulator pipeline, snapshots, diffs |
 | `src/lib/erd/__tests__/buildDesignedText.test.ts` | Designed text export |
+| `src/lib/erd/__tests__/layoutErdGraph.test.ts` | Dagre layout, column handles, lane offsets, large star-schema routing |
 | `src/lib/db/__tests__/schema.test.ts` | Schema introspection helpers |
+| `src/lib/db/__tests__/query.test.ts` | Multi-statement `runQuery` behavior |
+| `src/lib/sql/__tests__/splitSqlStatements.test.ts` | SQL semicolon splitting (strings, comments) |
 | `src/lib/onboarding/__tests__/onboardingStore.test.ts` | Onboarding persistence |
 | `src/constants/__tests__/onboardingSteps.test.ts` | Tour step config |
 | `src/components/simulator/playback/join/__tests__/joinPlaybackModel.test.ts` | JOIN playback model |
@@ -644,8 +707,9 @@ Same Gemini and rate-limit variables as backend; used by `api/sql-guidance.ts` a
 
 | Capability | Implemented with | Runs where |
 |------------|------------------|------------|
-| SQL editor & run | CodeMirror + PGlite + `useSqlWorkspace` | Browser |
-| Schema sidebar & ERD | `information_schema` + React Flow | Browser |
+| SQL editor & run | CodeMirror + PGlite + `splitSqlStatements` + `useSqlWorkspace` | Browser |
+| Schema sidebar & ERD | `information_schema` + React Flow + Dagre layout | Browser |
+| ERD fullscreen | `/erd` route + `ErdFullscreenPage` | Browser |
 | Project isolation | PGlite `idb://` + `projectStore` | Browser + IndexedDB |
 | Query history & drafts | `localStorage` | Browser |
 | Practice samples | Static TS data + `execSqlScript` | Browser |
