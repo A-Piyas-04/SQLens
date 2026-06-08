@@ -1,6 +1,14 @@
-import { MarkerType, type Edge, type Node } from "@xyflow/react";
+import { type Edge, type Node } from "@xyflow/react";
 
 import type { SchemaTable } from "../db/schema";
+import {
+  detectJunctionRelationships,
+  inferFkCardinality,
+  manyToManyCardinality,
+  relationshipNotation,
+  type CardinalityEnd,
+  type RelationshipKind,
+} from "./inferCardinality";
 import { layoutErdGraph } from "./layoutErdGraph";
 
 export type ErdTableNodeData = {
@@ -9,8 +17,13 @@ export type ErdTableNodeData = {
 };
 
 export type ErdEdgeData = {
-  sourceColumn: string;
-  targetColumn: string;
+  sourceColumn?: string;
+  targetColumn?: string;
+  sourceCardinality: CardinalityEnd;
+  targetCardinality: CardinalityEnd;
+  relationshipKind: RelationshipKind;
+  viaTable?: string;
+  detailLabel?: string;
   [key: string]: unknown;
 };
 
@@ -52,29 +65,63 @@ export function buildErdGraph(tables: SchemaTable[]): {
       if (seen.has(id)) return;
       seen.add(id);
 
+      const cardinality = inferFkCardinality(table, fk.column_name);
+      const notation = relationshipNotation(cardinality.kind);
+
       edges.push({
         id,
         source: fk.table_name,
         target: fk.foreign_table_name,
-        type: "smoothstep",
+        type: "erdCardinality",
         animated: false,
         data: {
           sourceColumn: fk.column_name,
           targetColumn: fk.foreign_column_name,
+          sourceCardinality: cardinality.source,
+          targetCardinality: cardinality.target,
+          relationshipKind: cardinality.kind,
+          detailLabel: `${fk.column_name} → ${fk.foreign_column_name} · ${notation}`,
         },
         label: `${fk.column_name} → ${fk.foreign_column_name}`,
         labelStyle: { fill: "#5c574f", fontSize: 10, fontWeight: 500 },
         labelBgStyle: { fill: "#f6f4ef", fillOpacity: 1 },
         labelBgPadding: [4, 2] as [number, number],
         labelBgBorderRadius: 3,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: "#0d6b63",
-          width: 14,
-          height: 14,
-        },
         style: { stroke: "#0d6b63", strokeWidth: 1.5 },
       });
+    });
+  });
+
+  detectJunctionRelationships(tables).forEach(({ junctionTable, entityA, entityB }) => {
+    const id = `mn:${entityA}<->${entityB}`;
+    if (seen.has(id)) return;
+    seen.add(id);
+
+    const cardinality = manyToManyCardinality();
+
+    edges.push({
+      id,
+      source: entityA,
+      target: entityB,
+      type: "erdCardinality",
+      animated: false,
+      data: {
+        sourceCardinality: cardinality.source,
+        targetCardinality: cardinality.target,
+        relationshipKind: cardinality.kind,
+        viaTable: junctionTable,
+        detailLabel: `via ${junctionTable} · ${relationshipNotation(cardinality.kind)}`,
+      },
+      label: `via ${junctionTable}`,
+      labelStyle: { fill: "#5c574f", fontSize: 10, fontWeight: 500 },
+      labelBgStyle: { fill: "#f6f4ef", fillOpacity: 0.92 },
+      labelBgPadding: [4, 2] as [number, number],
+      labelBgBorderRadius: 3,
+      style: {
+        stroke: "#0d6b63",
+        strokeWidth: 1.5,
+        strokeDasharray: "6 4",
+      },
     });
   });
 

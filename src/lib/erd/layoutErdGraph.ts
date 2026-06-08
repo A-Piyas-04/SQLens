@@ -244,7 +244,7 @@ function applyEdgeRouting(nodes: ErdNode[], edges: Edge[]): Edge[] {
 
     return {
       ...edge,
-      type: "smoothstep" as const,
+      type: edge.type ?? ("erdCardinality" as const),
       ...(handles ?? {}),
     };
   });

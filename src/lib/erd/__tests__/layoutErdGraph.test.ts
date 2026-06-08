@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import type { Edge } from "@xyflow/react";
+
 import type { SchemaTable } from "../../db/schema";
 import { buildErdGraph } from "../buildErdGraph";
 import { nodeHeight } from "../buildErdGraph";
+
+type RoutedEdge = Edge & { pathOptions?: { offset?: number } };
 
 function makeTable(
   name: string,
@@ -34,8 +38,8 @@ function makeTable(
   };
 }
 
-function pathOffset(edge: { pathOptions?: { offset?: number } }): number {
-  return edge.pathOptions?.offset ?? 0;
+function pathOffset(edge: Edge): number {
+  return (edge as RoutedEdge).pathOptions?.offset ?? 0;
 }
 
 describe("layoutErdGraph via buildErdGraph", () => {

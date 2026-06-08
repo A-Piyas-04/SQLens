@@ -36,11 +36,13 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
           type={role}
           id={id}
           position={position}
+          className="!border-none !bg-transparent !opacity-0"
           style={{
-            background: "var(--color-accent)",
-            border: "none",
-            width: 7,
-            height: 7,
+            width: 1,
+            height: 1,
+            minWidth: 0,
+            minHeight: 0,
+            pointerEvents: "none",
             ...(isVerticalSide ? { top: rowTop } : { left: "50%" }),
           }}
         />
@@ -49,35 +51,8 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
   });
 
   return (
-    <div className="min-w-[248px] overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-sm">
+    <div className="min-w-[248px] overflow-hidden rounded-sm border border-black/75 bg-surface-elevated shadow-[0_2px_10px_rgba(0,0,0,0.14),0_1px_3px_rgba(0,0,0,0.08)]">
       {columnHandles}
-      {(
-        [
-          ["source", "source-right", Position.Right],
-          ["source", "source-left", Position.Left],
-          ["source", "source-bottom", Position.Bottom],
-          ["source", "source-top", Position.Top],
-          ["target", "target-left", Position.Left],
-          ["target", "target-right", Position.Right],
-          ["target", "target-bottom", Position.Bottom],
-          ["target", "target-top", Position.Top],
-        ] as const
-      ).map(([type, id, position]) => (
-        <Handle
-          key={id}
-          type={type}
-          id={id}
-          position={position}
-          style={{
-            background: "var(--color-accent)",
-            border: "none",
-            width: 7,
-            height: 7,
-            opacity: 0,
-            pointerEvents: "none",
-          }}
-        />
-      ))}
 
       <div className="flex items-center gap-2 border-b border-line bg-accent-soft px-3 py-2.5">
         <div className="size-2 shrink-0 rounded-full bg-accent" aria-hidden />

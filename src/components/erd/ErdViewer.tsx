@@ -17,13 +17,16 @@ import { useCallback, useEffect, useRef } from "react";
 import type { SchemaTable } from "../../lib/db/schema";
 import { buildErdGraph, type ErdTableNodeData } from "../../lib/erd/buildErdGraph";
 import type { Node } from "@xyflow/react";
+import ErdCardinalityEdge from "./ErdCardinalityEdge";
 import ErdExportMenu from "./ErdExportMenu";
 import ErdMaximizeButton from "./ErdMaximizeButton";
+import ErdRelationLegend from "./ErdRelationLegend";
 import ErdTableNode from "./ErdTableNode";
 
 type ErdNode = Node<ErdTableNodeData, "erdTable">;
 
 const nodeTypes = { erdTable: ErdTableNode };
+const edgeTypes = { erdCardinality: ErdCardinalityEdge };
 
 type Props = {
   tables: SchemaTable[];
@@ -86,6 +89,7 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
         onEdgesChange={onEdgesChange}
         onInit={onInit}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         minZoom={0.15}
         maxZoom={2}
@@ -120,6 +124,8 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
         {projectId && !fullscreen ? (
           <ErdMaximizeButton projectId={projectId} />
         ) : null}
+
+        <ErdRelationLegend />
 
         <ErdExportMenu tables={tables} containerRef={containerRef} />
       </ReactFlow>
