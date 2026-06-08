@@ -1,4 +1,4 @@
-import { Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bookmark, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 
 import Button from "../../../components/common/Button";
 import { cn } from "../../../lib/utils/cn";
@@ -13,6 +13,7 @@ type Props = {
   hasPrevious: boolean;
   hasNext: boolean;
   compact?: boolean;
+  onViewStatement?: () => void;
 };
 
 const difficultyStyles = {
@@ -30,12 +31,13 @@ export default function ProblemHeader({
   hasPrevious,
   hasNext,
   compact = false,
+  onViewStatement,
 }: Props) {
   return (
     <div className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="shrink-0 text-xs font-medium text-ink-muted">
-          #{problem.id}
+          {problem.leetcodeId}
         </span>
         <span
           className={cn(
@@ -66,6 +68,18 @@ export default function ProblemHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
+        {onViewStatement ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onViewStatement}
+            title="Open full problem statement"
+          >
+            <FileText className="size-3.5" aria-hidden />
+            <span className="hidden sm:inline">Problem</span>
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="ghost"

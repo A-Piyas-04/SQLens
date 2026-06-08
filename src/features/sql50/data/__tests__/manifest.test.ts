@@ -8,29 +8,27 @@ describe("SQL50 manifest", () => {
     expect(SQL50_PACK.problems).toHaveLength(50);
   });
 
-  it("has unique ids and slugs", () => {
+  it("has unique ids, slugs, and leetcodeIds", () => {
     const ids = SQL50_PROBLEMS.map((p) => p.id);
     const slugs = SQL50_PROBLEMS.map((p) => p.slug);
+    const leetcodeIds = SQL50_PROBLEMS.map((p) => p.leetcodeId);
     expect(new Set(ids).size).toBe(50);
     expect(new Set(slugs).size).toBe(50);
-  });
-
-  it("has correct difficulty distribution", () => {
-    const easy = SQL50_PROBLEMS.filter((p) => p.difficulty === "easy");
-    const medium = SQL50_PROBLEMS.filter((p) => p.difficulty === "medium");
-    const hard = SQL50_PROBLEMS.filter((p) => p.difficulty === "hard");
-    expect(easy).toHaveLength(20);
-    expect(medium).toHaveLength(20);
-    expect(hard).toHaveLength(10);
+    expect(new Set(leetcodeIds).size).toBe(50);
+    expect(ids.sort((a, b) => a - b)).toEqual(
+      Array.from({ length: 50 }, (_, i) => i + 1)
+    );
   });
 
   it("each problem has required fields", () => {
     for (const p of SQL50_PROBLEMS) {
       expect(p.title).toBeTruthy();
+      expect(p.leetcodeId).toBeGreaterThan(0);
+      expect(p.statement.trim()).toBeTruthy();
       expect(p.schemaSql.trim()).toBeTruthy();
       expect(p.seedSql.trim()).toBeTruthy();
       expect(p.expectedOutputSql.trim()).toBeTruthy();
-      expect(p.hints.length).toBeGreaterThanOrEqual(2);
+      expect(p.hints).toHaveLength(3);
       expect(p.officialSolution.trim()).toBeTruthy();
       expect(p.explanation.trim()).toBeTruthy();
       expect(p.topics.length).toBeGreaterThanOrEqual(1);

@@ -2,11 +2,13 @@ export type PracticeDifficulty = "easy" | "medium" | "hard";
 
 export interface PracticeProblem {
   id: number;
+  leetcodeId: number;
   slug: string;
   title: string;
   difficulty: PracticeDifficulty;
   topics: string[];
   description: string;
+  statement: string;
   schemaSql: string;
   seedSql: string;
   expectedOutputSql: string;

@@ -163,7 +163,10 @@ function ProblemList({
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 font-medium">{problem.title}</span>
+                <span className="line-clamp-2 font-medium">
+                  <span className="text-ink-muted">{problem.leetcodeId}. </span>
+                  {problem.title}
+                </span>
                 <span className="mt-0.5 block text-xs capitalize text-ink-muted">
                   {problem.difficulty}
                 </span>

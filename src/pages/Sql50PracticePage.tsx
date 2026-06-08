@@ -9,6 +9,7 @@ import AiCoachPanel from "../features/sql50/components/AiCoachPanel";
 import HintPanel from "../features/sql50/components/HintPanel";
 import ProblemHeader from "../features/sql50/components/ProblemHeader";
 import ProblemStatement from "../features/sql50/components/ProblemStatement";
+import ProblemStatementModal from "../features/sql50/components/ProblemStatementModal";
 import ProgressPanel from "../features/sql50/components/ProgressPanel";
 import SolutionModal from "../features/sql50/components/SolutionModal";
 import Sql50ActionBar from "../features/sql50/components/Sql50ActionBar";
@@ -51,6 +52,7 @@ export default function Sql50PracticePage() {
   const editorRef = useRef<SqlEditorHandle>(null);
 
   const [solutionOpen, setSolutionOpen] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [acceptedScore, setAcceptedScore] = useState<number | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("problems");
@@ -139,6 +141,7 @@ export default function Sql50PracticePage() {
     clearResult();
     setAcceptedScore(null);
     clearSimulationError();
+    setStatementOpen(false);
   }, [workspace.activeProblem.id, clearResult, clearSimulationError]);
 
   useEffect(() => {
@@ -244,12 +247,21 @@ export default function Sql50PracticePage() {
                     onNext={workspace.goToNext}
                     hasPrevious={problemIndex > 0}
                     hasNext={problemIndex < workspace.problems.length - 1}
+                    onViewStatement={() => setStatementOpen(true)}
                   />
                   <ProblemStatement
                     embedded
-                    expandable
                     description={workspace.activeProblem.description}
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-0 py-0 text-xs font-medium text-accent-ink hover:bg-transparent hover:underline"
+                    onClick={() => setStatementOpen(true)}
+                  >
+                    View full problem statement →
+                  </Button>
                 </>
               )}
               {workspace.loadError ? (
@@ -383,6 +395,12 @@ export default function Sql50PracticePage() {
           onClose={closeSimulation}
         />
       ) : null}
+
+      <ProblemStatementModal
+        problem={workspace.activeProblem}
+        isOpen={statementOpen}
+        onClose={() => setStatementOpen(false)}
+      />
 
       <SolutionModal
         problem={workspace.activeProblem}
