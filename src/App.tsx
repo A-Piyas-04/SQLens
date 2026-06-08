@@ -202,7 +202,10 @@ export default function App() {
             title="Entity Relationship Diagram"
             className="scroll-mt-6"
           >
-            <ErdViewer tables={workspace.tables} />
+            <ErdViewer
+              tables={workspace.tables}
+              projectId={activeProject?.id}
+            />
           </Panel>
         </WorkspaceLayout>
 

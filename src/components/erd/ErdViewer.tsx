@@ -18,6 +18,7 @@ import type { SchemaTable } from "../../lib/db/schema";
 import { buildErdGraph, type ErdTableNodeData } from "../../lib/erd/buildErdGraph";
 import type { Node } from "@xyflow/react";
 import ErdExportMenu from "./ErdExportMenu";
+import ErdMaximizeButton from "./ErdMaximizeButton";
 import ErdTableNode from "./ErdTableNode";
 
 type ErdNode = Node<ErdTableNodeData, "erdTable">;
@@ -26,9 +27,11 @@ const nodeTypes = { erdTable: ErdTableNode };
 
 type Props = {
   tables: SchemaTable[];
+  fullscreen?: boolean;
+  projectId?: string;
 };
 
-export default function ErdViewer({ tables }: Props) {
+export default function ErdViewer({ tables, fullscreen = false, projectId }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ErdNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const rfInstanceRef = useRef<ReactFlowInstance<ErdNode, Edge> | null>(null);
@@ -54,7 +57,13 @@ export default function ErdViewer({ tables }: Props) {
 
   if (tables.length === 0) {
     return (
-      <div className="flex h-44 flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-line bg-surface-raised text-ink-muted">
+      <div
+        className={
+          fullscreen
+            ? "flex h-full min-h-[12rem] flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-line bg-surface-raised text-ink-muted"
+            : "flex h-44 flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-line bg-surface-raised text-ink-muted"
+        }
+      >
         <GitFork className="size-5 opacity-40" aria-hidden />
         <p className="text-sm">No tables yet — create some to see the ERD.</p>
       </div>
@@ -64,7 +73,11 @@ export default function ErdViewer({ tables }: Props) {
   return (
     <div
       ref={containerRef}
-      className="h-[540px] overflow-hidden rounded-sm border border-line"
+      className={
+        fullscreen
+          ? "h-full min-h-0 overflow-hidden rounded-sm border border-line"
+          : "h-[540px] overflow-hidden rounded-sm border border-line"
+      }
     >
       <ReactFlow
         nodes={nodes}
@@ -103,6 +116,10 @@ export default function ErdViewer({ tables }: Props) {
             borderRadius: "4px",
           }}
         />
+
+        {projectId && !fullscreen ? (
+          <ErdMaximizeButton projectId={projectId} />
+        ) : null}
 
         <ErdExportMenu tables={tables} containerRef={containerRef} />
       </ReactFlow>

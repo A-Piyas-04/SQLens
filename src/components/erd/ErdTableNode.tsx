@@ -1,6 +1,9 @@
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 
-import type { ErdTableNodeData } from "../../lib/erd/buildErdGraph";
+import {
+  columnRowCenter,
+  type ErdTableNodeData,
+} from "../../lib/erd/buildErdGraph";
 import { getColumnUniqueConstraints } from "../../lib/db/schema";
 import { cn } from "../../lib/utils/cn";
 
@@ -11,8 +14,43 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
   const pkSet = new Set(table.primaryKeys);
   const fkSet = new Set(table.foreignKeys.map((fk) => fk.column_name));
 
+  const columnHandles = table.columns.flatMap((col, index) => {
+    const rowTop = columnRowCenter(index);
+    const sides = [
+      ["source", "top", Position.Top],
+      ["source", "right", Position.Right],
+      ["source", "bottom", Position.Bottom],
+      ["source", "left", Position.Left],
+      ["target", "top", Position.Top],
+      ["target", "right", Position.Right],
+      ["target", "bottom", Position.Bottom],
+      ["target", "left", Position.Left],
+    ] as const;
+
+    return sides.map(([role, side, position]) => {
+      const id = `${role}-${side}-col-${col.column_name}`;
+      const isVerticalSide = side === "left" || side === "right";
+      return (
+        <Handle
+          key={id}
+          type={role}
+          id={id}
+          position={position}
+          style={{
+            background: "var(--color-accent)",
+            border: "none",
+            width: 7,
+            height: 7,
+            ...(isVerticalSide ? { top: rowTop } : { left: "50%" }),
+          }}
+        />
+      );
+    });
+  });
+
   return (
     <div className="min-w-[248px] overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-sm">
+      {columnHandles}
       {(
         [
           ["source", "source-right", Position.Right],
@@ -33,8 +71,10 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
           style={{
             background: "var(--color-accent)",
             border: "none",
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
+            opacity: 0,
+            pointerEvents: "none",
           }}
         />
       ))}
