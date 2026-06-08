@@ -10,18 +10,28 @@ import SchemaTableCard from "./SchemaTableCard";
 type Props = {
   tables: SchemaTable[];
   onRefresh: () => void;
+  /** Hide panel chrome when embedded in SQL50 schema tab */
+  embedded?: boolean;
 };
 
-export default function SchemaSidebar({ tables, onRefresh }: Props) {
+export default function SchemaSidebar({ tables, onRefresh, embedded = false }: Props) {
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <IconTile>
-            <SchemaTablesIcon size={26} className="text-accent" />
-          </IconTile>
-          <h2 className="font-semibold text-ink">Schema</h2>
-        </div>
+    <div className={embedded ? "flex flex-col" : "flex h-full flex-col"}>
+      <div
+        className={
+          embedded
+            ? "mb-3 flex items-center justify-end"
+            : "mb-4 flex items-center justify-between gap-2"
+        }
+      >
+        {!embedded ? (
+          <div className="flex items-center gap-3">
+            <IconTile>
+              <SchemaTablesIcon size={26} className="text-accent" />
+            </IconTile>
+            <h2 className="font-semibold text-ink">Schema</h2>
+          </div>
+        ) : null}
 
         <Button variant="ghost" size="sm" onClick={onRefresh}>
           <RefreshCw className="size-3.5" aria-hidden />

@@ -52,6 +52,7 @@ export function useSql50() {
   const [isLoadingProblem, setIsLoadingProblem] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [tables, setTables] = useState<SchemaTable[]>([]);
+  const [lastRunSucceeded, setLastRunSucceeded] = useState(false);
   const [, startUiTransition] = useTransition();
 
   const activeProblemRef = useRef(activeProblem);
@@ -71,6 +72,7 @@ export function useSql50() {
       setError("");
       setMessage("");
       setRows([]);
+      setLastRunSucceeded(false);
 
       const result = await loadProblem(dbRef.current, problem);
       if (!result.success) {
@@ -131,6 +133,7 @@ export function useSql50() {
     const result = await runQuery(dbRef.current, sqlToRun);
 
     if (result.success) {
+      setLastRunSucceeded(true);
       withViewTransition(() => {
         startUiTransition(() => {
           setRows(result.rows);
@@ -139,6 +142,7 @@ export function useSql50() {
       });
       await refreshSchema();
     } else {
+      setLastRunSucceeded(false);
       withViewTransition(() => {
         startUiTransition(() => {
           setRows([]);
@@ -188,6 +192,7 @@ export function useSql50() {
     isRunning,
     isLoadingProblem,
     loadError,
+    lastRunSucceeded,
     tables,
     refreshSchema,
     selectProblem,

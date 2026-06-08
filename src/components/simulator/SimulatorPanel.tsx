@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import type { PGlite } from "@electric-sql/pglite";
 import { AlertTriangle, Cpu, Info, Loader2, Play } from "lucide-react";
 
@@ -31,13 +31,17 @@ type PanelState =
       isSelection: boolean;
     };
 
-export default function SimulatorPanel({ query, selectedText, db }: Props) {
+export default function SimulatorPanel({
+  query,
+  selectedText,
+  db,
+}: Props) {
   const [state, setState] = useState<PanelState>({ status: "idle" });
 
   const isSelection = !!selectedText.trim();
   const isEmpty = !query.trim() && !selectedText.trim();
 
-  async function handleSimulate() {
+  const handleSimulate = useCallback(async () => {
     const sqlToSimulate = selectedText.trim() || query;
 
     setState({ status: "loading" });
@@ -55,7 +59,7 @@ export default function SimulatorPanel({ query, selectedText, db }: Props) {
       diffs: result.diffs,
       isSelection,
     });
-  }
+  }, [db, isSelection, query, selectedText]);
 
   return (
     <Panel

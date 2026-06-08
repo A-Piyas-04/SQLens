@@ -12,6 +12,7 @@ type Props = {
   onNext: () => void;
   hasPrevious: boolean;
   hasNext: boolean;
+  compact?: boolean;
 };
 
 const difficultyStyles = {
@@ -28,37 +29,43 @@ export default function ProblemHeader({
   onNext,
   hasPrevious,
   hasNext,
+  compact = false,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-ink-muted">
-            #{problem.id}
-          </span>
-          <span
-            className={cn(
-              "rounded-sm border px-2 py-0.5 text-xs font-medium capitalize",
-              difficultyStyles[problem.difficulty]
-            )}
-          >
-            {problem.difficulty}
-          </span>
-          {problem.topics.map((topic) => (
-            <span
-              key={topic}
-              className="rounded-sm border border-line bg-surface-muted px-2 py-0.5 text-xs text-ink-secondary"
-            >
-              {topic}
-            </span>
-          ))}
-        </div>
-        <h2 className="mt-2 font-display text-lg font-semibold text-ink sm:text-xl">
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="shrink-0 text-xs font-medium text-ink-muted">
+          #{problem.id}
+        </span>
+        <span
+          className={cn(
+            "shrink-0 rounded-sm border px-2 py-0.5 text-xs font-medium capitalize",
+            difficultyStyles[problem.difficulty]
+          )}
+        >
+          {problem.difficulty}
+        </span>
+        <h2
+          className={cn(
+            "min-w-0 truncate font-display font-semibold text-ink",
+            compact ? "text-sm sm:text-base" : "text-lg sm:text-xl"
+          )}
+        >
           {problem.title}
         </h2>
+        {!compact
+          ? problem.topics.map((topic) => (
+              <span
+                key={topic}
+                className="hidden rounded-sm border border-line bg-surface-muted px-2 py-0.5 text-xs text-ink-secondary sm:inline"
+              >
+                {topic}
+              </span>
+            ))
+          : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-0.5">
         <Button
           type="button"
           variant="ghost"

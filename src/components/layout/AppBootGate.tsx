@@ -9,9 +9,10 @@ import AppBootSkeleton from "./AppBootSkeleton";
 type Props = {
   db: PGlite;
   children: ReactNode;
+  className?: string;
 };
 
-export default function AppBootGate({ db, children }: Props) {
+export default function AppBootGate({ db, children, className }: Props) {
   const boot = useAppBootReady(db);
   const [revealed, setRevealed] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -37,7 +38,12 @@ export default function AppBootGate({ db, children }: Props) {
       ) : null}
 
       {revealed ? (
-        <div className="animate-fade-in-up motion-reduce:animate-none">
+        <div
+          className={cn(
+            "animate-fade-in-up motion-reduce:animate-none",
+            className
+          )}
+        >
           {children}
         </div>
       ) : null}

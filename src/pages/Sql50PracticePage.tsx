@@ -1,51 +1,59 @@
-import {
-  ExternalLink,
-  GraduationCap,
-  RotateCcw,
-  Send,
-} from "lucide-react";
+import { ExternalLink, GraduationCap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import SqlEditor from "../components/editor/SqlEditor";
 import StatusMessage from "../components/common/StatusMessage";
 import Button from "../components/common/Button";
 import Skeleton from "../components/common/Skeleton";
-import QueryToolbar from "../components/features/QueryToolbar";
 import AppBootGate from "../components/layout/AppBootGate";
-import ResultTable from "../components/results/ResultTable";
-import SchemaSidebar from "../components/schema/SchemaSidebar";
-import SimulatorPanel from "../components/simulator/SimulatorPanel";
 import AiCoachPanel from "../features/sql50/components/AiCoachPanel";
 import HintPanel from "../features/sql50/components/HintPanel";
 import ProblemHeader from "../features/sql50/components/ProblemHeader";
-import ProblemSidebar from "../features/sql50/components/ProblemSidebar";
 import ProblemStatement from "../features/sql50/components/ProblemStatement";
 import ProgressPanel from "../features/sql50/components/ProgressPanel";
 import SolutionModal from "../features/sql50/components/SolutionModal";
-import SubmissionResultPanel from "../features/sql50/components/SubmissionResult";
+import Sql50ActionBar from "../features/sql50/components/Sql50ActionBar";
+import Sql50EditorPanel from "../features/sql50/components/Sql50EditorPanel";
+import Sql50LeftSidebar from "../features/sql50/components/Sql50LeftSidebar";
 import Sql50PageLayout, {
-  Sql50EditorZone,
-  Sql50ResultsZone,
+  Sql50Workbench,
+  Sql50WorkbenchActions,
+  Sql50WorkbenchEditor,
+  Sql50WorkbenchResults,
+  Sql50WorkbenchTop,
 } from "../features/sql50/components/Sql50PageLayout";
-import Sql50SidebarSection from "../features/sql50/components/Sql50SidebarSection";
+import Sql50ResultsPanel from "../features/sql50/components/Sql50ResultsPanel";
+import Sql50SimulationModal from "../features/sql50/components/Sql50SimulationModal";
+import SubmissionResultPanel from "../features/sql50/components/SubmissionResult";
 import { useProblemProgress } from "../features/sql50/hooks/useProblemProgress";
 import { useSql50 } from "../features/sql50/hooks/useSql50";
+import { useSql50Simulation } from "../features/sql50/hooks/useSql50Simulation";
 import { useSubmissionEngine } from "../features/sql50/hooks/useSubmissionEngine";
 import { markSolutionViewed } from "../features/sql50/services/progressStore";
 import { notifyProgressUpdate } from "../features/sql50/hooks/useProblemProgress";
 import { PACK_ID } from "../features/sql50/services/progressStore";
 import { cn } from "../lib/utils/cn";
+import type { SqlEditorHandle } from "../components/editor/SqlEditor";
 
 type MobileTab = "problems" | "schema" | "help";
 
 export default function Sql50PracticePage() {
   const workspace = useSql50();
   const { analytics, getProblemProgress, toggleBookmark } = useProblemProgress();
+  const simulation = useSql50Simulation(workspace.db);
+  const {
+    isPreparing: isPreparingSimulation,
+    error: simulationError,
+    simulation: simulationData,
+    prepareSimulation,
+    closeSimulation,
+    clearError: clearSimulationError,
+  } = simulation;
+  const editorRef = useRef<SqlEditorHandle>(null);
+
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [acceptedScore, setAcceptedScore] = useState<number | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("problems");
-  const simulatorRef = useRef<HTMLDivElement>(null);
 
   const progress = getProblemProgress(workspace.activeProblem.id);
 
@@ -59,6 +67,13 @@ export default function Sql50PracticePage() {
       workspace.problems.findIndex((p) => p.id === workspace.activeProblem.id),
     [workspace.problems, workspace.activeProblem.id]
   );
+
+  const hasSelection = workspace.selectedText.trim().length > 0;
+  const runLabel = workspace.isRunning
+    ? "Running…"
+    : hasSelection
+      ? "Run Selection"
+      : "Run Query";
 
   const handleSubmit = useCallback(async () => {
     clearResult();
@@ -79,12 +94,18 @@ export default function Sql50PracticePage() {
     setSolutionOpen(true);
   }, [progress.solved, workspace.activeProblem.id]);
 
+  const handlePlaySimulation = useCallback(async () => {
+    clearSimulationError();
+    await prepareSimulation(workspace.query, workspace.selectedText);
+  }, [clearSimulationError, prepareSimulation, workspace.query, workspace.selectedText]);
+
   const handleVisualize = useCallback(
     (sql: string) => {
       workspace.setQuery(sql);
-      simulatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setSolutionOpen(false);
+      void prepareSimulation(sql, "");
     },
-    [workspace]
+    [workspace, prepareSimulation]
   );
 
   useEffect(() => {
@@ -117,36 +138,18 @@ export default function Sql50PracticePage() {
   useEffect(() => {
     clearResult();
     setAcceptedScore(null);
-  }, [workspace.activeProblem.id, clearResult]);
+    clearSimulationError();
+  }, [workspace.activeProblem.id, clearResult, clearSimulationError]);
 
-  const hasSelection = workspace.selectedText.trim().length > 0;
-
-  const problemSidebar = (
-    <ProblemSidebar
-      embedded
-      problems={workspace.problems}
-      activeSlug={workspace.activeProblem.slug}
-      getProgress={getProblemProgress}
-      onSelect={(p) => void workspace.selectProblem(p)}
-    />
-  );
-
-  const schemaPanel = (
-    <SchemaSidebar
-      tables={workspace.tables}
-      onRefresh={() => void workspace.refreshSchema()}
-    />
-  );
+  useEffect(() => {
+    if (!workspace.isLoadingProblem) {
+      editorRef.current?.focus();
+    }
+  }, [workspace.activeProblem.id, workspace.isLoadingProblem]);
 
   const helpPanel = (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <ProgressPanel analytics={analytics} embedded />
-      <Sql50SidebarSection title="Problem">
-        <ProblemStatement
-          embedded
-          description={workspace.activeProblem.description}
-        />
-      </Sql50SidebarSection>
       <HintPanel
         embedded
         hints={workspace.activeProblem.hints}
@@ -167,7 +170,12 @@ export default function Sql50PracticePage() {
           problem={workspace.activeProblem}
           hintsUsed={progress.hintsUsed}
           tables={workspace.tables}
-          lastError={workspace.error || lastResult?.message}
+          lastError={
+            workspace.error ||
+            lastResult?.message ||
+            simulationError ||
+            undefined
+          }
           isOpen={coachOpen}
           onToggle={() => setCoachOpen((v) => !v)}
         />
@@ -175,40 +183,19 @@ export default function Sql50PracticePage() {
     </div>
   );
 
-  const editorToolbar = (
-    <div className="flex flex-wrap items-center justify-center gap-2">
-      <QueryToolbar
-        variant="header"
-        isRunning={workspace.isRunning}
-        hasSelection={hasSelection}
-        onRun={() => void workspace.handleRunQuery()}
-        onReset={() => void workspace.handleResetProblemDb()}
-      />
-      <Button
-        type="button"
-        variant="primary"
-        size="sm"
-        disabled={isSubmitting || workspace.isRunning}
-        onClick={() => void handleSubmit()}
-      >
-        <Send className="size-3.5" aria-hidden />
-        {isSubmitting ? "Submitting…" : "Submit"}
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        disabled={workspace.isRunning}
-        onClick={() => void workspace.handleResetProblemDb()}
-      >
-        <RotateCcw className="size-3.5" aria-hidden />
-        Reset DB
-      </Button>
-    </div>
+  const leftSidebar = (
+    <Sql50LeftSidebar
+      problems={workspace.problems}
+      activeSlug={workspace.activeProblem.slug}
+      getProgress={getProblemProgress}
+      onSelectProblem={(p) => void workspace.selectProblem(p)}
+      tables={workspace.tables}
+      onRefreshSchema={() => void workspace.refreshSchema()}
+    />
   );
 
   return (
-    <AppBootGate db={workspace.db}>
+    <AppBootGate db={workspace.db} className="h-dvh">
       <Sql50PageLayout
         header={
           <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface-raised px-4 py-2.5 sm:px-5">
@@ -219,10 +206,7 @@ export default function Sql50PracticePage() {
                   Practice SQL 50
                 </h1>
                 <p className="truncate text-xs text-ink-muted">
-                  {analytics.solved}/{analytics.total} solved ·{" "}
-                  <span className="hidden sm:inline">
-                    Mod+Shift+Enter to submit
-                  </span>
+                  {analytics.solved}/{analytics.total} solved
                 </p>
               </div>
             </div>
@@ -238,32 +222,19 @@ export default function Sql50PracticePage() {
             </Button>
           </header>
         }
-        left={
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
-            <Sql50SidebarSection title="Problems" className="min-h-0 flex-[3]">
-              {problemSidebar}
-            </Sql50SidebarSection>
-            <Sql50SidebarSection
-              title="Schema"
-              className="min-h-0 shrink-0 border-t border-line pt-4"
-            >
-              <div className="max-h-56 overflow-y-auto scrollbar-thin lg:max-h-72">
-                {schemaPanel}
-              </div>
-            </Sql50SidebarSection>
-          </div>
-        }
+        left={leftSidebar}
         center={
-          <>
-            <Sql50EditorZone>
+          <Sql50Workbench>
+            <Sql50WorkbenchTop>
               {workspace.isLoadingProblem ? (
-                <div className="space-y-3">
-                  <Skeleton className="mx-auto h-8 w-2/3" />
-                  <Skeleton className="h-40 w-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-12 w-full" />
                 </div>
               ) : (
                 <>
                   <ProblemHeader
+                    compact
                     problem={workspace.activeProblem}
                     bookmarked={progress.bookmarked}
                     onToggleBookmark={() =>
@@ -274,51 +245,71 @@ export default function Sql50PracticePage() {
                     hasPrevious={problemIndex > 0}
                     hasNext={problemIndex < workspace.problems.length - 1}
                   />
-                  <SqlEditor
-                    value={workspace.query}
-                    onChange={workspace.setQuery}
-                    onSelectionChange={workspace.setSelectedText}
-                    onRun={() => void workspace.handleRunQuery()}
-                    hasSelection={hasSelection}
-                    toolbar={editorToolbar}
+                  <ProblemStatement
+                    embedded
+                    expandable
+                    description={workspace.activeProblem.description}
                   />
                 </>
               )}
               {workspace.loadError ? (
                 <StatusMessage variant="error" message={workspace.loadError} />
               ) : null}
-            </Sql50EditorZone>
+            </Sql50WorkbenchTop>
 
-            <Sql50ResultsZone>
-              {workspace.error ? (
-                <StatusMessage variant="error" message={workspace.error} />
-              ) : null}
-              {workspace.message && !lastResult ? (
-                <StatusMessage variant="success" message={workspace.message} />
-              ) : null}
-
-              <SubmissionResultPanel result={lastResult} />
-              {acceptedScore !== null && lastResult?.verdict === "accepted" ? (
-                <p className="text-sm text-success-ink">
-                  Score: {acceptedScore}/100
-                  {progress.bestScore > 0 &&
-                  progress.bestScore !== acceptedScore
-                    ? ` (best: ${progress.bestScore})`
-                    : null}
-                </p>
-              ) : null}
-
-              <ResultTable rows={workspace.rows} />
-
-              <div ref={simulatorRef}>
-                <SimulatorPanel
-                  query={workspace.query}
-                  selectedText={workspace.selectedText}
-                  db={workspace.db}
+            <Sql50WorkbenchEditor>
+              {workspace.isLoadingProblem ? (
+                <Skeleton className="h-[240px] w-full" />
+              ) : (
+                <Sql50EditorPanel
+                  ref={editorRef}
+                  value={workspace.query}
+                  onChange={workspace.setQuery}
+                  onSelectionChange={workspace.setSelectedText}
+                  onRun={() => void workspace.handleRunQuery()}
+                  hasSelection={hasSelection}
                 />
-              </div>
-            </Sql50ResultsZone>
-          </>
+              )}
+            </Sql50WorkbenchEditor>
+
+            <Sql50WorkbenchActions>
+              <Sql50ActionBar
+                runLabel={runLabel}
+                isRunning={workspace.isRunning}
+                isSubmitting={isSubmitting}
+                lastRunSucceeded={workspace.lastRunSucceeded}
+                isPreparingSimulation={isPreparingSimulation}
+                onPlaySimulation={() => void handlePlaySimulation()}
+                onRun={() => void workspace.handleRunQuery()}
+                onSubmit={() => void handleSubmit()}
+                onReset={() => void workspace.handleResetProblemDb()}
+              />
+            </Sql50WorkbenchActions>
+
+            <Sql50WorkbenchResults>
+              <Sql50ResultsPanel rows={workspace.rows}>
+                {workspace.error ? (
+                  <StatusMessage variant="error" message={workspace.error} />
+                ) : null}
+                {simulationError ? (
+                  <StatusMessage variant="error" message={simulationError} />
+                ) : null}
+                {workspace.message && !lastResult ? (
+                  <StatusMessage variant="success" message={workspace.message} />
+                ) : null}
+                <SubmissionResultPanel result={lastResult} />
+                {acceptedScore !== null && lastResult?.verdict === "accepted" ? (
+                  <p className="text-sm text-success-ink">
+                    Score: {acceptedScore}/100
+                    {progress.bestScore > 0 &&
+                    progress.bestScore !== acceptedScore
+                      ? ` (best: ${progress.bestScore})`
+                      : null}
+                  </p>
+                ) : null}
+              </Sql50ResultsPanel>
+            </Sql50WorkbenchResults>
+          </Sql50Workbench>
         }
         right={helpPanel}
         mobilePanels={
@@ -340,6 +331,8 @@ export default function Sql50PracticePage() {
                   type="button"
                   role="tab"
                   aria-selected={mobileTab === id}
+                  aria-controls={`sql50-mobile-${id}`}
+                  id={`sql50-mobile-tab-${id}`}
                   onClick={() => setMobileTab(id)}
                   className={cn(
                     "flex-1 px-3 py-2.5 text-xs font-medium transition-colors",
@@ -352,14 +345,44 @@ export default function Sql50PracticePage() {
                 </button>
               ))}
             </div>
-            <div className="overflow-y-auto p-3 scrollbar-thin" role="tabpanel">
-              {mobileTab === "problems" ? problemSidebar : null}
-              {mobileTab === "schema" ? schemaPanel : null}
-              {mobileTab === "help" ? helpPanel : null}
+            <div
+              className="h-[calc(40vh-2.5rem)] overflow-hidden"
+              role="tabpanel"
+              id={`sql50-mobile-${mobileTab}`}
+              aria-labelledby={`sql50-mobile-tab-${mobileTab}`}
+            >
+              {mobileTab === "problems" || mobileTab === "schema" ? (
+                <Sql50LeftSidebar
+                  problems={workspace.problems}
+                  activeSlug={workspace.activeProblem.slug}
+                  getProgress={getProblemProgress}
+                  onSelectProblem={(p) => void workspace.selectProblem(p)}
+                  tables={workspace.tables}
+                  onRefreshSchema={() => void workspace.refreshSchema()}
+                  activeTab={mobileTab === "schema" ? "schema" : "problems"}
+                  onTabChange={(tab) =>
+                    setMobileTab(tab === "schema" ? "schema" : "problems")
+                  }
+                  hideTabBar
+                />
+              ) : (
+                <div className="h-full overflow-y-auto p-3 scrollbar-thin">
+                  {helpPanel}
+                </div>
+              )}
             </div>
           </div>
         }
       />
+
+      {simulationData ? (
+        <Sql50SimulationModal
+          snapshots={simulationData.snapshots}
+          diffs={simulationData.diffs}
+          originalSql={simulationData.originalSql}
+          onClose={closeSimulation}
+        />
+      ) : null}
 
       <SolutionModal
         problem={workspace.activeProblem}

@@ -15,6 +15,7 @@ import { QueryToolbarHint } from "../features/QueryToolbar";
 
 export type SqlEditorHandle = {
   insertAtCursor: (text: string) => void;
+  focus: () => void;
 };
 
 type Props = {
@@ -24,6 +25,8 @@ type Props = {
   onRun?: () => void;
   toolbar?: ReactNode;
   hasSelection?: boolean;
+  hideTitle?: boolean;
+  editorHeight?: string;
 };
 
 const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
@@ -34,6 +37,8 @@ const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
     onRun,
     toolbar,
     hasSelection = false,
+    hideTitle = false,
+    editorHeight = "300px",
   },
   ref
 ) {
@@ -58,6 +63,9 @@ const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
         });
         view.focus();
         onChange(view.state.doc.toString());
+      },
+      focus() {
+        cmRef.current?.view?.focus();
       },
     }),
     [onChange]
@@ -90,13 +98,36 @@ const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
     }
   }
 
+  if (hideTitle) {
+    return (
+      <div data-tour="sql-editor">
+        <div className="overflow-hidden rounded-sm border border-line bg-surface-inset transition-colors duration-200 hover:border-line-strong/70">
+          <CodeMirror
+            ref={cmRef}
+            value={value}
+            height={editorHeight}
+            extensions={extensions}
+            theme="light"
+            onChange={onChange}
+            onUpdate={handleUpdate}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Panel title="SQL Editor" action={toolbar} interactive dataTour="sql-editor">
+    <Panel
+      title="SQL Editor"
+      action={toolbar}
+      interactive
+      dataTour="sql-editor"
+    >
       <div className="overflow-hidden rounded-sm border border-line bg-surface-inset transition-colors duration-200 hover:border-line-strong/70">
         <CodeMirror
           ref={cmRef}
           value={value}
-          height="300px"
+          height={editorHeight}
           extensions={extensions}
           theme="light"
           onChange={onChange}

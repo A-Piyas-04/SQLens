@@ -1,4 +1,4 @@
-import { Bookmark, Check, Circle, Clock, Search, Star } from "lucide-react";
+import { Bookmark, Check, Circle, Clock, ChevronDown, Search, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import Button from "../../../components/common/Button";
@@ -28,6 +28,8 @@ function ProblemFilters({
   onTopicChange,
   favoritesOnly,
   onFavoritesToggle,
+  showAdvanced,
+  onToggleAdvanced,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
@@ -37,6 +39,8 @@ function ProblemFilters({
   onTopicChange: (value: string) => void;
   favoritesOnly: boolean;
   onFavoritesToggle: () => void;
+  showAdvanced: boolean;
+  onToggleAdvanced: () => void;
 }) {
   return (
     <div className="shrink-0 space-y-3">
@@ -73,20 +77,6 @@ function ProblemFilters({
         ))}
       </div>
 
-      <select
-        value={topic}
-        onChange={(e) => onTopicChange(e.target.value)}
-        className="w-full rounded-sm border border-line bg-surface-inset px-2 py-1.5 text-xs text-ink focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent"
-        aria-label="Filter by topic"
-      >
-        <option value="all">All topics</option>
-        {SQL50_TOPICS.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
-
       <Button
         type="button"
         variant={favoritesOnly ? "primary" : "ghost"}
@@ -97,6 +87,38 @@ function ProblemFilters({
         <Star className="size-3.5" aria-hidden />
         Favorites
       </Button>
+
+      <button
+        type="button"
+        onClick={onToggleAdvanced}
+        className="flex w-full items-center justify-between rounded-sm border border-line px-2.5 py-1.5 text-xs font-medium text-ink-secondary hover:bg-surface-muted"
+        aria-expanded={showAdvanced}
+      >
+        Filters
+        <ChevronDown
+          className={cn(
+            "size-3.5 transition-transform",
+            showAdvanced && "rotate-180"
+          )}
+          aria-hidden
+        />
+      </button>
+
+      {showAdvanced ? (
+        <select
+          value={topic}
+          onChange={(e) => onTopicChange(e.target.value)}
+          className="w-full rounded-sm border border-line bg-surface-inset px-2 py-1.5 text-xs text-ink focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent"
+          aria-label="Filter by topic"
+        >
+          <option value="all">All topics</option>
+          {SQL50_TOPICS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      ) : null}
     </div>
   );
 }
@@ -176,6 +198,7 @@ export default function ProblemSidebar({
   const [difficulty, setDifficulty] = useState<FilterDifficulty>("all");
   const [topic, setTopic] = useState<string>("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -203,6 +226,8 @@ export default function ProblemSidebar({
       onTopicChange={setTopic}
       favoritesOnly={favoritesOnly}
       onFavoritesToggle={() => setFavoritesOnly((v) => !v)}
+      showAdvanced={showAdvanced}
+      onToggleAdvanced={() => setShowAdvanced((v) => !v)}
     />
   );
 
@@ -212,14 +237,14 @@ export default function ProblemSidebar({
       activeSlug={activeSlug}
       getProgress={getProgress}
       onSelect={onSelect}
-      className={embedded ? "min-h-0 flex-1" : "mt-4 max-h-[min(50vh,28rem)]"}
+      className={embedded ? "min-h-0 flex-1 overflow-y-auto" : "mt-4 max-h-[min(50vh,28rem)]"}
     />
   );
 
   if (embedded) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
-        {filters}
+      <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+        <div className="shrink-0">{filters}</div>
         {list}
       </div>
     );
