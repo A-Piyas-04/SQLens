@@ -18,6 +18,7 @@ import ErdScrollButton from "./components/layout/ErdScrollButton";
 import ProjectSwitcher from "./components/projects/ProjectSwitcher";
 import PracticeSidebar from "./components/practice/PracticeSidebar";
 import PracticeRadialMenu from "./components/practice/PracticeRadialMenu";
+import Sql50HeaderButton from "./features/sql50/components/Sql50HeaderButton";
 import type { PracticeCategoryId } from "./constants/practiceCategories";
 import { useActiveProject } from "./hooks/useActiveProject";
 import { useOnboardingTour } from "./hooks/useOnboardingTour";
@@ -122,6 +123,7 @@ export default function App() {
 
       <div className="relative mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
         <AppHeader
+          promo={<Sql50HeaderButton />}
           onStartTour={onboarding.restart}
           actions={
             <>

@@ -9,11 +9,12 @@ import {
 
 type Props = {
   actions?: ReactNode;
+  promo?: ReactNode;
   onStartTour?: () => void;
 };
 
-export default function AppHeader({ actions, onStartTour }: Props) {
-  const hasToolbar = Boolean(onStartTour || actions);
+export default function AppHeader({ actions, promo, onStartTour }: Props) {
+  const hasToolbar = Boolean(onStartTour || actions || promo);
 
   return (
     <header className="border-b border-line bg-surface-inset">
@@ -50,6 +51,12 @@ export default function AppHeader({ actions, onStartTour }: Props) {
             className={headerToolbarClass}
             aria-label="Application commands"
           >
+            {promo ? (
+              <div className="flex items-center px-2 sm:px-3">{promo}</div>
+            ) : null}
+            {promo && (onStartTour || actions) ? (
+              <div className={headerToolbarDividerClass} aria-hidden />
+            ) : null}
             {onStartTour ? <AppHeaderHelp onStartTour={onStartTour} /> : null}
             {onStartTour && actions ? (
               <div className={headerToolbarDividerClass} aria-hidden />
