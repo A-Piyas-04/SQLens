@@ -116,6 +116,7 @@ Entry point: `src/main.tsx` → `StrictMode` → route switch:
 
 - **`/`** (default) → `App.tsx` — full workspace
 - **`/erd`** → `ErdFullscreenPage.tsx` — dedicated fullscreen ERD for one project (`?project={id}`)
+- **`/practice/sql50`** → `Sql50PracticePage.tsx` — standalone SQL 50 practice platform (`?problem={slug}`)
 
 ### 4.2 Technology stack
 
@@ -572,6 +573,24 @@ Practice hub sections (sidebar + header radial menu):
 
 Loading a sample DB: `execSqlScript` → refresh schema → optionally set editor from `starterQuery`.
 
+### 10.3 Practice SQL 50 (`/practice/sql50`)
+
+Standalone learning route — does not modify the main workspace flow.
+
+| Layer | Location | Role |
+|-------|----------|------|
+| Page | `src/pages/Sql50PracticePage.tsx` | Orchestrates editor, results, simulator, sidebar |
+| Feature module | `src/features/sql50/` | UI components, hooks, 50-problem dataset |
+| Generic engine | `src/lib/practice/` | Result-set grading, progress store, scoring (extensible to future packs) |
+| Dedicated DB | `getDatabase("practice-sql50")` | Isolated PGlite instance (`idb://sqlens-practice-sql50`) |
+| AI coach | `POST /api/sql50-coaching` | Tutor-only coaching with stricter prompts + `sanitizeGuidance` |
+
+**Grading:** Never compares SQL strings. Runs user query and `expectedOutputSql`, compares columns / row count / values (order-insensitive multiset).
+
+**Progress (localStorage):** `sqlens-practice-progress-sql50`, `sqlens-practice-active-sql50` — cleared via `clearAllLocalData()`.
+
+**Keyboard shortcuts:** `Mod-Enter` run, `Mod-Shift-Enter` submit, `[` / `]` prev/next problem, `Mod-b` bookmark.
+
 ---
 
 ## 11. Onboarding tour
@@ -604,6 +623,8 @@ Tour targets DOM regions via `dataTour` attributes (e.g. ERD panel `dataTour="er
 | `sqlens-history-{projectId}` | Last **10** queries per project |
 | Onboarding | Stored via `onboardingStore` |
 | Simulator keys | See §8.6 |
+| `sqlens-practice-progress-{packId}` | Practice problem progress (e.g. SQL50) |
+| `sqlens-practice-active-{packId}` | Last active practice problem slug |
 
 **Clear Local Data:** `clearAllLocalData()` in `projectStore.ts` + confirm in `App.tsx` → full page reload.
 

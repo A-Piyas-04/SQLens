@@ -80,6 +80,57 @@ export async function requestSqlGuidance(
   return data.guidance;
 }
 
+export type Sql50CoachingRequest = {
+  problemTitle: string;
+  problemDescription: string;
+  topics: string[];
+  userPrompt: string;
+  userError?: string;
+  hintsUsed: number;
+  unlockedHints: string[];
+  schema?: string;
+};
+
+const RUNNABLE_SQL_PATTERN =
+  /\b(SELECT\s+.+\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|WITH\s+\w+\s+AS)\b/i;
+
+function clientSanitizeGuidance(guidance: SqlGuidance): SqlGuidance {
+  const combined = JSON.stringify(guidance);
+  if (RUNNABLE_SQL_PATTERN.test(combined)) {
+    throw new Error(
+      "Coaching response contained SQL-like content and was blocked. Try rephrasing your question."
+    );
+  }
+  return guidance;
+}
+
+export async function requestSql50Coaching(
+  body: Sql50CoachingRequest
+): Promise<SqlGuidance> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api/sql50-coaching`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    throw wrapFetchError(err);
+  }
+
+  const data = await parseJsonResponse<GuidanceResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(data.error ?? `Request failed (${response.status})`);
+  }
+
+  if (!data.guidance?.summary?.trim()) {
+    throw new Error("Server returned empty coaching.");
+  }
+
+  return clientSanitizeGuidance(data.guidance);
+}
+
 /** @deprecated Use requestSqlGuidance — guidance-only assistant replaces direct SQL generation. */
 export async function generateSql(prompt: string): Promise<string> {
   const response = await fetch(`${API_BASE}/api/generate-sql`, {

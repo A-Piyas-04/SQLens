@@ -3,6 +3,10 @@ import { Router, type Response } from "express";
 import { buildSqlGenerationPrompt } from "../prompts/sqlPrompt";
 import { buildSqlGuidancePrompt } from "../prompts/sqlGuidancePrompt";
 import {
+  buildSql50CoachingPrompt,
+  type Sql50CoachingContext,
+} from "../prompts/sql50CoachingPrompt";
+import {
   AiModelUnavailableError,
   AiQuotaExceededError,
   generateWithGemini,
@@ -77,6 +81,56 @@ function parseGuidanceBody(body: unknown): GuidanceBody {
   }
 
   return { prompt, schema };
+}
+
+function parseSql50CoachingBody(body: unknown): Sql50CoachingContext {
+  if (typeof body !== "object" || body === null) {
+    throw new Error("Request body must be a JSON object.");
+  }
+
+  const record = body as Record<string, unknown>;
+
+  const requiredStrings = ["problemTitle", "problemDescription", "userPrompt"] as const;
+  for (const key of requiredStrings) {
+    if (typeof record[key] !== "string" || !record[key].trim()) {
+      throw new Error(`Request body must include a non-empty string ${key}.`);
+    }
+  }
+
+  const topics = Array.isArray(record.topics)
+    ? record.topics.filter((t): t is string => typeof t === "string")
+    : [];
+
+  const unlockedHints = Array.isArray(record.unlockedHints)
+    ? record.unlockedHints.filter((h): h is string => typeof h === "string")
+    : [];
+
+  let schema: string | undefined;
+  if (record.schema !== undefined) {
+    if (typeof record.schema !== "string") {
+      throw new Error("schema must be a string when provided.");
+    }
+    schema = record.schema.trim().slice(0, MAX_SCHEMA_CHARS) || undefined;
+  }
+
+  const hintsUsed =
+    typeof record.hintsUsed === "number" && record.hintsUsed >= 0
+      ? record.hintsUsed
+      : 0;
+
+  return {
+    problemTitle: (record.problemTitle as string).trim(),
+    problemDescription: (record.problemDescription as string).trim(),
+    topics,
+    userPrompt: (record.userPrompt as string).trim(),
+    userError:
+      typeof record.userError === "string"
+        ? record.userError.trim() || undefined
+        : undefined,
+    hintsUsed,
+    unlockedHints,
+    schema,
+  };
 }
 
 const QUOTA_ERROR_MESSAGE =
@@ -187,6 +241,25 @@ router.post("/sql-guidance", async (req, res) => {
       console.error("[api/sql-guidance] rejected runnable SQL in model output");
     }
     sendAiError(res, error, "Failed to get SQL guidance. Please try again.");
+  }
+});
+
+router.post("/sql50-coaching", async (req, res) => {
+  try {
+    const ctx = parseSql50CoachingBody(req.body);
+    const raw = await generateWithGemini(buildSql50CoachingPrompt(ctx), {
+      jsonMode: true,
+    });
+    const guidance = sanitizeGuidance(raw);
+    res.json({ guidance });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === GUIDANCE_SQL_REJECTED_MESSAGE
+    ) {
+      console.error("[api/sql50-coaching] rejected runnable SQL in model output");
+    }
+    sendAiError(res, error, "Failed to get coaching. Please try again.");
   }
 });
 
