@@ -657,6 +657,18 @@ h3,
   pointer-events: none !important;
 }
 
+.react-flow__edge-labels {
+  z-index: 20 !important;
+}
+
+.react-flow__node-erdTable {
+  z-index: 2 !important;
+}
+
+.erd-edge-label {
+  z-index: 30;
+}
+
 .react-flow__controls {
   --xy-controls-button-background-color: var(--color-bg-subtle);
   --xy-controls-button-background-color-hover: var(--color-surface-muted);

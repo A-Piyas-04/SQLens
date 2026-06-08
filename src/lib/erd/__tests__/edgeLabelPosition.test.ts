@@ -48,6 +48,7 @@ describe("computeEdgeLabelPosition", () => {
       fallbackX: 120,
       fallbackY: 250,
       nodeBounds: [exams],
+      labelText: "student_id → semester_id",
     });
 
     expect(position.x).not.toBe(120);

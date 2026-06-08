@@ -7,8 +7,8 @@ import { NODE_WIDTH, nodeHeight } from "./buildErdGraph";
 type ErdNode = Node<ErdTableNodeData, "erdTable">;
 
 const COMPONENT_GAP = 140;
-const EDGE_LANE_SPACING = 22;
-const MIN_EDGE_LANE_SPACING = 16;
+const EDGE_LANE_SPACING = 32;
+const MIN_EDGE_LANE_SPACING = 24;
 
 function findComponents(nodeIds: string[], edges: Edge[]): Set<string>[] {
   const parent = new Map(nodeIds.map((id) => [id, id]));
@@ -216,13 +216,68 @@ function pickColumnHandles(
 }
 
 function edgeLaneSpacing(edgeCount: number): number {
-  if (edgeCount <= 6) return EDGE_LANE_SPACING;
-  return Math.max(MIN_EDGE_LANE_SPACING, EDGE_LANE_SPACING - (edgeCount - 6) * 1.5);
+  if (edgeCount <= 4) return EDGE_LANE_SPACING;
+  return Math.max(MIN_EDGE_LANE_SPACING, EDGE_LANE_SPACING - (edgeCount - 4));
 }
 
 function laneOffset(index: number, count: number, spacing: number): number {
   if (count <= 1) return 0;
   return (index - (count - 1) / 2) * spacing;
+}
+
+/** Groups handles on the same node face (e.g. all left-side targets). */
+function handleSideGroupKey(
+  nodeId: string,
+  handle?: string | null
+): string | null {
+  if (!handle) return null;
+  const match = handle.match(/^(source|target)-(top|right|bottom|left)-/);
+  if (!match) return `${nodeId}|${handle}`;
+  return `${nodeId}|${match[1]}|${match[2]}`;
+}
+
+function columnIndexForHandle(node: ErdNode, handle: string): number {
+  const column = handle.match(/-col-(.+)$/)?.[1];
+  if (!column) return 0;
+  const index = node.data.table.columns.findIndex(
+    (entry) => entry.column_name === column
+  );
+  return index >= 0 ? index : 0;
+}
+
+function sortEdgesOnNodeFace(
+  group: Edge[],
+  nodeId: string,
+  nodeById: Map<string, ErdNode>,
+  role: "source" | "target"
+): Edge[] {
+  const node = nodeById.get(nodeId);
+  if (!node) return group;
+
+  return [...group].sort((left, right) => {
+    const leftHandle =
+      role === "source" ? left.sourceHandle ?? "" : left.targetHandle ?? "";
+    const rightHandle =
+      role === "source" ? right.sourceHandle ?? "" : right.targetHandle ?? "";
+    return (
+      columnIndexForHandle(node, leftHandle) -
+      columnIndexForHandle(node, rightHandle)
+    );
+  });
+}
+
+function combineLaneOffsets(
+  sourceOffset: number,
+  targetOffset: number,
+  sourceCount: number,
+  targetCount: number
+): number {
+  if (sourceCount > 1 && targetCount > 1) {
+    return (sourceOffset + targetOffset) / 2;
+  }
+  if (sourceCount > 1) return sourceOffset;
+  if (targetCount > 1) return targetOffset;
+  return 0;
 }
 
 function applyEdgeRouting(nodes: ErdNode[], edges: Edge[]): Edge[] {
@@ -249,36 +304,60 @@ function applyEdgeRouting(nodes: ErdNode[], edges: Edge[]): Edge[] {
     };
   });
 
-  const sourceGroups = new Map<string, Edge[]>();
-  const targetGroups = new Map<string, Edge[]>();
+  const sourceSideGroups = new Map<string, Edge[]>();
+  const targetSideGroups = new Map<string, Edge[]>();
 
   routed.forEach((edge) => {
-    if (edge.sourceHandle) {
-      const key = `${edge.source}|${edge.sourceHandle}`;
-      const list = sourceGroups.get(key) ?? [];
+    const sourceKey = handleSideGroupKey(edge.source, edge.sourceHandle);
+    if (sourceKey) {
+      const list = sourceSideGroups.get(sourceKey) ?? [];
       list.push(edge);
-      sourceGroups.set(key, list);
+      sourceSideGroups.set(sourceKey, list);
     }
-    if (edge.targetHandle) {
-      const key = `${edge.target}|${edge.targetHandle}`;
-      const list = targetGroups.get(key) ?? [];
+
+    const targetKey = handleSideGroupKey(edge.target, edge.targetHandle);
+    if (targetKey) {
+      const list = targetSideGroups.get(targetKey) ?? [];
       list.push(edge);
-      targetGroups.set(key, list);
+      targetSideGroups.set(targetKey, list);
     }
+  });
+
+  const sortedSourceSideGroups = new Map<string, Edge[]>();
+  sourceSideGroups.forEach((group, key) => {
+    const nodeId = key.split("|")[0]!;
+    sortedSourceSideGroups.set(
+      key,
+      sortEdgesOnNodeFace(group, nodeId, nodeById, "source")
+    );
+  });
+
+  const sortedTargetSideGroups = new Map<string, Edge[]>();
+  targetSideGroups.forEach((group, key) => {
+    const nodeId = key.split("|")[0]!;
+    sortedTargetSideGroups.set(
+      key,
+      sortEdgesOnNodeFace(group, nodeId, nodeById, "target")
+    );
   });
 
   const maxCongestion = Math.max(
     1,
-    ...[...sourceGroups.values(), ...targetGroups.values()].map((g) => g.length)
+    ...[...sortedSourceSideGroups.values(), ...sortedTargetSideGroups.values()].map(
+      (group) => group.length
+    )
   );
   const spacing = edgeLaneSpacing(maxCongestion);
 
   return routed.map((edge) => {
-    const sourceGroup = edge.sourceHandle
-      ? sourceGroups.get(`${edge.source}|${edge.sourceHandle}`)!
+    const sourceKey = handleSideGroupKey(edge.source, edge.sourceHandle);
+    const targetKey = handleSideGroupKey(edge.target, edge.targetHandle);
+
+    const sourceGroup = sourceKey
+      ? sortedSourceSideGroups.get(sourceKey) ?? [edge]
       : [edge];
-    const targetGroup = edge.targetHandle
-      ? targetGroups.get(`${edge.target}|${edge.targetHandle}`)!
+    const targetGroup = targetKey
+      ? sortedTargetSideGroups.get(targetKey) ?? [edge]
       : [edge];
 
     const sourceOffset = laneOffset(
@@ -292,18 +371,17 @@ function applyEdgeRouting(nodes: ErdNode[], edges: Edge[]): Edge[] {
       spacing
     );
 
-    let offset = 0;
-    if (sourceGroup.length > 1 && targetGroup.length > 1) {
-      offset = (sourceOffset + targetOffset) / 2;
-    } else if (sourceGroup.length > 1) {
-      offset = sourceOffset;
-    } else if (targetGroup.length > 1) {
-      offset = targetOffset;
-    }
+    const offset = combineLaneOffsets(
+      sourceOffset,
+      targetOffset,
+      sourceGroup.length,
+      targetGroup.length
+    );
 
     return {
       ...edge,
       pathOptions: { offset, borderRadius: 12 },
+      zIndex: offset === 0 ? 0 : 1,
     };
   });
 }

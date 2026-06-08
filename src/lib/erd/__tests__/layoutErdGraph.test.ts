@@ -58,6 +58,23 @@ describe("layoutErdGraph via buildErdGraph", () => {
     expect(users.position.y).toBeLessThan(orders.position.y);
   });
 
+  it("offsets edges that share the same target face but different columns", () => {
+    const tables = [
+      makeTable("hub"),
+      makeTable("leaf_a", [{ column: "hub_id", refTable: "hub", refColumn: "id" }], [
+        { name: "note", type: "text" },
+      ]),
+      makeTable("leaf_b", [{ column: "hub_ref", refTable: "hub", refColumn: "id" }]),
+    ];
+
+    const { edges } = buildErdGraph(tables);
+    const toHub = edges.filter((e) => e.target === "hub");
+
+    expect(toHub.length).toBeGreaterThanOrEqual(2);
+    const offsets = toHub.map(pathOffset);
+    expect(new Set(offsets).size).toBeGreaterThan(1);
+  });
+
   it("offsets parallel edges between the same table pair", () => {
     const tables = [
       makeTable("a"),

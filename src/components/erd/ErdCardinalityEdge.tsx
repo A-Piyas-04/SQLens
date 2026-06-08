@@ -43,8 +43,6 @@ type ErdCardinalityEdgeData = ErdEdgeData & {
 
 export default function ErdCardinalityEdge({
   id,
-  source,
-  target,
   sourceX,
   sourceY,
   targetX,
@@ -60,7 +58,7 @@ export default function ErdCardinalityEdge({
   pathOptions,
   data,
 }: EdgeProps) {
-  const { getNode } = useReactFlow();
+  const { getNodes } = useReactFlow();
   const edgeData = data as ErdCardinalityEdgeData | undefined;
   const sourceOffset = outwardOffset(sourcePosition, MARKER_INSET);
   const targetOffset = outwardOffset(targetPosition, MARKER_INSET);
@@ -80,9 +78,10 @@ export default function ErdCardinalityEdge({
     offset: pathOptions?.offset ?? 0,
   });
 
-  const nodeBounds = [source, target]
-    .map((nodeId) => getNode(nodeId))
-    .filter((node): node is Node<ErdTableNodeData, "erdTable"> => !!node)
+  const labelText = typeof label === "string" ? label : "";
+
+  const nodeBounds = getNodes()
+    .filter((node): node is Node<ErdTableNodeData, "erdTable"> => node.type === "erdTable")
     .map((node) => getErdNodeBounds(node));
 
   const { x: labelX, y: labelY } = computeEdgeLabelPosition({
@@ -93,6 +92,7 @@ export default function ErdCardinalityEdge({
     fallbackX: fallbackLabelX,
     fallbackY: fallbackLabelY,
     nodeBounds,
+    labelText,
   });
 
   const sourceCardinality = edgeData?.sourceCardinality ?? "many";
@@ -122,7 +122,7 @@ export default function ErdCardinalityEdge({
       {label ? (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan pointer-events-none z-10 max-w-[9.5rem] truncate rounded-sm border border-line/60 px-1.5 py-0.5 text-[10px] font-medium shadow-sm"
+            className="erd-edge-label nodrag nopan pointer-events-none max-w-[9.5rem] truncate rounded-sm border border-line/60 px-1.5 py-0.5 text-[10px] font-medium shadow-sm"
             title={detailLabel}
             style={{
               position: "absolute",
