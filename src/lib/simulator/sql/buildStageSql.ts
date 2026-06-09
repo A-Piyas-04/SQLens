@@ -11,6 +11,21 @@ function getParser(): Parser {
   return _parser;
 }
 
+/**
+ * node-sql-parser's PostgreSQL sqlify quotes mixed-case identifiers (e.g. "Products").
+ * LeetCode-style schemas use unquoted PascalCase DDL, which PG stores as lowercase.
+ * Strip quotes and fold to lowercase so stage SQL matches the live database.
+ */
+export function normalizePostgresSqlifySql(sql: string): string {
+  return sql.replace(/"([^"]+)"/g, (_, ident: string) => ident.toLowerCase());
+}
+
+function sqlifySelect(ast: Select): string {
+  return normalizePostgresSqlifySql(
+    getParser().sqlify(ast, { database: "PostgreSQL" })
+  );
+}
+
 /** Column node that represents SELECT * */
 const STAR_COLUMN = [{ expr: { type: "star", value: "*" }, as: null }];
 
@@ -105,8 +120,6 @@ export function buildStageSql(
    */
   joinIndex?: number
 ): StageSqlResult {
-  const parser = getParser();
-
   try {
     let stageSql: string;
 
@@ -124,7 +137,7 @@ export function buildStageSql(
         if (Array.isArray(ast.from)) {
           ast.from = ast.from.filter((item) => !("join" in item));
         }
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
@@ -148,7 +161,7 @@ export function buildStageSql(
           ast.from = [...baseItems, ...joinOnlyItems];
         }
 
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
@@ -160,7 +173,7 @@ export function buildStageSql(
         clearGroupBy(ast);
         clearHaving(ast);
         ast.distinct = null;
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
@@ -171,7 +184,7 @@ export function buildStageSql(
         clearHaving(ast);
         clearOrderBy(ast);
         clearLimit(ast);
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
@@ -181,7 +194,7 @@ export function buildStageSql(
         const ast = cloneSelect(select);
         clearOrderBy(ast);
         clearLimit(ast);
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
@@ -189,14 +202,14 @@ export function buildStageSql(
         const ast = cloneSelect(select);
         clearOrderBy(ast);
         clearLimit(ast);
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
       case "ORDER_BY": {
         const ast = cloneSelect(select);
         clearLimit(ast);
-        stageSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        stageSql = sqlifySelect(ast);
         break;
       }
 
@@ -206,7 +219,7 @@ export function buildStageSql(
         // when _limit is not separately populated by the parser.
         const ast = cloneSelect(select);
         clearLimit(ast);
-        const baseSql = parser.sqlify(ast, { database: "PostgreSQL" });
+        const baseSql = sqlifySelect(ast);
 
         const limitVal = getLimitValue(select);
         stageSql =
@@ -238,7 +251,6 @@ export function buildStageSql(
  * Returns null if the AST has no JOIN item at that index or if sqlify fails.
  */
 export function buildRightTableSql(select: Select, joinIndex = 0): string | null {
-  const parser = getParser();
   const froms = Array.isArray(select.from) ? select.from : [];
   const joinItems = froms.filter((item) => "join" in item);
   const joinItem = joinItems[joinIndex];
@@ -259,7 +271,7 @@ export function buildRightTableSql(select: Select, joinIndex = 0): string | null
     delete rightItem.join;
     delete rightItem.on;
     ast.from = [rightItem];
-    return parser.sqlify(ast, { database: "PostgreSQL" });
+    return sqlifySelect(ast);
   } catch {
     return null;
   }

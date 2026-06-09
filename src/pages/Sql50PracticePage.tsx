@@ -117,7 +117,10 @@ export default function Sql50PracticePage() {
     lastRunSucceeded: workspace.lastRunSucceeded,
     isPreparingSimulation,
     onPlaySimulation: () => void handlePlaySimulation(),
-    onRun: () => void workspace.handleRunQuery(),
+    onRun: () => {
+      clearSimulationError();
+      void workspace.handleRunQuery();
+    },
     onSubmit: () => void handleSubmit(),
     onReset: () => void workspace.handleResetProblemDb(),
   };
