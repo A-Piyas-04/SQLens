@@ -1,6 +1,7 @@
 import { Cpu, Play, RotateCcw, Send } from "lucide-react";
 
 import Button from "../../../components/common/Button";
+import { cn } from "../../../lib/utils/cn";
 
 type Props = {
   runLabel: string;
@@ -12,6 +13,8 @@ type Props = {
   onRun: () => void;
   onSubmit: () => void;
   onReset: () => void;
+  /** Stack vertically in the editor rail (desktop). */
+  rail?: boolean;
 };
 
 export default function Sql50ActionBar({
@@ -24,14 +27,26 @@ export default function Sql50ActionBar({
   onRun,
   onSubmit,
   onReset,
+  rail = false,
 }: Props) {
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
+    <div
+      className={cn(
+        "space-y-2",
+        rail && "flex h-full min-h-0 flex-col"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          rail ? "flex-col" : "flex-wrap"
+        )}
+      >
         <Button
           type="button"
           variant="secondary"
           size="sm"
+          className={cn(rail && "w-full justify-center")}
           disabled={!lastRunSucceeded || isRunning || isPreparingSimulation}
           onClick={onPlaySimulation}
           title={
@@ -47,6 +62,7 @@ export default function Sql50ActionBar({
           type="button"
           variant="primary"
           size="sm"
+          className={cn(rail && "w-full justify-center")}
           onClick={onRun}
           disabled={isRunning}
         >
@@ -57,6 +73,7 @@ export default function Sql50ActionBar({
           type="button"
           variant="secondary"
           size="sm"
+          className={cn(rail && "w-full justify-center")}
           disabled={isSubmitting || isRunning}
           onClick={onSubmit}
         >
@@ -67,7 +84,10 @@ export default function Sql50ActionBar({
           type="button"
           variant="ghost"
           size="sm"
-          className="text-danger-ink hover:bg-danger-surface"
+          className={cn(
+            "text-danger-ink hover:bg-danger-surface",
+            rail && "w-full justify-center"
+          )}
           onClick={onReset}
           disabled={isRunning}
         >
@@ -75,15 +95,39 @@ export default function Sql50ActionBar({
           Reset DB
         </Button>
       </div>
-      <p className="text-[11px] text-ink-muted">
-        <kbd className="rounded border border-line bg-surface-muted px-1 py-0.5 font-mono text-[10px]">
-          Ctrl+Enter
-        </kbd>{" "}
-        run ·{" "}
-        <kbd className="rounded border border-line bg-surface-muted px-1 py-0.5 font-mono text-[10px]">
-          Ctrl+Shift+Enter
-        </kbd>{" "}
-        submit
+      <p
+        className={cn(
+          "text-[11px] text-ink-muted",
+          rail && "mt-auto space-y-1.5 text-center leading-relaxed"
+        )}
+      >
+        {rail ? (
+          <>
+            <span className="block">
+              <kbd className="rounded border border-line bg-surface-muted px-1 py-0.5 font-mono text-[10px]">
+                Ctrl+Enter
+              </kbd>{" "}
+              run
+            </span>
+            <span className="block">
+              <kbd className="rounded border border-line bg-surface-muted px-1 py-0.5 font-mono text-[10px]">
+                Ctrl+Shift+Enter
+              </kbd>{" "}
+              submit
+            </span>
+          </>
+        ) : (
+          <>
+            <kbd className="rounded border border-line bg-surface-muted px-1 py-0.5 font-mono text-[10px]">
+              Ctrl+Enter
+            </kbd>{" "}
+            run ·{" "}
+            <kbd className="rounded border border-line bg-surface-muted px-1 py-0.5 font-mono text-[10px]">
+              Ctrl+Shift+Enter
+            </kbd>{" "}
+            submit
+          </>
+        )}
       </p>
     </div>
   );

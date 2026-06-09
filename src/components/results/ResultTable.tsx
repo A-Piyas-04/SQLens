@@ -7,10 +7,20 @@ import { cn } from "../../lib/utils/cn";
 
 type Props = {
   rows: Record<string, unknown>[];
+  /** Compact layout for SQL50 — no panel chrome or duplicate headings. */
+  embedded?: boolean;
 };
 
-export default function ResultTable({ rows }: Props) {
+export default function ResultTable({ rows, embedded = false }: Props) {
   if (rows.length === 0) {
+    if (embedded) {
+      return (
+        <p className="px-1 py-2 text-center text-[11px] text-ink-muted">
+          No results yet. Run a query to see rows here.
+        </p>
+      );
+    }
+
     return (
       <Panel title="Results" dataTour="results-panel">
         <div className="flex flex-col items-center justify-center rounded-sm border border-dashed border-line bg-surface-inset px-6 py-10 text-center">
@@ -44,6 +54,83 @@ export default function ResultTable({ rows }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  const table = (
+    <div
+      className={cn(
+        "overflow-auto rounded-sm border border-line bg-surface-inset",
+        embedded ? "max-h-full" : "max-h-[420px]"
+      )}
+    >
+      <table className="w-full border-collapse text-[11px]">
+        <thead className="sticky top-0 z-10 bg-surface-muted">
+          <tr>
+            {columns.map((col) => (
+              <th
+                key={col}
+                className={cn(
+                  "border-b border-line text-left font-semibold tracking-wide whitespace-nowrap text-ink-secondary uppercase",
+                  embedded ? "px-2 py-1 text-[10px]" : "px-4 py-2.5 text-xs"
+                )}
+              >
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((row, index) => (
+            <tr
+              key={index}
+              className={cn(
+                "border-b border-line transition-colors duration-150",
+                "hover:bg-surface-muted"
+              )}
+            >
+              {columns.map((col) => {
+                const value = row[col];
+
+                return (
+                  <td
+                    key={col}
+                    className={cn(
+                      "font-mono whitespace-nowrap text-ink",
+                      embedded ? "px-2 py-1 text-[11px]" : "px-4 py-2.5 text-xs"
+                    )}
+                  >
+                    {value === null ? (
+                      <span className="italic text-orange-300">NULL</span>
+                    ) : (
+                      String(value)
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-1">
+        <div className="flex shrink-0 justify-end gap-1">
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={copyResults}>
+            <Copy className="size-3" aria-hidden />
+            Copy
+          </Button>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={downloadJson}>
+            <Download className="size-3" aria-hidden />
+            Export
+          </Button>
+        </div>
+        {table}
+      </div>
+    );
+  }
+
   return (
     <AnimatedReveal>
       <Panel
@@ -66,52 +153,7 @@ export default function ResultTable({ rows }: Props) {
           <span className="font-medium text-ink-secondary">{rows.length}</span> row
           {rows.length === 1 ? "" : "s"} returned
         </p>
-
-        <div className="max-h-[420px] overflow-auto rounded-sm border border-line bg-surface-inset">
-          <table className="w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-surface-muted ">
-              <tr>
-                {columns.map((col) => (
-                  <th
-                    key={col}
-                    className="border-b border-line px-4 py-2.5 text-left text-xs font-semibold tracking-wide whitespace-nowrap text-ink-secondary uppercase"
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {rows.map((row, index) => (
-                <tr
-                  key={index}
-                  className={cn(
-                    "border-b border-line transition-colors duration-150",
-                    "hover:bg-surface-muted"
-                  )}
-                >
-                  {columns.map((col) => {
-                    const value = row[col];
-
-                    return (
-                      <td
-                        key={col}
-                        className="px-4 py-2.5 font-mono text-xs whitespace-nowrap text-ink"
-                      >
-                        {value === null ? (
-                          <span className="italic text-orange-300">NULL</span>
-                        ) : (
-                          String(value)
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {table}
       </Panel>
     </AnimatedReveal>
   );

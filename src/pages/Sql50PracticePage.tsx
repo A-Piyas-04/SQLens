@@ -17,8 +17,8 @@ import Sql50EditorPanel from "../features/sql50/components/Sql50EditorPanel";
 import Sql50LeftSidebar from "../features/sql50/components/Sql50LeftSidebar";
 import Sql50PageLayout, {
   Sql50Workbench,
-  Sql50WorkbenchActions,
   Sql50WorkbenchEditor,
+  Sql50WorkbenchMain,
   Sql50WorkbenchResults,
   Sql50WorkbenchTop,
 } from "../features/sql50/components/Sql50PageLayout";
@@ -109,6 +109,18 @@ export default function Sql50PracticePage() {
     },
     [workspace, prepareSimulation]
   );
+
+  const actionBarProps = {
+    runLabel,
+    isRunning: workspace.isRunning,
+    isSubmitting,
+    lastRunSucceeded: workspace.lastRunSucceeded,
+    isPreparingSimulation,
+    onPlaySimulation: () => void handlePlaySimulation(),
+    onRun: () => void workspace.handleRunQuery(),
+    onSubmit: () => void handleSubmit(),
+    onReset: () => void workspace.handleResetProblemDb(),
+  };
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -255,13 +267,6 @@ export default function Sql50PracticePage() {
                     embedded
                     description={workspace.activeProblem.description}
                   />
-                  <button
-                    type="button"
-                    className="text-left text-xs font-medium text-accent-ink hover:underline"
-                    onClick={() => setStatementOpen(true)}
-                  >
-                    View full problem statement →
-                  </button>
                 </>
               )}
               {workspace.loadError ? (
@@ -269,9 +274,13 @@ export default function Sql50PracticePage() {
               ) : null}
             </Sql50WorkbenchTop>
 
-            <Sql50WorkbenchEditor>
+            <Sql50WorkbenchMain>
+            <Sql50WorkbenchEditor
+              actions={<Sql50ActionBar rail {...actionBarProps} />}
+              mobileActions={<Sql50ActionBar {...actionBarProps} />}
+            >
               {workspace.isLoadingProblem ? (
-                <Skeleton className="h-[240px] w-full" />
+                <Skeleton className="h-full min-h-0 w-full" />
               ) : (
                 <Sql50EditorPanel
                   ref={editorRef}
@@ -284,20 +293,6 @@ export default function Sql50PracticePage() {
               )}
             </Sql50WorkbenchEditor>
 
-            <Sql50WorkbenchActions>
-              <Sql50ActionBar
-                runLabel={runLabel}
-                isRunning={workspace.isRunning}
-                isSubmitting={isSubmitting}
-                lastRunSucceeded={workspace.lastRunSucceeded}
-                isPreparingSimulation={isPreparingSimulation}
-                onPlaySimulation={() => void handlePlaySimulation()}
-                onRun={() => void workspace.handleRunQuery()}
-                onSubmit={() => void handleSubmit()}
-                onReset={() => void workspace.handleResetProblemDb()}
-              />
-            </Sql50WorkbenchActions>
-
             <Sql50WorkbenchResults>
               <Sql50ResultsPanel rows={workspace.rows}>
                 {workspace.error ? (
@@ -306,12 +301,12 @@ export default function Sql50PracticePage() {
                 {simulationError ? (
                   <StatusMessage variant="error" message={simulationError} />
                 ) : null}
-                {workspace.message && !lastResult ? (
+                {workspace.message && !lastResult && workspace.rows.length === 0 ? (
                   <StatusMessage variant="success" message={workspace.message} />
                 ) : null}
                 <SubmissionResultPanel result={lastResult} />
                 {acceptedScore !== null && lastResult?.verdict === "accepted" ? (
-                  <p className="text-sm text-success-ink">
+                  <p className="text-[11px] text-success-ink">
                     Score: {acceptedScore}/100
                     {progress.bestScore > 0 &&
                     progress.bestScore !== acceptedScore
@@ -321,6 +316,7 @@ export default function Sql50PracticePage() {
                 ) : null}
               </Sql50ResultsPanel>
             </Sql50WorkbenchResults>
+            </Sql50WorkbenchMain>
           </Sql50Workbench>
         }
         right={helpPanel}

@@ -71,13 +71,13 @@ export default function ProblemHeader({
         {onViewStatement ? (
           <Button
             type="button"
-            variant="secondary"
+            variant="navy"
             size="sm"
             onClick={onViewStatement}
             title="Open full problem statement"
           >
             <FileText className="size-3.5" aria-hidden />
-            <span className="hidden sm:inline">Problem</span>
+            Problem statement
           </Button>
         ) : null}
         <Button

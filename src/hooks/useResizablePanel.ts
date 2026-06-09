@@ -7,28 +7,59 @@ import {
   SIDEBAR_STORAGE_KEY,
 } from "../constants/layout";
 
-function clampWidth(width: number) {
-  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
+export type ResizablePanelEdge = "left" | "right";
+
+export type ResizablePanelOptions = {
+  minWidth?: number;
+  maxWidth?: number;
+  defaultWidth?: number;
+  storageKey?: string;
+  /** Handle on the right edge (left sidebar) or left edge (right sidebar). */
+  edge?: ResizablePanelEdge;
+};
+
+type ResolvedOptions = Required<ResizablePanelOptions>;
+
+function resolveOptions(options?: ResizablePanelOptions): ResolvedOptions {
+  return {
+    minWidth: options?.minWidth ?? SIDEBAR_MIN_WIDTH,
+    maxWidth: options?.maxWidth ?? SIDEBAR_MAX_WIDTH,
+    defaultWidth: options?.defaultWidth ?? SIDEBAR_DEFAULT_WIDTH,
+    storageKey: options?.storageKey ?? SIDEBAR_STORAGE_KEY,
+    edge: options?.edge ?? "right",
+  };
 }
 
-function readStoredWidth() {
+function clampWidth(width: number, minWidth: number, maxWidth: number) {
+  return Math.min(maxWidth, Math.max(minWidth, width));
+}
+
+function readStoredWidth(options: ResolvedOptions) {
   if (typeof window === "undefined") {
-    return SIDEBAR_DEFAULT_WIDTH;
+    return options.defaultWidth;
   }
 
-  const stored = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+  const stored = window.localStorage.getItem(options.storageKey);
   if (!stored) {
-    return SIDEBAR_DEFAULT_WIDTH;
+    return options.defaultWidth;
   }
 
   const parsed = Number.parseInt(stored, 10);
   return Number.isFinite(parsed)
-    ? clampWidth(parsed)
-    : SIDEBAR_DEFAULT_WIDTH;
+    ? clampWidth(parsed, options.minWidth, options.maxWidth)
+    : options.defaultWidth;
 }
 
-export function useResizablePanel() {
-  const [width, setWidth] = useState(readStoredWidth);
+export function useResizablePanel(options?: ResizablePanelOptions) {
+  const resolved = resolveOptions(options);
+  const {
+    minWidth,
+    maxWidth,
+    storageKey,
+    edge,
+  } = resolved;
+
+  const [width, setWidth] = useState(() => readStoredWidth(resolved));
   const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(width);
@@ -49,7 +80,11 @@ export function useResizablePanel() {
 
     function handleMouseMove(event: MouseEvent) {
       const delta = event.clientX - startXRef.current;
-      setWidth(clampWidth(startWidthRef.current + delta));
+      const nextWidth =
+        edge === "right"
+          ? startWidthRef.current + delta
+          : startWidthRef.current - delta;
+      setWidth(clampWidth(nextWidth, minWidth, maxWidth));
     }
 
     function handleMouseUp() {
@@ -67,11 +102,11 @@ export function useResizablePanel() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing]);
+  }, [edge, isResizing, maxWidth, minWidth]);
 
   useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(width));
-  }, [width]);
+    window.localStorage.setItem(storageKey, String(width));
+  }, [storageKey, width]);
 
   return {
     width,

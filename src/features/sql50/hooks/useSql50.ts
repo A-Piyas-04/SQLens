@@ -57,6 +57,8 @@ export function useSql50() {
 
   const activeProblemRef = useRef(activeProblem);
   activeProblemRef.current = activeProblem;
+  const loadGenerationRef = useRef(0);
+  const loadQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const refreshSchema = useCallback(async () => {
     const schema = await getSchema(dbRef.current);
@@ -67,35 +69,49 @@ export function useSql50() {
 
   const loadProblemIntoDb = useCallback(
     async (problem: Sql50Problem) => {
-      setIsLoadingProblem(true);
-      setLoadError("");
-      setError("");
-      setMessage("");
-      setRows([]);
-      setLastRunSucceeded(false);
+      const generation = ++loadGenerationRef.current;
 
-      const result = await loadProblem(dbRef.current, problem);
-      if (!result.success) {
-        setLoadError(result.error ?? "Failed to load problem.");
-        setIsLoadingProblem(false);
-        return;
-      }
+      const runLoad = async () => {
+        setIsLoadingProblem(true);
+        setLoadError("");
+        setError("");
+        setMessage("");
+        setRows([]);
+        setLastRunSucceeded(false);
 
-      const progress = getProgress(PACK_ID, problem.id);
-      const draft =
-        progress.draftSql ?? STARTER_TEMPLATE(problem);
+        const result = await loadProblem(dbRef.current, problem);
+        if (generation !== loadGenerationRef.current) {
+          return;
+        }
 
-      withViewTransition(() => {
-        startUiTransition(() => {
-          setQueryState(draft);
-          setSelectedText("");
+        if (!result.success) {
+          setLoadError(result.error ?? "Failed to load problem.");
+          setIsLoadingProblem(false);
+          return;
+        }
+
+        const progress = getProgress(PACK_ID, problem.id);
+        const draft = progress.draftSql ?? STARTER_TEMPLATE(problem);
+
+        withViewTransition(() => {
+          startUiTransition(() => {
+            setQueryState(draft);
+            setSelectedText("");
+          });
         });
-      });
 
-      await refreshSchema();
-      setActiveProblemSlug(PACK_ID, problem.slug);
-      syncProblemSlugInUrl(problem.slug);
-      setIsLoadingProblem(false);
+        await refreshSchema();
+        if (generation !== loadGenerationRef.current) {
+          return;
+        }
+
+        setActiveProblemSlug(PACK_ID, problem.slug);
+        syncProblemSlugInUrl(problem.slug);
+        setIsLoadingProblem(false);
+      };
+
+      loadQueueRef.current = loadQueueRef.current.then(runLoad, runLoad);
+      await loadQueueRef.current;
     },
     [refreshSchema, startUiTransition]
   );
