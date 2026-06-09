@@ -68,11 +68,27 @@ flowchart TB
 | Concern | Where it runs | Technology |
 |--------|----------------|------------|
 | UI, editor, ERD, simulator UI | Browser | React 19, Vite 8, Tailwind CSS 4 |
-| SQL execution & persistence | Browser | PGlite (`@electric-sql/pglite`), IndexedDB |
-| Project metadata, drafts, history | Browser | `localStorage` |
-| AI SQL guidance | Server only | Express 5 **or** Vercel serverless + `@google/generative-ai` |
+| SQL execution & table data | Browser | PGlite → **IndexedDB** |
+| Projects, drafts, history, SQL50 progress | Browser | **localStorage** |
+| AI tutoring (main + SQL50 coach) | Server only | Express 5 **or** Vercel serverless → Gemini |
 
-**Important:** Query execution does **not** require a backend. The backend (or Vercel `api/` routes) exists solely for the optional AI assistant.
+**No remote SQL server.** Queries never leave the browser. The backend only handles optional AI routes (`/api/sql-guidance`, `/api/sql50-coaching`).
+
+### Data & backend at a glance
+
+| What you create | Stored where | Survives refresh? | On a server? |
+|-----------------|--------------|-------------------|--------------|
+| Custom projects (names, list) | `localStorage` → `sqlens-projects` | Yes | No |
+| SQL editor draft | `localStorage` → `sqlens-draft-{projectId}` | Yes | No |
+| Query history (last 10) | `localStorage` → `sqlens-history-{projectId}` | Yes | No |
+| Tables, rows, schema | IndexedDB → `idb://sqlens-{projectId}` | Yes | No |
+| SQL50 bookmarks & progress | `localStorage` → `sqlens-practice-progress-sql50` | Yes | No |
+| SQL50 draft per problem | Same progress key (`draftSql` field) | Yes | No |
+| SQL50 submission SQL / results | **Not saved** (in-memory only) | No | No |
+| Bundled sample DBs & SQL50 problems | Shipped in `src/data/` & `src/features/sql50/data/` (source code) | N/A | N/A |
+| AI prompts + schema summary | Sent to Gemini when you use AI | No local persist | Yes (Google) |
+
+**Clear Local Data** (ProjectSwitcher) wipes `localStorage` only. Old IndexedDB databases may remain as orphaned browser data until you clear site data in browser settings.
 
 ---
 
@@ -152,7 +168,7 @@ Fonts (Google Fonts in `index.html`): **Syne** (display), **Epilogue** (UI), **I
 | Boot | `AppBootGate` + `useAppBootReady` — waits for PGlite ready, splash skeleton |
 | Header | `AppHeader`, `PracticeRadialMenu`, `AiSqlGeneratorPopover`, tour restart |
 | Sidebar | `WorkspaceLayout` + `ResizableSidebar` — `ProjectSwitcher`, `PracticeSidebar` (includes `SchemaSidebar`) |
-| Main | `SqlEditor`, `QueryToolbar`, `ErdScrollButton`, `LoadingBanner`, `StatusMessage`, `ResultTable`, `SimulatorPanel`, `QueryHistory`, `ErdViewer` (+ `ErdMaximizeButton` when `projectId` is set) |
+| Main | `SqlEditor`, `ImportSqlButton`, `QueryToolbar`, `ErdScrollButton`, `LoadingBanner`, `StatusMessage`, `ResultTable`, `SimulatorPanel`, `QueryHistory`, `ErdViewer` (+ `ErdMaximizeButton` when `projectId` is set) |
 | Fullscreen ERD | `ErdFullscreenPage` at `/erd?project={id}` — `ErdViewer` with `fullscreen`, schema refresh on tab focus |
 | Overlay | `OnboardingTour` |
 
@@ -197,7 +213,7 @@ src/
 │   ├── projects/              # Project CRUD + localStorage
 │   ├── practice/              # Generic practice engine (grading, progress, scoring, URL sync)
 │   ├── simulator/             # Parse → pipeline → snapshots → diffs
-│   ├── sql/                   # assertSafeSql, simplifyError, splitSqlStatements
+│   ├── sql/                   # assertSafeSql, simplifyError, splitSqlStatements, readSqlFile
 │   ├── onboarding/            # Tour completion store
 │   └── utils/                 # cn, viewTransition wrapper
 └── components/
@@ -205,7 +221,7 @@ src/
     ├── common/                # Button, Panel, StatusMessage, Skeleton, AnimatedReveal
     ├── editor/                # SqlEditor (CodeMirror ref API: insertAtCursor, onRun)
     ├── erd/                   # ErdViewer, ErdTableNode, ErdExportMenu, ErdMaximizeButton, DesignedTextModal
-    ├── features/              # QueryToolbar, QueryHistory
+    ├── features/              # QueryToolbar, QueryHistory, ImportSqlButton
     ├── icons/                 # Brand and practice icons
     ├── layout/                # Header, workspace, boot gate, loading banner
     ├── onboarding/            # Tour overlay and step card
@@ -316,15 +332,18 @@ Used by: schema sidebar, ERD graph, AI schema formatting, simulator (indirectly 
 
 ### 6.1 Purpose
 
-The **backend does not execute user SQL**. Its only production role is:
+The backend is **AI-only**. It does **not** store user data, run SQL, or sync projects.
 
-1. Accept **`POST /api/sql-guidance`** with `{ prompt, schema? }`.
-2. Build a **tutor-style prompt** (JSON-only response, no runnable SQL).
-3. Call **Google Gemini** with model fallback chain.
-4. **Sanitize** model output (`sanitizeGuidance`) — reject SQL-like content and invalid JSON shape.
-5. Return `{ guidance: SqlGuidance }`.
+| Backend does | Backend does **not** |
+|--------------|----------------------|
+| `POST /api/sql-guidance` — main workspace AI tutor | Execute or persist queries |
+| `POST /api/sql50-coaching` — SQL50 problem-aware coach | Store bookmarks or submissions |
+| Call Gemini, sanitize JSON responses | Host PostgreSQL |
+| Rate-limit by IP | Sync across devices |
 
-Legacy endpoint **`POST /api/generate-sql`** still exists (returns `{ sql }` with `sanitizeGeneratedSql`); the UI has moved to guidance-only via `requestSqlGuidance`.
+Flow: browser sends prompt (+ optional schema text) → server builds tutor prompt → Gemini → `sanitizeGuidance` → JSON cards back to UI. **No SQL is written into the editor.**
+
+Legacy **`POST /api/generate-sql`** still exists; the UI uses guidance-only via `requestSqlGuidance`.
 
 ### 6.2 Technology stack (`backend/`)
 
@@ -681,14 +700,9 @@ There is **no inline simulator panel** on this page. **Play Simulation** (enable
 - **Score** (`computeScore`): penalizes hints used, failed attempts, viewing solution before solve.
 - **Submit** vs **Run Query**: Run shows results only; Submit grades against expected output.
 
-#### Progress (localStorage)
+#### Progress storage
 
-| Key | Contents |
-|-----|----------|
-| `sqlens-practice-progress-sql50` | Per-problem: solved, attempts, hints, bookmark, best score, draft SQL |
-| `sqlens-practice-active-sql50` | Last active problem slug |
-
-Cleared via `clearAllLocalData()` in `projectStore.ts`.
+Bookmarks, drafts, solved state, and scores live in `localStorage` (keys in [§12.3](#123-localstorage-keys)). Submission SQL is not persisted — see [§12.4](#124-sql50--what-is-and-is-not-saved).
 
 #### Keyboard shortcuts
 
@@ -730,25 +744,77 @@ Tour targets DOM regions via `dataTour` attributes (e.g. ERD panel `dataTour="er
 
 ## 12. Persistence and browser storage
 
-### 12.1 IndexedDB (via PGlite)
+All user data stays in the **browser** (this machine + this browser profile). There is no account system and no cloud database.
 
-- Per project: `idb://sqlens-{projectId}`
-- Survives refresh; holds all tables and data for that project
+### 12.1 Two storage layers
 
-### 12.2 localStorage keys
+```mermaid
+flowchart LR
+  subgraph ls ["localStorage — metadata & text"]
+    P["sqlens-projects"]
+    D["sqlens-draft-*"]
+    H["sqlens-history-*"]
+    S50["sqlens-practice-progress-sql50"]
+  end
+  subgraph idb ["IndexedDB — real Postgres data"]
+    DB1["idb://sqlens-proj_abc"]
+    DB2["idb://sqlens-practice-sql50"]
+  end
+  App["React app"] --> ls
+  App --> idb
+```
 
-| Key | Contents |
-|-----|----------|
-| `sqlens-projects` | JSON array of `Project` objects |
-| `sqlens-active-project` | Active project id |
-| `sqlens-draft-{projectId}` | Editor buffer per project |
-| `sqlens-history-{projectId}` | Last **10** queries per project |
-| Onboarding | Stored via `onboardingStore` |
-| Simulator keys | See §8.6 |
-| `sqlens-practice-progress-{packId}` | Practice problem progress (e.g. SQL50) |
-| `sqlens-practice-active-{packId}` | Last active practice problem slug |
+| Layer | Technology | Holds |
+|-------|------------|-------|
+| **IndexedDB** | PGlite (`idb://…`) | Actual tables, columns, rows — everything `CREATE TABLE` / `INSERT` creates |
+| **localStorage** | Plain JSON strings | Project list, editor drafts, query history, SQL50 progress, UI prefs |
 
-**Clear Local Data:** `clearAllLocalData()` in `projectStore.ts` + confirm in `App.tsx` → full page reload.
+Schema sidebar and ERD read live from IndexedDB (`information_schema`). They are not cached separately.
+
+### 12.2 IndexedDB databases
+
+| URI | Used by | Contents |
+|-----|---------|----------|
+| `idb://sqlens-{projectId}` | Main workspace (`createDatabase.ts`) | One isolated Postgres DB per custom project |
+| `idb://sqlens-practice-sql50` | `/practice/sql50` | Problem schema + seed data, reset per problem load |
+| `idb://sqlens` | Legacy single-DB users | Preserved under project id `"legacy"` |
+
+Implementation: [`src/lib/db/createDatabase.ts`](../src/lib/db/createDatabase.ts).
+
+### 12.3 localStorage keys
+
+| Key | Contents | Module |
+|-----|----------|--------|
+| `sqlens-projects` | Project list (`id`, `name`, dates) | `projectStore.ts` |
+| `sqlens-active-project` | Active project id | `projectStore.ts` |
+| `sqlens-draft-{projectId}` | Main editor SQL buffer | `projectStore.ts` |
+| `sqlens-history-{projectId}` | Last **10** executed queries | `useQueryHistory.ts` |
+| `sqlens-practice-progress-{packId}` | Per-problem: solved, attempts, hints, **bookmark**, best score, **draftSql** | `progressStore.ts` |
+| `sqlens-practice-active-{packId}` | Last opened problem slug | `progressStore.ts` |
+| `sqlens-onboarding-complete` | Tour finished flag | `onboardingStore.ts` |
+| `simulator:*` | Playback sidebar width, row IDs, debug flag | See §8.6 |
+| Layout keys | Sidebar / panel widths | `useResizablePanel.ts`, layout constants |
+
+### 12.4 SQL50 — what is and is not saved
+
+| Saved in localStorage | Not saved |
+|-----------------------|-----------|
+| Bookmark per problem | Past submission SQL |
+| Solved / attempts / best score | Last submit verdict after refresh |
+| Hints used, solution viewed flag | |
+| Draft SQL per problem (`draftSql`) | |
+
+Grading runs in the browser (`submissionEngine.ts` + PGlite). Submit updates progress counters only.
+
+### 12.5 Import SQL (main workspace)
+
+**Import SQL** toolbar button → [`ImportSqlButton`](../src/components/features/ImportSqlButton.tsx) reads a local `.sql` / `.txt` file ([`readSqlFile.ts`](../src/lib/sql/readSqlFile.ts), max 1 MB) into the editor. Content is persisted via the normal draft auto-save. Imported SQL is **not** auto-run.
+
+### 12.6 Clearing data
+
+**ProjectSwitcher → Clear Local Data** calls `clearAllLocalData()` in [`projectStore.ts`](../src/lib/projects/projectStore.ts): removes all keys above (projects, drafts, history, SQL50 progress, onboarding, simulator prefs), then reloads.
+
+Does **not** delete IndexedDB PGlite files. Orphaned DB blobs may remain until cleared via browser site-data settings.
 
 ---
 
@@ -796,6 +862,7 @@ Frontend volume-mounts repo; `node_modules` anonymous volume. Backend reads `bac
 | `src/lib/db/__tests__/schema.test.ts` | Schema introspection helpers |
 | `src/lib/db/__tests__/query.test.ts` | Multi-statement `runQuery` behavior |
 | `src/lib/sql/__tests__/splitSqlStatements.test.ts` | SQL semicolon splitting (strings, comments) |
+| `src/lib/sql/__tests__/readSqlFile.test.ts` | SQL file import validation and reading |
 | `src/lib/onboarding/__tests__/onboardingStore.test.ts` | Onboarding persistence |
 | `src/constants/__tests__/onboardingSteps.test.ts` | Tour step config |
 | `src/lib/practice/__tests__/compareResultSets.test.ts` | Practice result-set comparison |
@@ -852,18 +919,19 @@ Same Gemini and rate-limit variables as backend; used by `api/sql-guidance.ts` a
 
 ## Summary table: who implements what
 
-| Capability | Implemented with | Runs where |
-|------------|------------------|------------|
-| SQL editor & run | CodeMirror + PGlite + `splitSqlStatements` + `useSqlWorkspace` | Browser |
-| Schema sidebar & ERD | `information_schema` + React Flow + Dagre layout | Browser |
-| ERD fullscreen | `/erd` route + `ErdFullscreenPage` | Browser |
-| Project isolation | PGlite `idb://` + `projectStore` | Browser + IndexedDB |
-| Query history & drafts | `localStorage` | Browser |
-| Practice samples | Static TS data + `execSqlScript` | Browser |
-| SQL 50 (LeetCode) | `features/sql50` + `lib/practice` + dedicated PGlite | Browser |
-| Simulator | `node-sql-parser` + PGlite + React UI | Browser |
-| AI guidance | Gemini via Express **or** Vercel `api/` | Server |
-| SQL 50 AI coach | `POST /api/sql50-coaching` | Server |
-| Legacy AI SQL gen | `POST /api/generate-sql` | Server (deprecated in UI) |
+| Capability | Storage / runtime | Backend involved? |
+|------------|-------------------|-------------------|
+| SQL editor, run, reset | PGlite → IndexedDB | No |
+| Import SQL file | Editor draft → localStorage | No |
+| Custom projects | localStorage + IndexedDB per project | No |
+| Schema sidebar & ERD | Live read from IndexedDB | No |
+| Query history & drafts | localStorage | No |
+| SQL50 progress & bookmarks | localStorage | No |
+| SQL50 table data | IndexedDB `practice-sql50` | No |
+| SQL50 submit grading | PGlite in browser | No |
+| Practice samples & problem defs | Bundled TypeScript source | No |
+| Simulator | PGlite + `node-sql-parser` | No |
+| Main workspace AI tutor | — | Yes → `/api/sql-guidance` → Gemini |
+| SQL50 AI coach | — | Yes → `/api/sql50-coaching` → Gemini |
 
-SQLens is therefore a **thick client** for database work, with a **thin, optional AI API** layer for tutoring—not a traditional three-tier app with a remote SQL server.
+**Thick client** for all SQL work; **thin optional API** for AI only. No remote Postgres, no user database on the server.
