@@ -166,7 +166,7 @@ Fonts (Google Fonts in `index.html`): **Syne** (display), **Epilogue** (UI), **I
 | Region | Components / hooks |
 |--------|-------------------|
 | Boot | `AppBootGate` + `useAppBootReady` — waits for PGlite ready, splash skeleton |
-| Header | `AppHeader`, `PracticeRadialMenu`, `AiSqlGeneratorPopover`, tour restart |
+| Header | `AppHeader`, `Sql50HeaderButton` (promo), `PracticeRadialMenu`, `AiSqlGeneratorPopover`, tour restart |
 | Sidebar | `WorkspaceLayout` + `ResizableSidebar` — `ProjectSwitcher`, `PracticeSidebar` (includes `SchemaSidebar`) |
 | Main | `SqlEditor`, `ImportSqlButton`, `QueryToolbar`, `ErdScrollButton`, `LoadingBanner`, `StatusMessage`, `ResultTable`, `SimulatorPanel`, `QueryHistory`, `ErdViewer` (+ `ErdMaximizeButton` when `projectId` is set) |
 | Fullscreen ERD | `ErdFullscreenPage` at `/erd?project={id}` — `ErdViewer` with `fullscreen`, schema refresh on tab focus |
@@ -223,7 +223,7 @@ src/
     ├── erd/                   # ErdViewer, ErdTableNode, ErdExportMenu, ErdMaximizeButton, DesignedTextModal
     ├── features/              # QueryToolbar, QueryHistory, ImportSqlButton
     ├── icons/                 # Brand and practice icons
-    ├── layout/                # Header, workspace, boot gate, loading banner
+    ├── layout/                # Header, workspace, boot gate, loading banner, headerActionButton helpers
     ├── onboarding/            # Tour overlay and step card
     ├── practice/              # Sidebar, radial menu, category content
     ├── projects/              # ProjectSwitcher
@@ -278,11 +278,43 @@ Main workspace entry: `AppHeader` promo slot → `Sql50HeaderButton` links to `/
 
 ### 4.6 UI primitives and styling
 
-- Global theme: dark slate surfaces, blue accents (`src/index.css` CSS variables: `--color-surface`, `--color-line`, etc.).
-- **`Panel`**, **`Button`**, **`StatusMessage`** — shared layout primitives.
-- **View transitions**: `withViewTransition` wraps schema/result updates for smoother UI (where supported).
-- **Responsive**: sidebar stacks on small screens; playback modal has mobile panel toggles.
-- Detailed GUI map: [gui-structure.md](./gui-structure.md).
+**Theme: “Cold Precision”** (light-only, defined in `src/index.css`):
+
+| Token | Role |
+|-------|------|
+| `--color-bg` / `surface` | Warm off-white page background (`#f4f1ec`) |
+| `--color-bg-subtle` / `surface-raised` | Cards, sidebars |
+| `--color-accent` (`#0d6b63`) | Primary buttons, links, focus rings — full saturation on small controls only |
+| `--color-accent-muted` / `accent-soft` | Large tinted fills (headers, badges) |
+| `--radius-ui` | 4px unified corner radius |
+
+Tailwind v4 maps tokens via `@theme`; `tailwind.config.js` is unused. Global ambience: subtle noise overlay on `body`, optional 48px grid in the main workspace.
+
+**Shared primitives:**
+
+- **`Panel`** — bordered card with raised header and vertical accent bar (`bg-accent` strip).
+- **`Button`** — variants: `primary`, `secondary`, `accent-secondary`, `ghost`, `danger`, `navy`. All use `focus-visible:ring-accent`.
+- **`StatusMessage`** — semantic success/error surfaces.
+- **`headerActionButton.ts`** — compact toolbar control classes; `headerActionIconAccentClass` tints closed-state icons on AI / Practice buttons.
+
+**UX hierarchy (high-traffic controls, no palette changes):**
+
+| Area | Pattern |
+|------|---------|
+| Run Query (main + SQL50) | `primary` + idle `ring-accent/25` emphasis |
+| Import SQL | Accent icon + `border-accent/35` on secondary button |
+| SQL50 Submit | `accent-secondary` variant (`bg-accent-muted`, `text-accent-ink`) |
+| SQL50 Play Simulation | Accent border/fill when enabled after a successful run |
+| Header AI / Practice | `text-accent` icon when closed |
+| Results empty state | Accent dashed border + hint text (`ResultTable`) |
+| SQL50 results header | `bg-accent-muted/30`; brief flash when rows first appear (`.results-header-flash`) |
+| SQL50 desktop action rail | Tinted well (`bg-accent-muted/25`) around vertical `Sql50ActionBar` |
+
+**View transitions:** `withViewTransition` wraps schema/result updates where supported.
+
+**Responsive:** sidebar stacks on small screens; SQL50 uses a bottom tab bar on `< lg`; playback modal has mobile panel toggles.
+
+Detailed GUI map (may lag theme): [gui-structure.md](./gui-structure.md).
 
 ---
 
@@ -468,7 +500,7 @@ simulator/
 ├── sql/
 │   ├── parseSql.ts             # Lazy node-sql-parser singleton, PostgreSQL dialect
 │   ├── supportedSql.ts         # validateSqlSupport — rejects unsupported constructs
-│   └── buildStageSql.ts        # AST → SQL per stage (incl. JOIN, GROUP BY, HAVING)
+│   └── buildStageSql.ts        # AST → SQL per stage; normalizePostgresSqlifySql for LeetCode table names
 ├── pipeline/
 │   └── buildPipeline.ts        # AST → ordered SimulatorStage[]
 └── snapshot/
@@ -497,6 +529,16 @@ Logical execution order:
 | Window functions | No |
 | RIGHT / FULL / CROSS JOIN | No |
 | Non-SELECT statements | No |
+
+### 8.4.1 PostgreSQL identifier normalization (SQL50 / LeetCode tables)
+
+LeetCode-style problem DDL uses unquoted PascalCase names (e.g. `CREATE TABLE Products`). PostgreSQL stores these as **lowercase** (`products`). User queries with `FROM Products` work because unquoted identifiers fold to lowercase.
+
+`node-sql-parser`'s PostgreSQL **sqlify** emits quoted mixed-case identifiers (`SELECT * FROM "Products"`), which fail against the live database.
+
+**Fix:** `normalizePostgresSqlifySql()` in `buildStageSql.ts` — after every `sqlify`, strip double quotes and fold identifiers to lowercase so stage SQL matches PGlite. Applied to all pipeline stages and `buildRightTableSql`.
+
+Regression test: `src/lib/simulator/__tests__/pascalCaseTables.test.ts`.
 
 ### 8.5 UI components (`src/components/simulator/`)
 
@@ -663,14 +705,14 @@ Header (title, progress, back to workspace)
 │   ├── Problem strip (ProblemHeader: LeetCode #, difficulty, title, nav, bookmark)
 │   ├── Short description + link to full statement
 │   ├── Sql50EditorPanel (~240px, titleless SqlEditor)
-│   ├── Sql50ActionBar (Play Simulation · Run · Submit · Reset DB)
-│   └── Sql50ResultsPanel (min 30vh, always visible)
+│   ├── Sql50ActionBar rail (desktop xl+) — tinted well; Play Sim · Run · Submit · Reset
+│   └── Sql50ResultsPanel (resizable min height, always visible)
 └── Right 280px — Progress, Hints, Reveal Solution, AI Coach
 ```
 
 **Mobile (`< lg`):** center workbench full width; sticky bottom tab bar **Problems | Schema | Help**.
 
-There is **no inline simulator panel** on this page. **Play Simulation** (enabled after a successful run) calls `generateSnapshots` via `useSql50Simulation` and opens fullscreen `SimulatorPlaybackModal` through `Sql50SimulationModal`.
+There is **no inline simulator panel** on this page. **Play Simulation** (enabled after a successful run) calls `generateSnapshots` via `useSql50Simulation` and opens fullscreen `SimulatorPlaybackModal` through `Sql50SimulationModal`. Stage SQL uses the same identifier normalization as the main simulator (§8.4.1). Stale simulation errors are cleared when the user runs a new query.
 
 #### Key components
 
@@ -680,8 +722,8 @@ There is **no inline simulator panel** on this page. **Play Simulation** (enable
 | `ProblemSidebar` | Search, difficulty pills, favorites, collapsible topic filter |
 | `ProblemStatementModal` | Full LeetCode statement; portal to `document.body`, dismissible (×, Close, Escape, backdrop) |
 | `SolutionModal` | Official solution + visualize |
-| `Sql50ActionBar` | Action hierarchy: secondary Play Sim → primary Run → secondary Submit → ghost Reset |
-| `Sql50ResultsPanel` | Labeled results region with `ResultTable` empty state |
+| `Sql50ActionBar` | Action hierarchy: Play Sim (accent when enabled) → primary Run → `accent-secondary` Submit → ghost Reset |
+| `Sql50ResultsPanel` | Labeled results region; accent header; row-count flash; embeds `ResultTable` |
 | `SubmissionResultPanel` | Wrong answer / accepted feedback |
 | `ProgressPanel`, `HintPanel`, `AiCoachPanel` | Right sidebar help |
 
@@ -875,6 +917,7 @@ Frontend volume-mounts repo; `node_modules` anonymous volume. Backend reads `bac
 | Test file | Area |
 |-----------|------|
 | `src/lib/simulator/__tests__/simulator.test.ts` | Simulator pipeline, snapshots, diffs |
+| `src/lib/simulator/__tests__/pascalCaseTables.test.ts` | LeetCode PascalCase table names vs sqlify normalization |
 | `src/lib/erd/__tests__/buildDesignedText.test.ts` | Designed text export |
 | `src/lib/erd/__tests__/layoutErdGraph.test.ts` | Dagre layout, column handles, lane offsets, large star-schema routing |
 | `src/lib/db/__tests__/schema.test.ts` | Schema introspection helpers |
