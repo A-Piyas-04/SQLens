@@ -69,8 +69,9 @@ export default function ImportSqlButton({
         onClick={handleClick}
         disabled={disabled || isReading}
         aria-label="Import SQL file"
+        className="border-accent/35 hover:border-accent/60"
       >
-        <Upload className="size-3.5" aria-hidden />
+        <Upload className="size-3.5 text-accent-ink" aria-hidden />
         {isReading ? "Importing…" : "Import SQL"}
       </Button>
     </div>

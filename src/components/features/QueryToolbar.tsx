@@ -37,7 +37,10 @@ export default function QueryToolbar({
         size={variant === "header" ? "sm" : "md"}
         onClick={onRun}
         disabled={isRunning}
-        className={variant === "default" ? "sm:min-w-[168px]" : undefined}
+        className={cn(
+          !isRunning && "shadow-sm ring-1 ring-accent/25",
+          variant === "default" && "sm:min-w-[168px]"
+        )}
       >
         <Play className="size-3.5" aria-hidden />
         {runLabel}

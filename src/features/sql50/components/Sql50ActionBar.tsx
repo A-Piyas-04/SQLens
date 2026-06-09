@@ -46,7 +46,13 @@ export default function Sql50ActionBar({
           type="button"
           variant="secondary"
           size="sm"
-          className={cn(rail && "w-full justify-center")}
+          className={cn(
+            rail && "w-full justify-center",
+            lastRunSucceeded &&
+              !isRunning &&
+              !isPreparingSimulation &&
+              "border-accent bg-accent-soft/50 text-accent-ink hover:border-accent hover:bg-accent-soft"
+          )}
           disabled={!lastRunSucceeded || isRunning || isPreparingSimulation}
           onClick={onPlaySimulation}
           title={
@@ -62,7 +68,10 @@ export default function Sql50ActionBar({
           type="button"
           variant="primary"
           size="sm"
-          className={cn(rail && "w-full justify-center")}
+          className={cn(
+            rail && "w-full justify-center",
+            !isRunning && "shadow-sm ring-1 ring-accent/25"
+          )}
           onClick={onRun}
           disabled={isRunning}
         >
@@ -71,7 +80,7 @@ export default function Sql50ActionBar({
         </Button>
         <Button
           type="button"
-          variant="secondary"
+          variant="accent-secondary"
           size="sm"
           className={cn(rail && "w-full justify-center")}
           disabled={isSubmitting || isRunning}

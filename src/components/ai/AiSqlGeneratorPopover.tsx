@@ -11,6 +11,7 @@ import {
   HEADER_ACTION_ICON_SIZE,
   headerActionButtonClass,
   headerActionButtonOpenClass,
+  headerActionIconAccentClass,
 } from "../layout/headerActionButton";
 import Button from "../common/Button";
 
@@ -242,7 +243,7 @@ export default function AiSqlGeneratorPopover({
         {isOpen ? (
           <X className="size-4 shrink-0" aria-hidden />
         ) : (
-          <AiSqlIcon size={HEADER_ACTION_ICON_SIZE} className="shrink-0" />
+          <AiSqlIcon size={HEADER_ACTION_ICON_SIZE} className={cn("shrink-0", headerActionIconAccentClass)} />
         )}
         <span>{isOpen ? "Close" : "AI SQL"}</span>
       </button>

@@ -15,6 +15,9 @@ export const headerActionButtonOpenClass = "bg-surface-muted text-ink";
 /** Icon size for header toolbar buttons */
 export const HEADER_ACTION_ICON_SIZE = 20;
 
+/** Accent tint for toolbar icons when the control is closed */
+export const headerActionIconAccentClass = "text-accent";
+
 export const headerToolbarClass = cn(
   "flex h-10 items-stretch overflow-visible rounded-sm border border-line bg-surface-raised"
 );

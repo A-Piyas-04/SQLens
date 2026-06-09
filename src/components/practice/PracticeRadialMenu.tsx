@@ -11,6 +11,7 @@ import {
   HEADER_ACTION_ICON_SIZE,
   headerActionButtonClass,
   headerActionButtonOpenClass,
+  headerActionIconAccentClass,
 } from "../layout/headerActionButton";
 import { cn } from "../../lib/utils/cn";
 import PracticeCategoryContent from "./PracticeCategoryContent";
@@ -234,7 +235,7 @@ export default function PracticeRadialMenu({
         {isOpen ? (
           <X className="size-4 shrink-0" aria-hidden />
         ) : (
-          <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} className="shrink-0" />
+          <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} className={cn("shrink-0", headerActionIconAccentClass)} />
         )}
         <span>{isOpen ? "Close" : "Practice"}</span>
       </button>

@@ -286,7 +286,9 @@ export function Sql50WorkbenchEditor({
               className="hidden min-h-0 w-40 shrink-0 flex-col border-l border-line pl-4 xl:flex"
               aria-label="Query actions"
             >
-              {actions}
+              <div className="flex min-h-0 flex-1 flex-col rounded-sm border border-line bg-accent-muted/25 p-2.5">
+                {actions}
+              </div>
             </aside>
           ) : null}
         </div>

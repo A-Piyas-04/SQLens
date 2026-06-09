@@ -99,6 +99,10 @@
   box-shadow: var(--shadow-card);
 }
 
+.results-header-flash {
+  animation: pb-glow-flash 320ms ease-out;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
