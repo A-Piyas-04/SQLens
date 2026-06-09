@@ -237,6 +237,24 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     loadQuery(item);
   }
 
+  function importSql(sql: string, filename: string) {
+    loadQuery(sql);
+    withViewTransition(() => {
+      startUiTransition(() => {
+        setMessage(`Imported ${filename}`);
+      });
+    });
+  }
+
+  function reportWorkspaceError(message: string) {
+    withViewTransition(() => {
+      startUiTransition(() => {
+        setError(message);
+        setMessage("");
+      });
+    });
+  }
+
   return {
     query,
     setQuery,
@@ -255,5 +273,7 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     loadQuery,
     loadSampleDatabase,
     applyVisualizationPreset,
+    importSql,
+    reportWorkspaceError,
   };
 }

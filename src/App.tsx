@@ -10,6 +10,7 @@ import WorkspaceLayout from "./components/layout/WorkspaceLayout";
 import SqlEditor, { type SqlEditorHandle } from "./components/editor/SqlEditor";
 import ResultTable from "./components/results/ResultTable";
 import QueryHistory from "./components/features/QueryHistory";
+import ImportSqlButton from "./components/features/ImportSqlButton";
 import QueryToolbar from "./components/features/QueryToolbar";
 import StatusMessage from "./components/common/StatusMessage";
 import Panel from "./components/common/Panel";
@@ -163,6 +164,12 @@ export default function App() {
             hasSelection={hasSelection}
             toolbar={
               <div className="flex items-center gap-2">
+                <ImportSqlButton
+                  disabled={workspace.isRunning}
+                  currentQuery={workspace.query}
+                  onImport={workspace.importSql}
+                  onError={workspace.reportWorkspaceError}
+                />
                 <ErdScrollButton />
                 <QueryToolbar
                   variant="header"
