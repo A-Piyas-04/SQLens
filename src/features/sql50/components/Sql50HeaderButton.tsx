@@ -10,6 +10,7 @@ export default function Sql50HeaderButton({ className }: Props) {
   return (
     <a
       href="/practice/sql50"
+      data-tour="sql50-promo"
       className={cn(
         "group relative inline-flex items-center gap-2 overflow-hidden rounded-sm",
         "border border-accent bg-accent px-4 py-2.5",

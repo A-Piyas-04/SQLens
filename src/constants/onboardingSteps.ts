@@ -29,6 +29,16 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     target: "project-switcher",
   },
   {
+    id: "sql50",
+    title: "Practice SQL 50",
+    body: "Open the LeetCode SQL 50 study plan in a dedicated workspace — 50 problems, auto-grading, hints, and bookmarks.",
+    target: "sql50-promo",
+    highlights: [
+      "Separate practice page at /practice/sql50",
+      "Progress saved in your browser",
+    ],
+  },
+  {
     id: "practice",
     title: "Practice menu",
     body: "Open sample databases, query templates, SQL snippets, and visualization presets to get started quickly.",
@@ -43,8 +53,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "editor",
     title: "SQL editor",
-    body: "Write SQL here. Press Ctrl+Enter to run. Select part of a query to run only the selection.",
+    body: "Write SQL here. Press Ctrl+Enter to run the full query, or select part of a query to run only that selection.",
     target: "sql-editor",
+  },
+  {
+    id: "import-sql",
+    title: "Import SQL",
+    body: "Load a local .sql or .txt file into the editor. Replaces the buffer after confirm; does not auto-run.",
+    target: "import-sql",
+    highlights: ["Max 1 MB per file", "Draft auto-saves per project"],
   },
   {
     id: "run",
@@ -57,29 +74,42 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Results",
     body: "Query output appears here. Copy or export results as JSON when rows are returned.",
     target: "results-panel",
+    highlights: [
+      "Recent queries appear in Query History below after you run",
+    ],
+  },
+  {
+    id: "ai-sql",
+    title: "AI SQL assistant",
+    body: "Describe your query goal and get tutoring cards — techniques, breakdown, pitfalls. Suggestions only; no SQL is inserted into the editor.",
+    target: "ai-sql",
+    highlights: [
+      "Uses your active project schema",
+      "Requires API key when deployed",
+    ],
   },
   {
     id: "simulator",
     accent: "purple",
     title: "SQL Execution Simulator",
-    body: "SQLens’s core experience — visualize exactly how PostgreSQL runs your query, one stage at a time.",
+    body: "SQLens's core experience — visualize exactly how PostgreSQL runs your query, one stage at a time.",
     target: "simulator-panel",
     highlights: [
       "Stage-by-stage playback (FROM → JOIN → WHERE → …)",
-      "Rows animate as they’re filtered, joined, or aggregated",
+      "Rows animate as they're filtered, joined, or aggregated",
       "Run Simulate Query, then scrub the timeline at your pace",
     ],
   },
   {
     id: "erd",
     title: "Entity Relationship Diagram",
-    body: "Visualize tables and foreign keys. Use View ERD in the editor toolbar to jump here anytime.",
+    body: "Visualize tables and foreign keys. Use View ERD in the editor toolbar to jump here, or maximize on the canvas for fullscreen.",
     target: "erd-section",
   },
   {
     id: "finish",
     title: "You're all set",
-    body: "Start with a sample database from the Practice menu, or write your own SQL. Open Help anytime to take this tour again.",
+    body: "Try Practice SQL 50, import a .sql file, or ask the AI assistant for concepts. Start with a sample database from the Practice menu, or write your own SQL. Open Help anytime to replay this tour.",
     placement: "center",
   },
 ];
@@ -88,7 +118,7 @@ export function getOnboardingTargetSelector(target: string): string {
   return `[data-tour="${target}"]`;
 }
 
-/** Padding from viewport edges when deciding if a tour target is “on screen”. */
+/** Padding from viewport edges when deciding if a tour target is "on screen". */
 export const TOUR_VIEWPORT_MARGIN = 48;
 
 const TOUR_MIN_VISIBLE_PX = 72;

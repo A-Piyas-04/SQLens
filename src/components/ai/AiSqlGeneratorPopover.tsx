@@ -226,6 +226,7 @@ export default function AiSqlGeneratorPopover({
 
       <button
         type="button"
+        data-tour="ai-sql"
         onClick={onToggle}
         disabled={disabled}
         title={disabled ? "SQL assistant unavailable while query runs" : "SQL assistant"}

@@ -731,14 +731,32 @@ Reusable for future problem packs:
 
 ## 11. Onboarding tour
 
+Main workspace only (`App.tsx`). **13 steps** — auto-starts on first visit; replay from header **Help**.
+
 | Piece | Location |
 |-------|----------|
 | Steps | `src/constants/onboardingSteps.ts` |
-| State | `src/lib/onboarding/onboardingStore.ts` (completion flag in localStorage) |
+| State | `src/lib/onboarding/onboardingStore.ts` (`sqlens-onboarding-complete`) |
 | Hook | `src/hooks/useOnboardingTour.ts` |
 | UI | `OnboardingTour`, `OnboardingStepCard`, `OnboardingSpotlightOverlay` |
 
-Tour targets DOM regions via `dataTour` attributes (e.g. ERD panel `dataTour="erd-section"`). Restart from header help control.
+**Step order:** `welcome` → `projects` → `sql50` → `practice` → `schema` → `editor` → `import-sql` → `run` → `results` → `ai-sql` → `simulator` → `erd` → `finish`
+
+| Step id | `data-tour` target |
+|---------|-------------------|
+| projects | `project-switcher` |
+| sql50 | `sql50-promo` (header link) |
+| practice | `practice-menu` |
+| schema | `workspace-sidebar` |
+| editor | `sql-editor` |
+| import-sql | `import-sql` |
+| run | `run-query` |
+| results | `results-panel` |
+| ai-sql | `ai-sql` |
+| simulator | `simulator-panel` |
+| erd | `erd-section` |
+
+`welcome` and `finish` are centered modals (no spotlight target).
 
 ---
 

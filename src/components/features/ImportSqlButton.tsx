@@ -53,7 +53,7 @@ export default function ImportSqlButton({
   }
 
   return (
-    <>
+    <div data-tour="import-sql" className="inline-flex">
       <input
         ref={inputRef}
         type="file"
@@ -73,6 +73,6 @@ export default function ImportSqlButton({
         <Upload className="size-3.5" aria-hidden />
         {isReading ? "Importing…" : "Import SQL"}
       </Button>
-    </>
+    </div>
   );
 }
