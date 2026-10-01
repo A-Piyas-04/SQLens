@@ -126,7 +126,7 @@ export default function AppBootSkeleton({ stepLabel, progress }: Props) {
       </div>
 
       {/* Boot status */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-line bg-surface-elevated/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-line bg-surface-elevated px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-ink-muted">{stepLabel}</p>
           <div className="flex items-center gap-3 sm:min-w-[12rem]">

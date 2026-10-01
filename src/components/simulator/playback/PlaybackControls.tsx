@@ -86,9 +86,8 @@ export default function PlaybackControls({
             <div
               key={index}
               className={cn(
-                "h-1.5 rounded-full transition-colors",
-                index <= activeIndex ? segmentColor : "bg-surface-muted/70",
-                index === activeIndex && "opacity-80"
+                "h-1 rounded-[1px] transition-colors",
+                index < activeIndex ? "bg-ink-secondary" : index === activeIndex ? segmentColor : "bg-line"
               )}
             />
           );
@@ -147,7 +146,7 @@ export default function PlaybackControls({
         </button>
 
         <span className="ml-1 inline-flex items-center gap-1 text-xs tabular-nums text-ink-muted" aria-live="polite">
-          <span className={cn("inline-block size-2 rounded-full", stageColor.dot)} />
+          <span className={cn("inline-block size-2 rounded-[1px]", stageColor.dot)} />
           Stage <span className="font-semibold text-ink-secondary">{activeIndex + 1}</span> of{" "}
           <span className="font-semibold text-ink-secondary">{totalStages}</span>:{" "}
           <span className="font-semibold text-ink-secondary">{activeStageType}</span>

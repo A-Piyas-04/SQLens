@@ -177,7 +177,7 @@ export default function ProjectSwitcher({
                     ) : isConfirmingDelete ? (
                       /* ── Delete confirm ───────────────────────── */
                       <>
-                        <span className="flex-1 truncate text-xs text-red-400">
+                        <span className="flex-1 truncate text-xs text-danger-ink">
                           Delete &ldquo;{project.name}&rdquo;?
                         </span>
                         <button
@@ -185,7 +185,7 @@ export default function ProjectSwitcher({
                             e.stopPropagation();
                             handleDeleteClick(project.id);
                           }}
-                          className="shrink-0 rounded bg-red-900/50 px-2 py-0.5 text-xs font-medium text-red-300 hover:bg-red-900/70"
+                          className="shrink-0 rounded-sm border border-danger-ink bg-danger-ink px-2 py-0.5 text-xs font-medium text-white hover:bg-red-800"
                         >
                           Delete
                         </button>
@@ -237,7 +237,7 @@ export default function ProjectSwitcher({
                                 e.stopPropagation();
                                 handleDeleteClick(project.id);
                               }}
-                              className="rounded p-1 text-ink-muted hover:bg-red-950/50 hover:text-red-400"
+                              className="rounded p-1 text-ink-muted hover:bg-danger-surface hover:text-danger-ink"
                               title="Delete"
                             >
                               <Trash2 className="size-3" aria-hidden />
@@ -276,7 +276,7 @@ export default function ProjectSwitcher({
               }}
               className={cn(
                 "mt-1 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm",
-                "text-red-300/80 transition-colors hover:bg-red-950/50 hover:text-red-200"
+                "text-danger-ink transition-colors hover:bg-danger-surface"
               )}
             >
               <Trash2 className="size-4 shrink-0" aria-hidden />

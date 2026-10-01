@@ -1,8 +1,8 @@
 import { memo } from "react";
-import { ArrowRight } from "lucide-react";
 import { cn } from "../../../lib/utils/cn";
 import type { SimulatorStageType } from "../../../lib/simulator";
-import { STAGE_COLORS, STAGE_ICONS, STAGE_SUBTITLES } from "../stageConstants";
+import { STAGE_COLORS, STAGE_SUBTITLES } from "../stageConstants";
+import StageGlyph from "../StageGlyph";
 import { STAGE_LABEL } from "./animation/stageSqlParts";
 import type { PlaybackPhase } from "./animation/stageAnimationTypes";
 
@@ -37,35 +37,38 @@ const PlaybackOperationBar = memo(function PlaybackOperationBar({
   phase,
   showBefore,
 }: Props) {
-  const Icon = STAGE_ICONS[stageType];
   const colors = STAGE_COLORS[stageType];
+  const done = phase === "settled";
   return (
-    <div
-      data-operation-bar
-      role="status"
-      aria-live="polite"
-      className={cn("pb-operation-bar", colors.header, colors.border)}
-    >
-      <Icon className={cn("size-4 shrink-0", colors.icon)} aria-hidden />
-      <span className={cn("shrink-0 text-xs font-semibold tracking-wide", colors.icon)}>{STAGE_LABEL[stageType]}</span>
+    <div data-operation-bar role="status" aria-live="polite" className="pb-operation-bar">
+      <StageGlyph stageType={stageType} />
+      <span className={cn("shrink-0 font-display text-sm font-bold tracking-tight", colors.icon)}>
+        {STAGE_LABEL[stageType]}
+      </span>
       {expression && (
         <code className="min-w-0 truncate font-mono text-xs text-ink" title={expression}>
           {expression}
         </code>
       )}
-      <span className="hidden min-w-0 truncate text-[11px] text-ink-muted xl:inline">· {STAGE_SUBTITLES[stageType]}</span>
-      <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-ink-secondary">
+      <span className="hidden min-w-0 truncate text-[11px] italic text-ink-muted xl:inline">{STAGE_SUBTITLES[stageType]}</span>
+      <span className="ml-auto flex shrink-0 items-baseline gap-1.5 font-mono text-xs tabular-nums text-ink-muted">
         {showBefore && (
           <>
             <span data-count-before>{beforeLabel}</span>
-            <ArrowRight className="size-3 text-ink-muted" aria-hidden />
+            <span aria-hidden>→</span>
           </>
         )}
         <span data-count-after className={cn("font-semibold", countPhase === "after" ? "text-ink" : "text-ink-muted")}>
           {countPhase === "after" || !showBefore ? afterLabel : "…"}
         </span>
       </span>
-      <span data-phase-label className="shrink-0 rounded-sm border border-line bg-surface-raised px-1.5 py-0.5 text-[10px] text-ink-muted">
+      <span
+        data-phase-label
+        className={cn(
+          "shrink-0 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+          done ? "border-ink bg-ink text-surface" : "border-line-strong text-ink-secondary"
+        )}
+      >
         {PHASE_LABEL[phase]}
       </span>
     </div>

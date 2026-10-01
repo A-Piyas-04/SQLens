@@ -123,7 +123,7 @@ export default function ErdRelationLegend() {
 
   return (
     <Panel position="bottom-left" className="!m-3 !mb-28 max-w-[min(100%,18rem)]">
-      <div className="overflow-hidden rounded-sm border border-line bg-surface-elevated/95 shadow-sm backdrop-blur-sm">
+      <div className="overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-sm">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}

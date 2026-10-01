@@ -32,77 +32,50 @@ export const STAGE_ICONS: Record<SimulatorStageType, LucideIcon> = {
 export const STAGE_COLORS: Record<
   SimulatorStageType,
   {
-    pill: string;
     icon: string;
     border: string;
-    header: string;
     dot: string;
-    activeRow: string;
   }
 > = {
   FROM: {
-    pill: "bg-stone-100 text-stone-800 border-stone-300",
     icon: "text-stone-700",
     border: "border-stone-300",
-    header: "bg-stone-50",
     dot: "bg-stone-600",
-    activeRow: "bg-stone-100 border-l-2 border-l-stone-600 text-stone-900",
   },
   JOIN: {
-    pill: "bg-orange-100 text-orange-900 border-orange-300",
     icon: "text-orange-800",
     border: "border-orange-300",
-    header: "bg-orange-50",
     dot: "bg-orange-700",
-    activeRow: "bg-orange-100 border-l-2 border-l-orange-700 text-orange-950",
   },
   WHERE: {
-    pill: "bg-amber-100 text-amber-900 border-amber-300",
     icon: "text-amber-800",
     border: "border-amber-300",
-    header: "bg-amber-50",
     dot: "bg-amber-700",
-    activeRow: "bg-amber-100 border-l-2 border-l-amber-700 text-amber-950",
   },
   GROUP_BY: {
-    pill: "bg-rose-100 text-rose-900 border-rose-300",
     icon: "text-rose-800",
     border: "border-rose-300",
-    header: "bg-rose-50",
     dot: "bg-rose-700",
-    activeRow: "bg-rose-100 border-l-2 border-l-rose-700 text-rose-950",
   },
   HAVING: {
-    pill: "bg-orange-50 text-orange-950 border-orange-200",
     icon: "text-orange-900",
     border: "border-orange-200",
-    header: "bg-orange-50/80",
     dot: "bg-orange-800",
-    activeRow: "bg-orange-50 border-l-2 border-l-orange-800 text-orange-950",
   },
   SELECT: {
-    pill: "bg-emerald-100 text-emerald-900 border-emerald-300",
     icon: "text-emerald-800",
     border: "border-emerald-300",
-    header: "bg-emerald-50",
     dot: "bg-emerald-700",
-    activeRow: "bg-emerald-100 border-l-2 border-l-emerald-700 text-emerald-950",
   },
   ORDER_BY: {
-    pill: "bg-teal-100 text-teal-900 border-teal-300",
     icon: "text-teal-800",
     border: "border-teal-300",
-    header: "bg-teal-50",
     dot: "bg-teal-700",
-    activeRow: "bg-teal-100 border-l-2 border-l-teal-700 text-teal-950",
   },
   LIMIT: {
-    pill: "bg-red-100 text-red-900 border-red-300",
     icon: "text-red-800",
     border: "border-red-300",
-    header: "bg-red-50",
     dot: "bg-red-700",
-    activeRow: "bg-red-100 border-l-2 border-l-red-700 text-red-950",
   },
 };
 

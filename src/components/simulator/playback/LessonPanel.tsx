@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../../../lib/utils/cn";
 import type { SimulatorSnapshot, StageDiff } from "../../../lib/simulator";
-import { STAGE_ACCENT, STAGE_COLORS, STAGE_HINTS, STAGE_ICONS, STAGE_SUBTITLES, diffRowCounts } from "../stageConstants";
+import { STAGE_COLORS, STAGE_HINTS, STAGE_SUBTITLES, diffRowCounts } from "../stageConstants";
+import StageGlyph from "../StageGlyph";
 
 export const LESSON_PANEL_ID = "simulator-lesson-panel";
 
@@ -29,8 +30,6 @@ export default function LessonPanel({
   onToggleCollapsed,
   panelId = LESSON_PANEL_ID,
 }: Props) {
-  const Icon = STAGE_ICONS[snapshot.stageType];
-  const accent = STAGE_ACCENT[snapshot.stageType];
   const colors = STAGE_COLORS[snapshot.stageType];
   const beforeCount = prevSnapshot?.rowCount ?? snapshot.rowCount;
   const afterCount = snapshot.rowCount;
@@ -68,12 +67,12 @@ export default function LessonPanel({
     <aside
       data-lesson-panel
       data-collapsed={collapsed || undefined}
-      className={cn("flex h-full flex-col border-l border-line bg-surface-raised", accent.border)}
+      className="flex h-full flex-col border-l border-line bg-surface-raised"
     >
       {collapsed && (
         <div data-lesson-rail className="flex h-full flex-col items-center gap-3 py-3">
           {toggle}
-          <Icon className={cn("size-5", colors.icon)} aria-hidden />
+          <StageGlyph stageType={snapshot.stageType} />
           <span className="pb-rail-label text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Lesson</span>
           {changeCount > 0 && (
             <span
@@ -91,8 +90,8 @@ export default function LessonPanel({
         <div className="flex items-start gap-2 border-b border-line p-4">
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2">
-              <Icon className={cn("size-5", colors.icon)} aria-hidden />
-              <p className={cn("text-xs font-semibold uppercase tracking-wider", colors.icon)}>{snapshot.stageType}</p>
+              <StageGlyph stageType={snapshot.stageType} />
+              <p className={cn("font-display text-sm font-bold tracking-tight", colors.icon)}>{snapshot.stageType.replace("_", " ")}</p>
             </div>
             <p className="text-xs text-ink-muted">{STAGE_SUBTITLES[snapshot.stageType]}</p>
           </div>
@@ -112,8 +111,8 @@ export default function LessonPanel({
               <span className="font-semibold text-ink">After: {afterCount}</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
-              <div className="h-full bg-emerald-500/70" style={{ width: `${keptRatio}%` }} />
-              {removedRatio > 0 && <div className="h-full -mt-2 bg-rose-500/60" style={{ width: `${removedRatio}%`, marginLeft: `${keptRatio}%` }} />}
+              <div className="h-full bg-success-ink" style={{ width: `${keptRatio}%` }} />
+              {removedRatio > 0 && <div className="h-full -mt-2 bg-danger-ink/70" style={{ width: `${removedRatio}%`, marginLeft: `${keptRatio}%` }} />}
             </div>
             <p className={cn("mt-2 text-xs", counts.added > 0 ? "text-emerald-700" : counts.removed > 0 ? "text-rose-700" : "text-ink-muted")}>
               {rowChangeLabel}

@@ -88,7 +88,7 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
           {/* Content */}
           <div className="max-h-[240px] overflow-auto p-3">
             {tab === "sql" && (
-              <pre className="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-emerald-400">
+              <pre className="whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed text-ink-secondary">
                 {snapshot.sql}
               </pre>
             )}
@@ -162,7 +162,7 @@ export default function SimulatorDebugPanel({ snapshots, diffs }: Props) {
                           className={cn(
                             "rounded border px-1.5 py-0.5 text-[10px] font-mono",
                             c.status === "hidden"
-                              ? "border-red-500/30 text-red-400"
+                              ? "border-danger-ink/40 text-danger-ink"
                               : "border-line text-ink-muted"
                           )}
                         >

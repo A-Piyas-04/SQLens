@@ -68,58 +68,28 @@ export default function OnboardingStepCard({
       className={cn(
         "onboarding-tooltip relative z-[201] w-full",
         "max-w-[min(100%,32rem)]",
-        layoutReady ? "opacity-100" : "opacity-0",
-        featured
-          ? "onboarding-guide-card--featured"
-          : "onboarding-guide-card"
+        layoutReady ? "opacity-100" : "opacity-0"
       )}
     >
-      {featured ? (
-        <>
-          <div className="onboarding-guide-card-shine pointer-events-none" aria-hidden />
-          <div
-            className="pointer-events-none absolute -left-px top-8 h-16 w-1 rounded-full bg-accent"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -right-px bottom-16 h-12 w-1 rounded-full bg-accent/60"
-            aria-hidden
-          />
-        </>
-      ) : null}
-
       <div
         className={cn(
-          "relative overflow-hidden rounded-lg border bg-surface-elevated",
-          featured
-            ? "border-accent/35 ring-1 ring-accent/15"
-            : "border-line-strong/80 border-l-[3px] border-l-accent shadow-md",
-          theme.shadow
+          "relative overflow-hidden rounded-sm border bg-surface-elevated",
+          theme.card
         )}
       >
         <div
           className={cn(
-            "relative overflow-hidden border-b px-6 pb-5 pt-6 sm:px-7",
-            theme.heroBorder,
-            theme.heroGradient
+            "relative border-b px-6 pb-5 pt-6 sm:px-7",
+            theme.heroBorder
           )}
         >
-          {featured ? (
-            <div
-              className="pointer-events-none absolute -right-6 -top-6 size-32 rounded-full bg-accent/10 blur-2xl"
-              aria-hidden
-            />
-          ) : null}
-
           <div className="relative flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "flex shrink-0 items-center justify-center rounded-md border",
-                  featured ? "size-14" : "size-11",
-                  theme.iconBorder,
-                  theme.iconGradient,
-                  featured && "onboarding-guide-icon-pulse"
+                  "flex shrink-0 items-center justify-center rounded-sm border",
+                  featured ? "size-12" : "size-10",
+                  theme.iconBox
                 )}
               >
                 <Icon
@@ -130,10 +100,8 @@ export default function OnboardingStepCard({
               <div>
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em]",
-                    theme.badgeBorder,
-                    theme.badgeBg,
-                    theme.badgeText
+                    "inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
+                    theme.badge
                   )}
                 >
                   {featured ? (
@@ -154,10 +122,12 @@ export default function OnboardingStepCard({
                 <span
                   key={i}
                   className={cn(
-                    "h-1.5 rounded-full transition-all",
+                    "h-1 w-3 rounded-[1px] transition-colors",
                     i === stepIndex
-                      ? cn("w-4", theme.progressActive)
-                      : "w-1.5 bg-line-strong/50"
+                      ? theme.progressActive
+                      : i < stepIndex
+                        ? "bg-ink-muted"
+                        : "bg-line"
                   )}
                 />
               ))}
@@ -172,11 +142,7 @@ export default function OnboardingStepCard({
               theme.titleClass
             )}
           >
-            {featured ? (
-              <span className="onboarding-guide-title-shimmer">{step.title}</span>
-            ) : (
-              step.title
-            )}
+            {step.title}
           </h2>
         </div>
 
@@ -195,14 +161,14 @@ export default function OnboardingStepCard({
             <ul
               className={cn(
                 "mt-5 space-y-3",
-                featured && "rounded-md border border-accent/20 bg-accent-muted/30 p-4"
+                featured && "border-t border-dashed border-accent-ink/30 pt-4"
               )}
             >
               {step.highlights.map((line) => (
                 <li key={line} className="flex gap-3 text-sm text-ink-secondary">
                   <span
                     className={cn(
-                      "mt-1.5 size-1.5 shrink-0 rounded-full",
+                      "mt-1.5 size-1.5 shrink-0 rounded-[1px]",
                       theme.bulletClass
                     )}
                     aria-hidden

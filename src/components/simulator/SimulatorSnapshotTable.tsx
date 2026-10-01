@@ -14,30 +14,30 @@ type Props = {
 const ROW_STATUS_CLASSES: Record<RowStatus, string> = {
   unchanged: "",
   removed:
-    "opacity-40 bg-red-500/8 text-red-300 line-through",
-  added: "bg-emerald-500/8",
-  reordered: "border-l-2 border-l-teal-700",
-  "null-introduced": "bg-amber-500/5",
+    "opacity-50 bg-danger-surface text-danger-ink line-through",
+  added: "bg-success-surface",
+  reordered: "bg-teal-50",
+  "null-introduced": "bg-amber-50",
 };
 
 const ROW_STATUS_BADGE: Partial<Record<RowStatus, { label: string; classes: string }>> = {
   removed: {
     label: "filtered",
     classes:
-      "border-red-500/30 bg-red-500/10 text-red-400",
+      "border-danger-ink/40 text-danger-ink",
   },
   added: {
     label: "matched",
     classes:
-      "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+      "border-success-ink/40 text-success-ink",
   },
   reordered: {
     label: "reordered",
-    classes: "border-teal-300 bg-teal-100 text-teal-800",
+    classes: "border-teal-700/40 text-teal-800",
   },
   "null-introduced": {
     label: "null row",
-    classes: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+    classes: "border-amber-700/40 text-amber-800",
   },
 };
 
@@ -140,7 +140,7 @@ export default function SimulatorSnapshotTable({
                           ? "text-ink-muted opacity-30"
                           : "text-ink-secondary",
                         isNullIntroduced &&
-                          "bg-amber-500/15 text-amber-300 rounded"
+                          "bg-amber-100 text-amber-900 rounded"
                       )}
                     >
                       {isHiddenCol ? (
@@ -150,8 +150,8 @@ export default function SimulatorSnapshotTable({
                           className={cn(
                             "italic",
                             isNullIntroduced
-                              ? "text-amber-400 font-semibold"
-                              : "text-orange-400/80"
+                              ? "text-amber-800 font-semibold"
+                              : "text-orange-800"
                           )}
                         >
                           NULL

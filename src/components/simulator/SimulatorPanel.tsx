@@ -139,12 +139,12 @@ type ErrorStateProps = { message: string; sql: string };
 function ErrorState({ message, sql }: ErrorStateProps) {
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-3 rounded-sm border border-amber-500/20 bg-amber-500/8 px-4 py-3">
+      <div className="inline-flex w-fit max-w-full items-start gap-2 rounded-sm border border-amber-700/50 bg-surface-elevated px-3 py-2">
         <AlertTriangle
-          className="mt-0.5 size-4 shrink-0 text-amber-400"
+          className="mt-0.5 size-4 shrink-0 text-amber-700"
           aria-hidden
         />
-        <p className="text-sm text-amber-300">{message}</p>
+        <p className="text-sm text-ink-secondary">{message}</p>
       </div>
       {sql && <SqlPreview sql={sql} />}
     </div>
@@ -170,7 +170,7 @@ function SuccessState({ snapshots, diffs, isSelection, originalSql }: SuccessSta
             {snapshots.length === 1 ? "stage" : "stages"}
           </span>
           {isSelection && (
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+            <span className="rounded-sm border border-amber-700/50 px-2 py-0.5 font-mono text-[10px] font-medium text-amber-800">
               selection
             </span>
           )}

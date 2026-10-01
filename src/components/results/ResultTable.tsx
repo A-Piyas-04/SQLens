@@ -99,7 +99,7 @@ export default function ResultTable({ rows, embedded = false }: Props) {
                     )}
                   >
                     {value === null ? (
-                      <span className="italic text-orange-300">NULL</span>
+                      <span className="italic text-orange-800/80">NULL</span>
                     ) : (
                       String(value)
                     )}

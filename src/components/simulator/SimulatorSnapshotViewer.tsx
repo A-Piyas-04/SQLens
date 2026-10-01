@@ -7,7 +7,7 @@ import SimulatorJoinCanvas from "./SimulatorJoinCanvas";
 import { cn } from "../../lib/utils/cn";
 import type { SimulatorSnapshot, StageDiff } from "../../lib/simulator/types/snapshotTypes";
 import StageStepList from "./StageStepList";
-import { STAGE_COLORS, STAGE_ICONS } from "./stageConstants";
+import StageGlyph from "./StageGlyph";
 
 type Props = {
   snapshots: SimulatorSnapshot[];
@@ -23,8 +23,6 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
   const active = snapshots[activeIndex];
   if (!active) return null;
 
-  const colors = STAGE_COLORS[active.stageType];
-  const Icon = STAGE_ICONS[active.stageType];
   const isFirst = activeIndex === 0;
   const isLast = activeIndex === snapshots.length - 1;
 
@@ -87,24 +85,17 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
         <div
           ref={cardRef}
           className={cn(
-            "relative overflow-hidden rounded-sm border transition-all duration-150 ease-out",
-            colors.border
+            "relative overflow-hidden rounded-sm border border-line bg-surface-elevated transition-all duration-150 ease-out"
           )}
         >
         {/* Stage header */}
         <div
           className={cn(
-            "flex items-start justify-between gap-3 px-4 py-3",
-            colors.header,
-            "border-b",
-            colors.border
+            "flex items-start justify-between gap-3 border-b border-line px-4 py-3"
           )}
         >
           <div className="flex items-start gap-2.5">
-            <Icon
-              className={cn("mt-0.5 size-4 shrink-0", colors.icon)}
-              aria-hidden
-            />
+            <StageGlyph stageType={active.stageType} className="mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-ink">
                 {active.label}
@@ -138,11 +129,11 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
             </div>
             {/* Removed row badge */}
             {removedRows.length > 0 && (
-              <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] font-mono text-red-400">
+              <span className="rounded-sm border border-danger-ink/40 px-2 py-0.5 text-[11px] font-mono text-danger-ink">
                 −{removedRows.length} removed
               </span>
             )}
-            <span className="rounded-full border border-line bg-surface-raised px-2 py-0.5 text-[11px] font-mono text-ink-muted">
+            <span className="rounded-sm border border-line px-2 py-0.5 text-[11px] font-mono text-ink-muted">
               {active.rowCount} {active.rowCount === 1 ? "row" : "rows"}
             </span>
           </div>

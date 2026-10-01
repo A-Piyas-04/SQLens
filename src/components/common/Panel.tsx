@@ -34,20 +34,13 @@ export default function Panel({
       )}
     >
       {(title || action) && (
-        <header className="flex items-center justify-between gap-3 border-b border-line bg-surface-raised px-4 py-3.5">
+        <header className="flex items-center gap-3 px-4 pb-1 pt-4 sm:px-5">
           {title ? (
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span
-                className="h-4 w-1 shrink-0 rounded-sm bg-accent"
-                aria-hidden
-              />
-              <h2 className="font-display truncate text-sm font-semibold tracking-wide text-ink">
-                {title}
-              </h2>
-            </div>
-          ) : (
-            <span />
-          )}
+            <h2 className="font-display min-w-0 shrink truncate text-[15px] font-bold tracking-tight text-ink">
+              {title}
+            </h2>
+          ) : null}
+          <span className="h-px min-w-6 flex-1 bg-line-strong" aria-hidden />
           {action}
         </header>
       )}
