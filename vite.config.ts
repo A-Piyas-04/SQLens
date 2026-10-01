@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
     environment: "node",
     include: [
       "src/**/__tests__/**/*.test.ts",
+      "src/**/__tests__/**/*.test.tsx",
       "api/**/__tests__/**/*.test.ts",
     ],
   },

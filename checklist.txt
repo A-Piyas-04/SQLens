@@ -1,0 +1,225 @@
+SQLens — Animation & Visualization Betterment — Implementation Checklist
+Source: SQLens_Animation_Betterment_Plan.md
+Legend: [x] done   [ ] pending   [-] cannot be completed by code alone (needs a human / real device) — reason noted
+
+======================================================================
+PHASE 0 — Baseline & instrumentation (plan §15 Phase 0)
+======================================================================
+[x] 0.1  Baseline: existing unit suite recorded (144 tests passing before changes)
+[x] 0.2  Debug logger gated by localStorage "simulator:debug" = "1"
+[x] 0.3  Log events w/ performance.now(): stage enter, phase start, phase complete,
+         animation count, animation duration, stage complete, autoplay advance,
+         navigation interruption, cancel, pause, resume
+[x] 0.4  Fixed simulator test query set covering: FROM only, WHERE, SELECT, ORDER BY,
+         LIMIT, INNER JOIN, LEFT JOIN (unmatched), one-to-many JOIN, GROUP BY,
+         GROUP BY + aggregate, HAVING, full multi-stage query
+[-] 0.5  Screen recordings of current behaviour (needs a human with a screen recorder)
+
+======================================================================
+PHASE 1 — Reliability fixes (plan §6, §15 Phase 1)
+======================================================================
+[x] 1.1  Stop remounting <tbody> per phase (no `${animationKey}-${phase}` key)
+[x] 1.2  Preserve row DOM by _rowId (stable React key, same node across phases)
+[x] 1.3  State changes expressed via data-* attributes (data-phase, data-status)
+[x] 1.4  No DOM destruction used to restart animations (StageEntryBanner key remount etc.)
+[x] 1.5  Fix ORDER BY FLIP lifecycle: FIRST captured before reorder, LAST after commit,
+         INVERT, PLAY; rows registered regardless of stage
+[x] 1.6  JOIN reports completion globally
+[x] 1.7  Autoplay never advances while a stage animation is running
+[x] 1.8  Fix early-return / hook-ordering bug (SimulatorPlaybackModal hooks after `return null`)
+[x] 1.9  Banner transform / off-centering fixed or banner removed
+[x] 1.10 Dead / duplicate playback CSS removed
+[x] 1.11 Backward navigation animates (at minimum a safe crossfade)
+[x] 1.12 Cancellation cleanup for every stage (no stale transforms / opacity / timers)
+
+======================================================================
+PHASE 2 — Unified timeline / controller (plan §5, §13, §14, §15 Phase 2)
+======================================================================
+[x] 2.1  stageAnimationTypes.ts: PlaybackPhase (focus|action|result|settled),
+         AnimationState (idle|running|paused|complete)
+[x] 2.2  Central StageAnimationController: play, pause, resume, cancel, reverse,
+         setPlaybackRate, getPhase, isRunning
+[x] 2.3  Controller tracks every active Animation object
+[x] 2.4  Phase completion = awaited animation.finished (no guessed timeouts)
+[x] 2.5  Pausable / rate-aware holds (timeline delays) instead of setTimeout chains
+[x] 2.6  Completion fires exactly once; cancel suppresses completion side effects
+[x] 2.7  Pause freezes all active animations without resetting stage/phase/progress
+[x] 2.8  Resume continues from exact current time
+[x] 2.9  Speed change updates playbackRate of active animations (no restart)
+[x] 2.10 One global contract: await runStageAnimation(...) for every stage incl. JOIN
+[x] 2.11 useSimulatorPlayback: animationState gating; autoplay only when
+         complete && !paused && has next stage; HOLD_MS no longer = completion
+[x] 2.12 No overlapping interval behaviour (single post-completion dwell, cleared on change)
+[x] 2.13 Space pauses/resumes an active animation; otherwise previous play/step behaviour
+[x] 2.14 Navigation during an animation cancels it cleanly and starts the next stage
+[x] 2.15 Reduced-motion: controller knows the mode; simplified choreography (no large
+         translations, no cascade, no connector drawing, no pulses; quick opacity change;
+         labels preserved); not relying solely on global 0.01ms override
+[x] 2.16 Architecture allows future scrubbing (WAAPI currentTime based)
+
+======================================================================
+PHASE 3 — Layout cleanup (plan §4, §8.4, §10, §15 Phase 3)
+======================================================================
+[x] 3.1  Lesson panel collapsible (expanded 300–340px, collapsed rail 44–52px)
+[x] 3.2  Collapsed rail: stage icon, vertical "Lesson" label, expand chevron, change-count badge
+[x] 3.3  Smooth width transition; centre expands automatically
+[x] 3.4  Persist in localStorage "simulator:lessonPanelCollapsed" (+ optional width key)
+[x] 3.5  Small screens use overlay/drawer for Lesson (not a tiny visualisation)
+[x] 3.6  Lesson content not unmounted unexpectedly when collapsing
+[x] 3.7  Accessible toggle: aria-expanded, aria-controls="simulator-lesson-panel", aria-label
+[x] 3.8  Left SQL/context sidebar kept intact (context, navigation, counts, keyboard)
+[x] 3.9  Floating stage banner removed from data area
+[x] 3.10 Permanent PlaybackOperationBar: icon, stage name, expression, before→after
+         count, short action phrase; never overlays data
+[x] 3.11 Relevant-column selection per stage (≤6 show; otherwise focus subset)
+[x] 3.12 Row focus policy: ~8 affected rows max + "+ N other rows" summary
+[x] 3.13 Focus-on-change mode for large tables (changed rows + neighbours + summary)
+[x] 3.14 Reduce simultaneous signals (one focus, one motion, one result signal)
+[x] 3.15 Centre visualisation dominates; no horizontal scroll for representative queries
+
+======================================================================
+PHASE 4 — PlaybackDataGrid (plan §7, §8, §15 Phase 4)
+======================================================================
+[x] 4.1  PlaybackDataGrid (CSS Grid, role=table/rowgroup/row/columnheader/cell)
+[x] 4.2  PlaybackGridRow (stable, keyed by _rowId, data attributes)
+[x] 4.3  PlaybackGridCell (data-col on header + body cells)
+[x] 4.4  Migrate FROM
+[x] 4.5  Migrate WHERE / HAVING / LIMIT
+[x] 4.6  Migrate SELECT (header AND body cells participate)
+[x] 4.7  Migrate ORDER BY
+[x] 4.8  Migrate GROUP BY
+[x] 4.9  JOIN canvas kept specialised
+[x] 4.10 Row collapse smooth (transform/opacity + FLIP of survivors, no <tr> max-height)
+[x] 4.11 Cell alignment correct (shared grid-template-columns)
+[x] 4.12 Regular (non-playback) results table untouched
+
+======================================================================
+PHASE 5 — Stage choreography (plan §3, §9, §15 Phase 5)
+======================================================================
+[x] 5.0  Shared motion helpers; compositor-friendly (transform/opacity only); no blur
+[x] 5.1  FROM: fade + translateY(10px→0), 250–350ms, tiny cascade only if few rows,
+         no max-height reveal
+[x] 5.2  WHERE: focus predicate columns; sequential evaluation ✓/✕ marks; failing rows
+         red tint → ✕ → translateX(24px) → opacity 0 → collapse; survivors stay calm;
+         result "N rows → M rows" + "k rows removed by <cond>"
+[x] 5.3  HAVING: same grammar on groups; focus aggregate columns; "N groups → M groups"
+[x] 5.4  LIMIT: single cutoff marker after row N; rows below fade/move out; collapse;
+         no per-row badges
+[x] 5.5  SELECT: selected columns emphasised, dropped dimmed; dropped columns (header +
+         body) leave; survivors translate to final position; final columns exact
+[x] 5.6  ORDER BY: same DOM nodes glide old Y → new Y; no fade replacement;
+         subtle ↑/↓ hint for significant movers; sort columns focused
+[x] 5.7  GROUP BY A Focus: only grouping keys + aggregate inputs (+ identifying column)
+[x] 5.8  GROUP BY B Gather: rows move physically into group containers
+[x] 5.9  GROUP BY C Aggregate: show inputs → aggregate result (AVG/SUM/COUNT/MIN/MAX)
+[x] 5.10 GROUP BY D Collapse to grouped result rows
+[x] 5.11 GROUP BY fallback when aggregates can't be mapped (still gather + collapse)
+[x] 5.12 JOIN layout: LEFT | MATCH LANE | RIGHT; key columns + compact identity
+[x] 5.13 JOIN one active match at a time; "✓ Match found"; compact combined row
+[x] 5.14 JOIN previous arrows dimmed to ~0.2 opacity
+[x] 5.15 JOIN one-to-many fan-out + "N matches" summary
+[x] 5.16 JOIN LEFT JOIN null: dashed stub → "no match" → NULL
+[x] 5.17 JOIN curved cubic-Bézier <path>; draw-on via strokeDasharray/offset (getTotalLength)
+[x] 5.18 JOIN uses global controller (pause/speed/cancel/completion)
+[x] 5.19 JOIN resize: anchors re-measured, no stale coordinates
+[x] 5.20 Every stage's settled visual state equals the snapshot (rows, columns, count)
+
+======================================================================
+PHASE 6 — Advanced interaction (plan §12, §13, §15 Phase 6)
+======================================================================
+[x] 6.1  Reverse animations on backward navigation (WHERE/LIMIT rows return, SELECT
+         columns reappear, ORDER BY slides back, GROUP BY expands, JOIN recedes)
+[x] 6.2  Skip animation (jump current stage to settled)
+[x] 6.3  Replay current stage
+[x] 6.4  Focus-on-changes toggle
+[-] 6.5  Scrubber UI (optional "later enhancement"; architecture keeps it possible — see 2.16)
+[-] 6.6  View Transition API experimentation (optional experiment, not a deliverable)
+
+======================================================================
+DIFF / LINEAGE CORRECTNESS (plan §11)
+======================================================================
+[x] 11.1 Reorder detection uses survivor relative order (LIS) — removing B from A B C D
+         does NOT mark C, D reordered
+[x] 11.2 Only true movers get "reordered" status
+[-] 11.3 Row lineage via source PK/provenance (plan: "longer-term, track only") — tracked here
+
+======================================================================
+CSS CLEANUP (plan §17)
+======================================================================
+[x] 17.1 Remove duplicate definitions (pb-join-result-row x2, flip-glow x2, etc.)
+[x] 17.2 Remove unused scan / progress / remove / collapse rules
+[x] 17.3 Motion vocabulary: pb-enter, pb-exit, pb-move, pb-focus, pb-dim, pb-collapse, pb-path-draw
+[x] 17.4 Easing tokens --pb-ease-standard / --pb-ease-exit / --pb-ease-enter
+[x] 17.5 Reduced-motion CSS consolidated for playback
+
+======================================================================
+FILE-LEVEL PLAN (plan §16)
+======================================================================
+[x] F.1  useSimulatorPlayback.ts refactored (state, gating, completion, navigation)
+[x] F.2  PlaybackStage.tsx = choreography host, one stable tree, reports completion
+[x] F.3  PlaybackTable.tsx replaced by grid path (relevant columns, stable rows)
+[x] F.4  PlaybackRow.tsx replaced by PlaybackGridRow (stable DOM, data attributes)
+[x] F.5  useFlipAnimation.ts fixed / replaced with WAAPI FLIP
+[x] F.6  JoinPlaybackCanvas.tsx refactored (controller, completion, sequential pair, fade,
+         cancel, pause, curved path, one-to-many, LEFT JOIN null)
+[x] F.7  JoinArrowOverlay.tsx: <path>, real length, old paths dimmed
+[x] F.8  StageEntryBanner.tsx deprecated (operation bar replaces it)
+[x] F.9  LessonPanel.tsx collapse + rail + persistence + a11y
+[x] F.10 New: PlaybackOperationBar, PlaybackDataGrid, PlaybackGridRow, PlaybackGridCell,
+         animation/{useStageAnimationController, stageAnimationTypes, animateFrom,
+         animateWhere, animateSelect, animateOrderBy, animateLimit, animateGroupBy,
+         animateHaving, animateJoin}
+
+======================================================================
+TESTING (plan §18, §20)
+======================================================================
+Unit
+[x] T.1  Controller: start, phase order, completion once, pause freezes, resume,
+         cancel prevents completion, speed change, reduced motion, autoplay waits
+         (fake animation objects)
+[x] T.2  Controller cases: play→complete, play→pause→resume→complete, play→cancel,
+         1×→2×, play→navigate→previous cancelled
+[x] T.3  Reorder detection tests (A B C D → A C D; A C B D)
+[x] T.4  Relevant-column selection tests (required, irrelevant excluded, group keys,
+         ORDER BY cols, aggregate cols, JOIN key)
+Component (React Testing Library + jsdom)
+[x] T.5  Lesson panel: default/persisted, collapse works, rail accessible, persists,
+         centre layout state, keyboard activation
+[x] T.6  Operation bar: stage, expression, counts, not an overlay
+[x] T.7  Playback rows: stable DOM node per _rowId, status change no remount,
+         settled state matches snapshot
+[x] T.8  JOIN: current pair, previous dimming, one-to-many, LEFT JOIN no-match,
+         completion callback once
+Integration
+[x] T.9  Queries A–I (WHERE, SELECT, ORDER BY, LIMIT, GROUP BY, HAVING, INNER JOIN,
+         LEFT JOIN, one-to-many JOIN): final settled state == snapshot, autoplay waits
+[x] T.10 Data-correctness assertion helper (rows / columns / count / aggregates)
+Regression suite (plan §20)
+[x] R.1  ORDER BY animates on first visit
+[x] R.2  ORDER BY replays correctly
+[x] R.3  ORDER BY after backward navigation
+[x] R.4  Removing a row doesn't mark following survivors reordered
+[x] R.5  GROUP BY follower collapse not instant
+[x] R.6  SELECT removes body cells as well as headers
+[x] R.7  JOIN cannot auto-advance before completion
+[x] R.8  JOIN completion callback fires exactly once
+[x] R.9  Pausing JOIN freezes connector drawing
+[x] R.10 Lesson collapse doesn't unmount Lesson content
+[x] R.11 Stage change cancels active animation
+[x] R.12 Modal close cleans up animation objects
+[x] R.13 Reduced-motion produces correct final state
+[x] R.14 Resize doesn't leave stale JOIN coordinates
+[x] R.15 Speed change doesn't restart the stage
+E2E / browser
+[x] T.11 Selenium E2E spec (repo's existing browser-test stack) for core scenarios:
+         open, play, pause mid-move, resume, speed change, back, replay, collapse
+         lesson, resize, close/reopen persistence, reduced motion
+[-] T.12 Firefox / WebKit runs (only Chrome driver configured in repo)
+[-] T.13 Visual regression screenshot review at 5 layouts (needs human review)
+[-] T.14 Chrome Performance panel profiling / CPU throttling (manual tooling)
+[-] T.15 Manual QA checklist §19 sign-off (needs a human)
+Final
+[x] Z.1  Existing unit suite still passes
+[x] Z.2  New tests pass
+[x] Z.3  TypeScript build (tsc) clean
+[x] Z.4  No lint errors in touched files
