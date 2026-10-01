@@ -110,7 +110,7 @@ export default function SimulatorPanel({
 function IdleState() {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-      <div className="rounded-full border border-line bg-surface-muted p-3">
+      <div className="retro-inset p-3">
         <Cpu className="size-5 text-ink-muted" aria-hidden />
       </div>
       <p className="text-sm text-ink-muted">

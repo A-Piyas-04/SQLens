@@ -73,8 +73,8 @@ function Sql50ResizableAside({
         className={cn(
           "flex h-full min-h-0 flex-col bg-surface-raised",
           borderClass,
-          "border-line",
-          isResizing && "ring-2 ring-accent"
+          "border-ink",
+          isResizing && "outline outline-2 outline-accent"
         )}
         aria-label={ariaLabel}
       >
@@ -98,10 +98,9 @@ function Sql50ResizableAside({
       >
         <span
           className={cn(
-            "flex h-16 w-1.5 items-center justify-center rounded-full",
-            "bg-surface-muted transition-all duration-200",
-            "group-hover:h-24 group-hover:bg-accent",
-            isResizing && "h-24 bg-accent"
+            "retro-grip flex h-14 w-2.5 items-center justify-center transition-[height,background-color] duration-150",
+            "group-hover:h-20 group-hover:bg-accent",
+            isResizing && "h-20 bg-accent"
           )}
         >
           <GripVertical
@@ -159,7 +158,7 @@ export default function Sql50PageLayout({
           {left}
         </Sql50ResizableAside>
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-x-3 border-black">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-x-2 border-ink bg-surface">
           {center}
         </main>
 
@@ -248,7 +247,7 @@ export function Sql50WorkbenchTop({ children, className }: WorkbenchSectionProps
   return (
     <div
       className={cn(
-        "shrink-0 border-b border-line bg-surface-inset px-3 py-3 sm:px-5",
+        "shrink-0 border-b-2 border-ink bg-surface-raised px-3 py-3 sm:px-5",
         className
       )}
     >
@@ -266,7 +265,7 @@ export function Sql50WorkbenchEditor({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden border-b border-line bg-surface-inset",
+        "flex h-full min-h-0 flex-col overflow-hidden border-b-2 border-ink bg-surface-inset",
         className
       )}
     >
@@ -283,10 +282,10 @@ export function Sql50WorkbenchEditor({
           </div>
           {actions ? (
             <aside
-              className="hidden min-h-0 w-40 shrink-0 flex-col border-l border-line pl-4 xl:flex"
+              className="hidden min-h-0 w-40 shrink-0 flex-col border-l-2 border-dashed border-line-strong pl-4 xl:flex"
               aria-label="Query actions"
             >
-              <div className="flex min-h-0 flex-1 flex-col rounded-sm border border-line bg-accent-muted/25 p-2.5">
+              <div className="retro-inset flex min-h-0 flex-1 flex-col p-2.5">
                 {actions}
               </div>
             </aside>
@@ -344,8 +343,7 @@ export function Sql50WorkbenchResults({ children, className }: WorkbenchSectionP
       >
         <span
           className={cn(
-            "flex h-1.5 w-16 items-center justify-center rounded-full",
-            "bg-surface-muted transition-all duration-200",
+            "retro-grip flex h-2.5 w-16 items-center justify-center transition-[width,background-color] duration-150",
             "group-hover:w-24 group-hover:bg-accent",
             resultsPanel.isResizing && "w-24 bg-accent"
           )}
@@ -360,7 +358,7 @@ export function Sql50WorkbenchResults({ children, className }: WorkbenchSectionP
       <section
         className={cn(
           "flex h-full min-h-0 flex-col overflow-hidden px-3 py-3 sm:px-5 sm:py-4",
-          resultsPanel.isResizing && "ring-2 ring-accent",
+          resultsPanel.isResizing && "outline outline-2 outline-accent outline-offset-[-2px]",
           className
         )}
         aria-label="Query results"

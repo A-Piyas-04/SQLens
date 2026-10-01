@@ -41,7 +41,7 @@ export default function ProblemHeader({
         </span>
         <span
           className={cn(
-            "shrink-0 rounded-sm border px-2 py-0.5 text-xs font-medium capitalize",
+            "retro-stamp shrink-0 px-2 py-1 capitalize",
             difficultyStyles[problem.difficulty]
           )}
         >
@@ -59,7 +59,7 @@ export default function ProblemHeader({
           ? problem.topics.map((topic) => (
               <span
                 key={topic}
-                className="hidden rounded-sm border border-line bg-surface-muted px-2 py-0.5 text-xs text-ink-secondary sm:inline"
+                className="retro-stamp hidden bg-surface-muted px-2 py-1 text-ink-secondary sm:inline"
               >
                 {topic}
               </span>

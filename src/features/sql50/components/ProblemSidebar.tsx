@@ -54,22 +54,20 @@ function ProblemFilters({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search problems…"
-          className="w-full rounded-sm border border-line bg-surface-inset py-2 pl-8 pr-3 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent"
+          className="retro-field w-full py-2 pl-8 pr-3 text-sm text-ink placeholder:text-ink-muted"
           aria-label="Search problems"
         />
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="grid grid-cols-4 gap-1 bg-ink p-1">
         {(["all", "easy", "medium", "hard"] as const).map((d) => (
           <button
             key={d}
             type="button"
             onClick={() => onDifficultyChange(d)}
+            aria-pressed={difficulty === d}
             className={cn(
-              "rounded-sm border px-2 py-0.5 text-xs capitalize transition-colors",
-              difficulty === d
-                ? "border-accent bg-accent/10 text-accent-ink"
-                : "border-line text-ink-muted hover:border-line-strong"
+              "retro-segment px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wide transition-colors"
             )}
           >
             {d}
@@ -91,7 +89,7 @@ function ProblemFilters({
       <button
         type="button"
         onClick={onToggleAdvanced}
-        className="flex w-full items-center justify-between rounded-sm border border-line px-2.5 py-1.5 text-xs font-medium text-ink-secondary hover:bg-surface-muted"
+        className="retro-button flex w-full items-center justify-between border border-ink bg-surface-elevated px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-secondary hover:bg-surface-muted"
         aria-expanded={showAdvanced}
       >
         Filters
@@ -108,7 +106,7 @@ function ProblemFilters({
         <select
           value={topic}
           onChange={(e) => onTopicChange(e.target.value)}
-          className="w-full rounded-sm border border-line bg-surface-inset px-2 py-1.5 text-xs text-ink focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent"
+          className="retro-field w-full px-2 py-1.5 font-mono text-xs text-ink"
           aria-label="Filter by topic"
         >
           <option value="all">All topics</option>
@@ -147,10 +145,10 @@ function ProblemList({
               type="button"
               onClick={() => onSelect(problem)}
               className={cn(
-                "flex w-full items-start gap-2 rounded-sm border px-2.5 py-2 text-left text-sm transition-colors",
+                "flex w-full items-start gap-2 border px-2.5 py-2 text-left text-sm transition-[background-color,color,box-shadow,transform]",
                 isActive
-                  ? "border-accent bg-accent/10 text-ink"
-                  : "border-transparent hover:border-line hover:bg-surface-muted"
+                  ? "translate-x-0.5 translate-y-0.5 border-ink bg-ink text-surface shadow-[inset_2px_2px_0_rgb(0_0_0/0.35)]"
+                  : "border-line bg-surface-elevated shadow-[2px_2px_0_var(--color-border-strong)] hover:border-ink hover:bg-surface-muted"
               )}
             >
               <span className="mt-0.5 shrink-0" aria-hidden>
@@ -164,10 +162,10 @@ function ProblemList({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 font-medium">
-                  <span className="text-ink-muted">{problem.leetcodeId}. </span>
+                  <span className={isActive ? "text-surface/65" : "text-ink-muted"}>{problem.leetcodeId}. </span>
                   {problem.title}
                 </span>
-                <span className="mt-0.5 block text-xs capitalize text-ink-muted">
+                <span className={cn("mt-0.5 block font-mono text-[10px] uppercase", isActive ? "text-surface/65" : "text-ink-muted")}>
                   {problem.difficulty}
                 </span>
               </span>

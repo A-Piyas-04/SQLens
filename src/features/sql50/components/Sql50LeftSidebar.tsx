@@ -45,7 +45,7 @@ export default function Sql50LeftSidebar({
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {!hideTabBar ? (
         <div
-          className="flex shrink-0 border-b border-line"
+          className="retro-tablist shrink-0"
           role="tablist"
           aria-label="Sidebar sections"
         >
@@ -64,10 +64,7 @@ export default function Sql50LeftSidebar({
               id={`sql50-tab-${id}`}
               onClick={() => selectTab(id)}
               className={cn(
-                "flex-1 px-3 py-2.5 text-xs font-medium transition-colors",
-                tab === id
-                  ? "border-b-2 border-accent text-accent-ink bg-surface"
-                  : "text-ink-muted hover:text-ink hover:bg-surface-muted/50"
+                "retro-tab flex-1 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.12em] transition-colors"
               )}
             >
               {label}

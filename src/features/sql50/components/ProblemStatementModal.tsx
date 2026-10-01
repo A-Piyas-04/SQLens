@@ -49,12 +49,12 @@ export default function ProblemStatementModal({
     <>
       <button
         type="button"
-        className="fixed inset-0 z-[200] bg-surface-inset/80"
+        className="retro-scrim fixed inset-0 z-[200]"
         aria-label="Close problem statement"
         onClick={onClose}
       />
       <div
-        className="fixed left-1/2 top-1/2 z-[201] flex max-h-[min(90vh,42rem)] w-[min(calc(100vw-2rem),44rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-lg"
+        className="retro-panel fixed left-1/2 top-1/2 z-[201] flex max-h-[min(90vh,42rem)] w-[min(calc(100vw-2rem),44rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden bg-surface-elevated"
         role="dialog"
         aria-modal="true"
         aria-labelledby="problem-statement-modal-title"

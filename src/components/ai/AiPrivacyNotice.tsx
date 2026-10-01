@@ -12,7 +12,7 @@ export default function AiPrivacyNotice({ onContinue, onCancel }: Props) {
     <div
       role="alertdialog"
       aria-labelledby="ai-privacy-notice-title"
-      className="space-y-3 rounded-sm border border-accent/40 bg-surface-muted/60 px-4 py-3"
+      className="retro-inset space-y-3 border-accent px-4 py-3"
     >
       <p
         id="ai-privacy-notice-title"

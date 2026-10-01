@@ -169,7 +169,7 @@ export default function SimulatorSnapshotTable({
                     {badge && (
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                          "retro-stamp inline-flex items-center gap-1 px-2 py-1",
                           badge.classes
                         )}
                         title={rowDiff?.reason}

@@ -32,12 +32,12 @@ export default function SolutionModal({
     <>
       <button
         type="button"
-        className="fixed inset-0 z-50 bg-surface-inset/80"
+        className="retro-scrim fixed inset-0 z-50"
         aria-label="Close solution"
         onClick={onClose}
       />
       <div
-        className="fixed left-1/2 top-1/2 z-50 max-h-[min(90vh,36rem)] w-[min(calc(100vw-2rem),40rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-sm border border-line bg-surface-elevated p-5 shadow-lg scrollbar-thin sm:p-6"
+        className="retro-panel fixed left-1/2 top-1/2 z-50 max-h-[min(90vh,36rem)] w-[min(calc(100vw-2rem),40rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto bg-surface-elevated p-5 scrollbar-thin sm:p-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby="solution-modal-title"

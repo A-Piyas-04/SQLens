@@ -27,15 +27,15 @@ export default function Sql50ResultsPanel({ rows, children }: Props) {
       : `${rows.length} row${rows.length === 1 ? "" : "s"}`;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-sm border border-line bg-surface-inset">
+    <div className="retro-inset flex h-full min-h-0 flex-col overflow-hidden">
       <header
         ref={headerRef}
-        className="flex shrink-0 items-center gap-3 border-b border-line px-3 py-1.5"
+        className="flex shrink-0 items-center gap-3 border-b border-ink bg-ink px-3 py-1.5 text-surface"
       >
-        <h2 className="font-display text-xs font-bold tracking-tight text-ink">Results</h2>
-        <span className="h-px flex-1 bg-line" aria-hidden />
+        <h2 className="font-mono text-[10px] font-bold uppercase tracking-[0.14em]">Results</h2>
+        <span className="flex-1 border-t border-dashed border-surface/40" aria-hidden />
         {rowLabel ? (
-          <span className="shrink-0 text-[11px] text-ink-muted">{rowLabel}</span>
+          <span className="shrink-0 font-mono text-[10px] text-surface/70">{rowLabel}</span>
         ) : null}
       </header>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2 scrollbar-thin">

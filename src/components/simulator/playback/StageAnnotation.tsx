@@ -80,11 +80,9 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
     <div
       key={animationKey}
       className={cn(
-        // Floating card — positioned by PlaybackStage's wrapper
         "absolute bottom-5 right-5 z-20",
-        "w-72 rounded-sm border border-line border-l-2 bg-surface-raised/90 shadow-xl shadow-black/40 ",
+        "retro-panel w-72 bg-surface-raised",
         "animate-fade-in-up",
-        accent.border
       )}
       role="status"
       aria-live="polite"
@@ -101,7 +99,7 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
       <div className="px-4 py-3 pr-8">
         {/* Stage label dot */}
         <div className="mb-1.5 flex items-center gap-1.5">
-          <span className={cn("size-1.5 rounded-full", accent.dot)} aria-hidden />
+          <span className={cn("size-2 border border-ink", accent.dot)} aria-hidden />
           <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
             {snapshot.label}
           </span>

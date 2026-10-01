@@ -30,26 +30,26 @@ export default function Panel({
       id={id}
       data-tour={dataTour}
       className={cn(
-        "rounded-sm border border-line bg-surface-inset",
-        "transition-colors duration-150 ease-out",
-        interactive && "hover:border-line-strong hover:bg-surface-raised",
+        "retro-panel bg-surface-raised",
+        "transition-[background-color,transform,box-shadow] duration-100 ease-out",
+        interactive && "hover:-translate-x-px hover:-translate-y-px hover:bg-surface-elevated hover:shadow-[5px_5px_0_0_var(--color-text)]",
         raised && "surface-3d",
         className
       )}
     >
       {(title || action) && (
-        <header className="flex items-center gap-3 px-4 pb-1 pt-4 sm:px-5">
+        <header className="relative z-[1] flex items-center gap-3 border-b border-ink bg-ink px-4 py-2 text-surface sm:px-5">
           {title ? (
-            <h2 className="font-display min-w-0 shrink truncate text-[15px] font-bold tracking-tight text-ink">
+            <h2 className="min-w-0 shrink truncate font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-surface">
               {title}
             </h2>
           ) : null}
-          <span className="h-px min-w-6 flex-1 bg-line-strong" aria-hidden />
+          <span className="min-w-6 flex-1 border-t border-dashed border-surface/40" aria-hidden />
           {action}
         </header>
       )}
 
-      <div className="p-4 sm:p-5">{children}</div>
+      <div className="relative z-[1] p-4 sm:p-5">{children}</div>
     </section>
   );
 }

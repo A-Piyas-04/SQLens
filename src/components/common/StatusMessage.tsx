@@ -11,8 +11,8 @@ type Props = {
 };
 
 const styles: Record<Variant, string> = {
-  error: "border-danger-ink/50 text-danger-ink",
-  success: "border-success-ink/50 text-success-ink",
+  error: "border-danger-ink text-danger-ink",
+  success: "border-success-ink text-success-ink",
 };
 
 /** Compact status tag — sized to its message, not a full-width tinted band. */
@@ -21,7 +21,7 @@ export default function StatusMessage({ variant, message }: Props) {
     <AnimatedReveal>
       <div
         className={cn(
-          "inline-flex w-fit max-w-full items-start gap-2 rounded-sm border bg-surface-elevated px-3 py-2 text-sm",
+          "inline-flex w-fit max-w-full items-start gap-2 border-2 bg-surface-elevated px-3 py-2 font-mono text-xs shadow-[2px_2px_0_0_currentColor]",
           styles[variant]
         )}
         role="status"

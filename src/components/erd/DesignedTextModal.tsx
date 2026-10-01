@@ -42,7 +42,7 @@ export default function DesignedTextModal({ text, onClose }: Props) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6">
       <button
         type="button"
-        className="absolute inset-0 bg-surface/70 "
+        className="retro-scrim absolute inset-0"
         aria-label="Close designed text"
         onClick={onClose}
       />
@@ -54,7 +54,7 @@ export default function DesignedTextModal({ text, onClose }: Props) {
         className={cn(
           "relative z-10 flex w-full max-w-3xl flex-col",
           "max-h-[min(90vh,720px)] overflow-hidden",
-          "rounded-sm border border-line bg-surface-elevated shadow-md"
+          "retro-panel bg-surface-elevated"
         )}
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">

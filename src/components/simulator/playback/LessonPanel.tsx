@@ -76,7 +76,7 @@ export default function LessonPanel({
           <span className="pb-rail-label text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Lesson</span>
           {changeCount > 0 && (
             <span
-              className="rounded-full border border-line bg-surface-muted px-1.5 text-[10px] tabular-nums text-ink-secondary"
+              className="retro-stamp bg-surface-muted px-1.5 py-1 tabular-nums text-ink-secondary"
               title={`${changeCount} changes at this stage`}
             >
               {changeCount}
@@ -110,7 +110,7 @@ export default function LessonPanel({
               <span>Before: {beforeCount}</span>
               <span className="font-semibold text-ink">After: {afterCount}</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
+            <div className="retro-inset flex h-3 overflow-hidden bg-surface-muted p-0.5">
               <div className="h-full bg-success-ink" style={{ width: `${keptRatio}%` }} />
               {removedRatio > 0 && <div className="h-full -mt-2 bg-danger-ink/70" style={{ width: `${removedRatio}%`, marginLeft: `${keptRatio}%` }} />}
             </div>

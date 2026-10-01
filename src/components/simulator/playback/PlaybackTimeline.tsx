@@ -33,14 +33,14 @@ const STAGE_COLORS: Record<SimulatorStageType, {
   iconActive:string;
   dot:       string;
 }> = {
-  FROM:     { active: "bg-stone-100 border-l-2 border-l-stone-600 text-stone-900", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-stone-700", dot: "bg-stone-600" },
-  JOIN:     { active: "bg-orange-100 border-l-2 border-l-orange-700 text-orange-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-800", dot: "bg-orange-700" },
-  WHERE:    { active: "bg-amber-100 border-l-2 border-l-amber-700 text-amber-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-amber-800", dot: "bg-amber-700" },
-  GROUP_BY: { active: "bg-rose-100 border-l-2 border-l-rose-700 text-rose-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-rose-800", dot: "bg-rose-700" },
-  HAVING:   { active: "bg-orange-50 border-l-2 border-l-orange-800 text-orange-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-900", dot: "bg-orange-800" },
-  SELECT:   { active: "bg-emerald-100 border-l-2 border-l-emerald-700 text-emerald-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-emerald-800", dot: "bg-emerald-700" },
-  ORDER_BY: { active: "bg-teal-100 border-l-2 border-l-teal-700 text-teal-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-teal-800", dot: "bg-teal-700" },
-  LIMIT:    { active: "bg-red-100 border-l-2 border-l-red-700 text-red-950", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-red-800", dot: "bg-red-700" },
+  FROM:     { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-stone-700", dot: "bg-stone-600" },
+  JOIN:     { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-800", dot: "bg-orange-700" },
+  WHERE:    { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-amber-800", dot: "bg-amber-700" },
+  GROUP_BY: { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-rose-800", dot: "bg-rose-700" },
+  HAVING:   { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-900", dot: "bg-orange-800" },
+  SELECT:   { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-emerald-800", dot: "bg-emerald-700" },
+  ORDER_BY: { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-teal-800", dot: "bg-teal-700" },
+  LIMIT:    { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-red-800", dot: "bg-red-700" },
 };
 
 type Props = {
@@ -73,7 +73,7 @@ export default function PlaybackTimeline({ snapshots, activeIndex, navigate, onN
               key={snap.stageId}
               onClick={() => { navigate(i); onNavigate?.(); }}
               className={cn(
-                "group relative flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors duration-150",
+                "group relative flex w-full items-center gap-2.5 border border-transparent px-3 py-2.5 text-left transition-colors duration-150",
                 isActive    && colors.active,
                 isCompleted && cn("hover:bg-surface-muted", colors.completed),
                 isPending   && cn("hover:bg-surface-muted", colors.pending)
@@ -108,7 +108,7 @@ export default function PlaybackTimeline({ snapshots, activeIndex, navigate, onN
               {/* Active dot */}
               {isActive && (
                 <span
-                  className={cn("ml-auto size-1.5 rounded-full shrink-0", colors.dot)}
+                  className={cn("ml-auto size-2 shrink-0 border border-ink", colors.dot)}
                   aria-hidden
                 />
               )}

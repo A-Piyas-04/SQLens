@@ -79,7 +79,7 @@ export default function AiSqlGeneratorPopover({
       {isOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-surface-inset"
+          className="retro-scrim fixed inset-0 z-40"
           aria-label="Close SQL assistant"
           onClick={onToggle}
         />
@@ -91,8 +91,8 @@ export default function AiSqlGeneratorPopover({
             "practice-radial-panel absolute right-0 top-full z-50 mt-2",
             "w-[min(calc(100vw-1.5rem),32rem)] sm:w-[min(calc(100vw-2rem),36rem)]",
             "max-h-[min(85vh,42rem)] overflow-y-auto",
-            "rounded-sm border border-line bg-surface-elevated p-5 sm:p-6",
-            "shadow-md scrollbar-thin"
+            "retro-panel bg-surface-elevated p-5 sm:p-6",
+            "scrollbar-thin"
           )}
         >
           <div className="mb-4 flex items-center justify-between gap-2 border-b border-line pb-3">
@@ -124,7 +124,7 @@ export default function AiSqlGeneratorPopover({
                 rows={4}
                 maxLength={MAX_AI_PROMPT_CHARS}
                 disabled={disabled || isLoading}
-                className="min-h-[6.5rem] w-full resize-y rounded-sm border border-line bg-surface-inset px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 sm:text-base"
+                className="retro-field min-h-[6.5rem] w-full resize-y px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted disabled:opacity-50 sm:text-base"
               />
             </label>
 
@@ -189,7 +189,7 @@ export default function AiSqlGeneratorPopover({
                       {guidance.techniques.map((technique) => (
                         <li
                           key={`${technique.name}-${technique.whenToUse}`}
-                          className="rounded-sm border border-line bg-surface-muted/50 px-4 py-3"
+                          className="retro-inset px-4 py-3"
                         >
                           <p className="text-sm font-semibold text-accent-ink sm:text-base">
                             {technique.name}

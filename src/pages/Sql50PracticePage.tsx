@@ -218,7 +218,7 @@ export default function Sql50PracticePage() {
     <AppBootGate db={workspace.db} className="h-dvh">
       <Sql50PageLayout
         header={
-          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface-raised px-4 py-2.5 sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-4 border-b-2 border-ink bg-surface-raised px-4 py-2.5 shadow-[0_3px_0_var(--color-border-strong)] sm:px-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <GraduationCap className="size-5 shrink-0 text-accent" aria-hidden />
               <div className="min-w-0">
@@ -326,7 +326,7 @@ export default function Sql50PracticePage() {
         mobilePanels={
           <div className="max-h-[40vh] overflow-hidden">
             <div
-              className="flex border-b border-line"
+              className="retro-tablist"
               role="tablist"
               aria-label="Practice panels"
             >
@@ -346,10 +346,7 @@ export default function Sql50PracticePage() {
                   id={`sql50-mobile-tab-${id}`}
                   onClick={() => setMobileTab(id)}
                   className={cn(
-                    "flex-1 px-3 py-2.5 text-xs font-medium transition-colors",
-                    mobileTab === id
-                      ? "border-b-2 border-accent text-accent-ink"
-                      : "text-ink-muted hover:text-ink"
+                    "retro-tab flex-1 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.12em] transition-colors"
                   )}
                 >
                   {label}

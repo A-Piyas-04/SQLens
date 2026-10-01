@@ -78,16 +78,16 @@ export default function SimulatorStageList({ stages }: Props) {
                 </p>
               </div>
 
-              <span className="ml-auto shrink-0 rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-mono font-medium opacity-60">
+              <span className="retro-stamp ml-auto shrink-0 bg-surface-inset px-2 py-1 opacity-70">
                 {i + 1}
               </span>
             </div>
 
             {!isLast && (
               <div className="ml-6 flex flex-col items-center gap-0.5 py-1">
-                <div className={cn("h-3 w-0.5 rounded-full", connectorColor)} />
-                <div className="size-1 rounded-full bg-line-strong" />
-                <div className={cn("h-3 w-0.5 rounded-full", CONNECTOR_COLORS[stages[i + 1].type])} />
+                <div className={cn("h-3 w-0.5", connectorColor)} />
+                <div className="size-1 bg-line-strong" />
+                <div className={cn("h-3 w-0.5", CONNECTOR_COLORS[stages[i + 1].type])} />
               </div>
             )}
           </div>

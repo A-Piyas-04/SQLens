@@ -109,7 +109,7 @@ export default function PracticeRadialMenu({
       {isOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-surface-inset/80"
+          className="retro-scrim fixed inset-0 z-40"
           aria-label="Close practice menu"
           onClick={() => {
             onSelectCategory(null);
@@ -134,7 +134,7 @@ export default function PracticeRadialMenu({
               className={cn(
                 "practice-radial-panel pointer-events-auto absolute z-50",
                 "w-[min(calc(100vw-2rem),280px)]",
-                "rounded-sm border border-line bg-surface-elevated p-4 shadow-md",
+                "retro-panel bg-surface-elevated p-4",
                 "right-full top-0 mr-3 max-sm:fixed max-sm:right-4 max-sm:top-16 max-sm:mr-0"
               )}
             >
@@ -203,10 +203,10 @@ export default function PracticeRadialMenu({
                   </span>
                   <span
                     className={cn(
-                      "flex size-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors duration-200",
+                      "retro-button flex size-11 shrink-0 items-center justify-center border transition-colors duration-100",
                       isActive
-                        ? "border-accent bg-accent text-white"
-                        : "border-line-strong bg-surface-elevated text-accent group-hover:border-accent"
+                        ? "border-ink bg-accent text-white"
+                        : "border-ink bg-surface-elevated text-accent group-hover:bg-surface-muted"
                     )}
                   >
                     <Icon size={22} />

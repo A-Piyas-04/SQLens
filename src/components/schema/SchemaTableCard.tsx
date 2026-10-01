@@ -14,9 +14,9 @@ export default function SchemaTableCard({ table }: Props) {
   return (
     <article
       className={cn(
-        "rounded-sm border border-line bg-surface-raised p-3 shadow-sm",
-        "transition-all duration-200 ease-out",
-        "hover:border-line-strong hover:bg-surface-raised hover:shadow-sm"
+        "retro-inset bg-surface-raised p-3",
+        "transition-[background-color,border-color] duration-100 ease-out",
+        "hover:border-ink hover:bg-surface-elevated"
       )}
     >
       <h3 className="mb-2 font-medium text-accent-ink">{table.table_name}</h3>
@@ -33,7 +33,7 @@ export default function SchemaTableCard({ table }: Props) {
             <div
               key={column.column_name}
               className={cn(
-                "rounded-sm border-t border-line px-1 pt-2 text-xs",
+                "border-t border-line px-1 pt-2 text-xs",
                 "transition-colors duration-150 hover:bg-surface-raised"
               )}
             >

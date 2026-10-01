@@ -178,7 +178,7 @@ export default function AiCoachPanel({
                 {guidance.techniques.map((t) => (
                   <li
                     key={`${t.name}-${t.whenToUse}`}
-                    className="rounded-sm border border-line bg-surface-muted/50 px-3 py-2 text-sm"
+                    className="retro-inset px-3 py-2 text-sm"
                   >
                     <span className="font-semibold text-accent-ink">{t.name}</span>
                     <p className="mt-0.5 text-ink-secondary">{t.whenToUse}</p>

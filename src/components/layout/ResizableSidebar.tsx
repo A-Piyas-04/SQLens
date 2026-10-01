@@ -34,7 +34,7 @@ export default function ResizableSidebar({
         className={cn(
           "surface-3d h-[calc(100vh-8rem)] overflow-hidden rounded-sm",
           "border border-line bg-surface-raised",
-          isResizing && "ring-2 ring-accent"
+          isResizing && "outline outline-2 outline-accent"
         )}
       >
         {collapsed ? (
@@ -75,10 +75,9 @@ export default function ResizableSidebar({
           >
             <span
               className={cn(
-                "flex h-16 w-1.5 items-center justify-center rounded-full",
-                "bg-surface-muted transition-all duration-200",
-                "group-hover:h-24 group-hover:bg-accent",
-                isResizing && "h-24 bg-accent"
+                "retro-grip flex h-14 w-2.5 items-center justify-center transition-[height,background-color] duration-150",
+                "group-hover:h-20 group-hover:bg-accent",
+                isResizing && "h-20 bg-accent"
               )}
             >
               <GripVertical
@@ -94,9 +93,8 @@ export default function ResizableSidebar({
             aria-label="Collapse sidebar"
             title="Collapse sidebar"
             className={cn(
-              "absolute -right-3 top-5 z-30 flex size-6 items-center justify-center rounded-full",
-              "border border-line-strong bg-surface-elevated text-ink-muted",
-              "shadow-[0_2px_0_#b5aea0] transition-colors duration-150",
+              "retro-button absolute -right-3 top-5 z-30 flex size-6 items-center justify-center rounded-sm",
+              "border border-ink bg-surface-elevated text-ink-muted transition-colors duration-150",
               "hover:bg-accent hover:text-white hover:border-accent"
             )}
           >

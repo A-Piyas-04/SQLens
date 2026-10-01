@@ -13,15 +13,15 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-accent text-white border border-accent hover:bg-accent-ink hover:border-accent-ink hover:text-white",
+    "bg-accent text-white border border-ink hover:bg-accent-ink hover:text-white",
   secondary:
-    "bg-surface-raised text-ink border border-line hover:bg-surface-muted hover:border-line-strong",
+    "bg-surface-elevated text-ink border border-ink hover:bg-surface-muted",
   "accent-secondary":
-    "bg-accent-muted text-accent-ink border border-accent/40 hover:bg-accent-soft hover:border-accent/55",
+    "bg-accent-muted text-accent-ink border border-ink hover:bg-accent-soft",
   ghost:
-    "bg-transparent text-ink-secondary hover:text-ink border border-transparent hover:border-line hover:bg-surface-muted",
+    "bg-surface-raised text-ink-secondary border border-line-strong hover:border-ink hover:bg-surface-elevated hover:text-ink",
   danger:
-    "bg-danger-surface text-danger-ink border border-line hover:bg-red-100 hover:border-danger-ink",
+    "bg-danger-surface text-danger-ink border border-danger-ink hover:bg-red-100",
   "danger-solid":
     "bg-danger-ink text-white border border-danger-ink hover:bg-red-800 hover:border-red-800 hover:text-white",
   navy:
@@ -43,9 +43,9 @@ export default function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium",
-        "transition-colors duration-150 ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+        "retro-button inline-flex items-center justify-center gap-2 font-medium",
+        "transition-[color,background-color,border-color,transform,box-shadow] duration-100 ease-out",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         variantStyles[variant],
         sizeStyles[size],
