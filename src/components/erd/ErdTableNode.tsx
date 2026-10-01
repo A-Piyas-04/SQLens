@@ -55,7 +55,7 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
       {columnHandles}
 
       <div className="flex items-center gap-2 border-b border-line bg-accent-soft px-3 py-2.5">
-        <div className="size-2 shrink-0 border border-ink bg-accent" aria-hidden />
+        <div className="size-2 shrink-0 border border-retro-edge bg-accent" aria-hidden />
         <span className="truncate text-sm font-semibold text-accent-ink">
           {table.table_name}
         </span>

@@ -20,7 +20,7 @@ export const HEADER_ACTION_ICON_SIZE = 20;
 export const headerActionIconAccentClass = "text-accent";
 
 export const headerToolbarClass = cn(
-  "flex items-center gap-1 overflow-visible border border-retro-edge bg-surface-muted p-1 shadow-[3px_3px_0_0_var(--color-retro-edge)]"
+  "flex items-center gap-2 overflow-visible"
 );
 
 export const headerToolbarDividerClass = "mx-0.5 w-px shrink-0 self-stretch border-l border-dashed border-line-strong";

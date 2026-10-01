@@ -11,6 +11,13 @@ import type { UserProblemProgress } from "../../../lib/practice/types";
 
 type FilterDifficulty = PracticeDifficulty | "all";
 
+const difficultyFilterStyles: Record<FilterDifficulty, string> = {
+  all: "",
+  easy: "retro-segment--easy",
+  medium: "retro-segment--medium",
+  hard: "retro-segment--hard",
+};
+
 type Props = {
   problems: Sql50Problem[];
   activeSlug: string;
@@ -67,7 +74,8 @@ function ProblemFilters({
             onClick={() => onDifficultyChange(d)}
             aria-pressed={difficulty === d}
             className={cn(
-              "retro-segment px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wide transition-colors"
+              "retro-segment px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wide transition-colors",
+              difficultyFilterStyles[d]
             )}
           >
             {d}
@@ -89,7 +97,7 @@ function ProblemFilters({
       <button
         type="button"
         onClick={onToggleAdvanced}
-        className="retro-button flex w-full items-center justify-between border border-ink bg-surface-elevated px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-secondary hover:bg-surface-muted"
+        className="retro-button flex w-full items-center justify-between border border-line-strong bg-surface-elevated px-2.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-ink-secondary hover:border-retro-edge hover:bg-surface-muted"
         aria-expanded={showAdvanced}
       >
         Filters
@@ -148,7 +156,7 @@ function ProblemList({
                 "flex w-full items-start gap-2 border px-2.5 py-2 text-left text-sm transition-[background-color,color,box-shadow,transform]",
                 isActive
                   ? "translate-x-0.5 translate-y-0.5 border-retro-chrome-dark bg-retro-chrome text-white shadow-[inset_2px_2px_0_rgb(0_0_0/0.2)]"
-                  : "border-line bg-surface-elevated shadow-[2px_2px_0_var(--color-border-strong)] hover:border-ink hover:bg-surface-muted"
+                  : "border-line bg-surface-elevated shadow-[2px_2px_0_var(--color-border-strong)] hover:border-retro-edge hover:bg-surface-muted"
               )}
             >
               <span className="mt-0.5 shrink-0" aria-hidden>

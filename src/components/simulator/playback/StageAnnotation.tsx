@@ -99,7 +99,7 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
       <div className="px-4 py-3 pr-8">
         {/* Stage label dot */}
         <div className="mb-1.5 flex items-center gap-1.5">
-          <span className={cn("size-2 border border-ink", accent.dot)} aria-hidden />
+          <span className={cn("size-2 border border-retro-edge", accent.dot)} aria-hidden />
           <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
             {snapshot.label}
           </span>

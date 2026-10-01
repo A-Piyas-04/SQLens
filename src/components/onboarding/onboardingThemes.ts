@@ -17,7 +17,7 @@ export type OnboardingTheme = {
 const guideTheme: OnboardingTheme = {
   card: "border-retro-edge shadow-[4px_4px_0_0_var(--color-retro-edge)]",
   heroBorder: "border-line",
-  iconBox: "border-ink bg-surface",
+  iconBox: "border-retro-edge bg-surface",
   iconText: "text-ink",
   badge: "border-line-strong text-ink-muted",
   stepLabel: "text-ink-muted",

@@ -33,14 +33,14 @@ const STAGE_COLORS: Record<SimulatorStageType, {
   iconActive:string;
   dot:       string;
 }> = {
-  FROM:     { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-stone-700", dot: "bg-stone-600" },
-  JOIN:     { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-800", dot: "bg-orange-700" },
-  WHERE:    { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-amber-800", dot: "bg-amber-700" },
-  GROUP_BY: { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-rose-800", dot: "bg-rose-700" },
-  HAVING:   { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-900", dot: "bg-orange-800" },
-  SELECT:   { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-emerald-800", dot: "bg-emerald-700" },
-  ORDER_BY: { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-teal-800", dot: "bg-teal-700" },
-  LIMIT:    { active: "border-ink bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.16)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-red-800", dot: "bg-red-700" },
+  FROM:     { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-stone-700", dot: "bg-stone-600" },
+  JOIN:     { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-800", dot: "bg-orange-700" },
+  WHERE:    { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-amber-800", dot: "bg-amber-700" },
+  GROUP_BY: { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-rose-800", dot: "bg-rose-700" },
+  HAVING:   { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-orange-900", dot: "bg-orange-800" },
+  SELECT:   { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-emerald-800", dot: "bg-emerald-700" },
+  ORDER_BY: { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-teal-800", dot: "bg-teal-700" },
+  LIMIT:    { active: "border-retro-edge bg-surface-elevated text-ink shadow-[inset_2px_2px_0_rgb(28_25_22/0.12)]", completed: "text-ink-muted", pending: "text-ink-muted", iconActive: "text-red-800", dot: "bg-red-700" },
 };
 
 type Props = {
@@ -108,7 +108,7 @@ export default function PlaybackTimeline({ snapshots, activeIndex, navigate, onN
               {/* Active dot */}
               {isActive && (
                 <span
-                  className={cn("ml-auto size-2 shrink-0 border border-ink", colors.dot)}
+                  className={cn("ml-auto size-2 shrink-0 border border-retro-edge", colors.dot)}
                   aria-hidden
                 />
               )}

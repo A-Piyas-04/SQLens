@@ -25,7 +25,7 @@
   /* Retro hardware chrome — softer than black, distinct from action teal. */
   --color-retro-chrome: #315f59;
   --color-retro-chrome-dark: #274d48;
-  --color-retro-edge: #514b42;
+  --color-retro-edge: #746c60;
   --color-danger: #a61c1c;
   --color-success: #166534;
   --color-danger-surface: #efe4e4;
@@ -134,7 +134,7 @@
 }
 
 .retro-field:focus {
-  border-color: var(--color-text);
+  border-color: var(--color-retro-chrome);
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
@@ -154,6 +154,19 @@
 .retro-button[aria-pressed="true"] {
   transform: translate(2px, 2px);
   box-shadow: none;
+}
+
+.retro-run-button {
+  border-color: #39788e;
+  background-color: #8ccbe0;
+  color: #173b48;
+  font-weight: 700;
+}
+
+.retro-run-button:hover:not(:disabled) {
+  border-color: #2c6478;
+  background-color: #72b8d0;
+  color: #102f3a;
 }
 
 .retro-tablist {
@@ -192,7 +205,7 @@
 }
 
 .retro-segment:hover {
-  border-color: var(--color-text);
+  border-color: var(--color-retro-edge);
   color: var(--color-text);
 }
 
@@ -201,6 +214,42 @@
   background-color: var(--color-retro-chrome);
   color: white;
   box-shadow: inset 2px 2px 0 rgb(0 0 0 / 0.25);
+}
+
+.retro-segment--easy {
+  border-color: #6f9a7d;
+  background-color: #dce9df;
+  color: #24533c;
+}
+
+.retro-segment--easy[aria-pressed="true"] {
+  border-color: #24533c;
+  background-color: #347352;
+  color: white;
+}
+
+.retro-segment--medium {
+  border-color: #b58b2e;
+  background-color: #f0e3b6;
+  color: #6f5316;
+}
+
+.retro-segment--medium[aria-pressed="true"] {
+  border-color: #8b681c;
+  background-color: #d5a738;
+  color: #2b2415;
+}
+
+.retro-segment--hard {
+  border-color: #b96a63;
+  background-color: #edd8d5;
+  color: #82312d;
+}
+
+.retro-segment--hard[aria-pressed="true"] {
+  border-color: #82312d;
+  background-color: #ad4741;
+  color: white;
 }
 
 .retro-grip {

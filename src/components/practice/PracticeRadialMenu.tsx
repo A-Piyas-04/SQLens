@@ -205,8 +205,8 @@ export default function PracticeRadialMenu({
                     className={cn(
                       "retro-button flex size-11 shrink-0 items-center justify-center border transition-colors duration-100",
                       isActive
-                        ? "border-ink bg-accent text-white"
-                        : "border-ink bg-surface-elevated text-accent group-hover:bg-surface-muted"
+                        ? "border-retro-edge bg-accent text-white"
+                        : "border-retro-edge bg-surface-elevated text-accent group-hover:bg-surface-muted"
                     )}
                   >
                     <Icon size={22} />

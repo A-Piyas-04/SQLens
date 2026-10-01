@@ -16,7 +16,7 @@ export default function SchemaTableCard({ table }: Props) {
       className={cn(
         "retro-inset bg-surface-raised p-3",
         "transition-[background-color,border-color] duration-100 ease-out",
-        "hover:border-ink hover:bg-surface-elevated"
+        "hover:border-retro-edge hover:bg-surface-elevated"
       )}
     >
       <h3 className="mb-2 font-medium text-accent-ink">{table.table_name}</h3>

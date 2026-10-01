@@ -94,7 +94,7 @@ export default function ResizableSidebar({
             title="Collapse sidebar"
             className={cn(
               "retro-button absolute -right-3 top-5 z-30 flex size-6 items-center justify-center rounded-sm",
-              "border border-ink bg-surface-elevated text-ink-muted transition-colors duration-150",
+              "border border-retro-edge bg-surface-elevated text-ink-muted transition-colors duration-150",
               "hover:bg-accent hover:text-white hover:border-accent"
             )}
           >

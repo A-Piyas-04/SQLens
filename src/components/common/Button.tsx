@@ -13,13 +13,13 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-accent text-white border border-ink hover:bg-accent-ink hover:text-white",
+    "bg-accent text-white border border-retro-edge hover:bg-accent-ink hover:text-white",
   secondary:
-    "bg-surface-elevated text-ink border border-ink hover:bg-surface-muted",
+    "bg-surface-elevated text-ink border border-line-strong hover:border-retro-edge hover:bg-surface-muted",
   "accent-secondary":
-    "bg-accent-muted text-accent-ink border border-ink hover:bg-accent-soft",
+    "bg-accent-muted text-accent-ink border border-line-strong hover:border-retro-edge hover:bg-accent-soft",
   ghost:
-    "bg-surface-raised text-ink-secondary border border-line-strong hover:border-ink hover:bg-surface-elevated hover:text-ink",
+    "bg-surface-raised text-ink-secondary border border-line-strong hover:border-retro-edge hover:bg-surface-elevated hover:text-ink",
   danger:
     "bg-danger-surface text-danger-ink border border-danger-ink hover:bg-red-100",
   "danger-solid":
