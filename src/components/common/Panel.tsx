@@ -30,7 +30,7 @@ export default function Panel({
       id={id}
       data-tour={dataTour}
       className={cn(
-        "retro-panel bg-surface-raised",
+        "retro-panel relative bg-surface-raised",
         "transition-[background-color,transform,box-shadow] duration-100 ease-out",
         interactive && "hover:-translate-x-px hover:-translate-y-px hover:bg-surface-elevated hover:shadow-[5px_5px_0_0_var(--color-retro-edge)]",
         raised && "surface-3d",

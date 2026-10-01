@@ -103,7 +103,6 @@
  * translucent cards, soft elevation, underline tabs, and pill-shaped grips.
  */
 .retro-panel {
-  position: relative;
   border: 2px solid var(--color-retro-edge);
   border-radius: 2px;
   background-color: var(--color-bg-subtle);
