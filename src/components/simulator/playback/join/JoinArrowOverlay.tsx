@@ -1,158 +1,75 @@
-import {
-  useLayoutEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-  type RefObject,
-} from "react";
-import { cn } from "../../../../lib/utils/cn";
+import type { JoinArrowStatus } from "../animation/stageAnimationTypes";
 
-export type StageAnchor = { x: number; y: number };
-
-export type PersistentArrow = {
-  key: string;
-  leftId: string;
-  rightId: string | null;
-  isNull: boolean;
-  drawing: boolean;
-};
-
-type ResolvedArrow = {
+export type ArrowGeometry = {
   key: string;
   x1: number;
   y1: number;
   x2: number;
   y2: number;
-  length: number;
   isNull: boolean;
-  drawing: boolean;
+  status: JoinArrowStatus;
 };
 
 type Props = {
-  stageRef: RefObject<HTMLDivElement | null>;
-  arrows: PersistentArrow[];
-  leftAnchors: Map<string, StageAnchor>;
-  rightAnchors: Map<string, StageAnchor>;
+  width: number;
+  height: number;
+  arrows: ArrowGeometry[];
   overlayUid: string;
 };
 
-export default function JoinArrowOverlay({
-  stageRef,
-  arrows,
-  leftAnchors,
-  rightAnchors,
-  overlayUid,
-}: Props) {
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const [resolved, setResolved] = useState<ResolvedArrow[]>([]);
+/** Cubic Bézier from a left anchor to a right anchor; NULL arrows are short dashed stubs. */
+export function arrowPath(a: Pick<ArrowGeometry, "x1" | "y1" | "x2" | "y2" | "isNull">): string {
+  if (a.isNull) return `M ${a.x1} ${a.y1} L ${a.x2} ${a.y2}`;
+  const mx = a.x1 + (a.x2 - a.x1) / 2;
+  return `M ${a.x1} ${a.y1} C ${mx} ${a.y1}, ${mx} ${a.y2}, ${a.x2} ${a.y2}`;
+}
 
-  const anchorKey = useMemo(
-    () => arrows.map((a) => `${a.key}:${a.drawing}`).join("|"),
-    [arrows]
-  );
+const STATUS_OPACITY: Record<JoinArrowStatus, number> = {
+  drawing: 1,
+  active: 0.95,
+  done: 0.2,
+};
 
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || arrows.length === 0) {
-      setResolved([]);
-      return;
-    }
-
-    const sr = stage.getBoundingClientRect();
-    const next: ResolvedArrow[] = [];
-
-    for (const arrow of arrows) {
-      const left = leftAnchors.get(arrow.leftId);
-      if (!left) continue;
-
-      const right =
-        !arrow.isNull && arrow.rightId ? rightAnchors.get(arrow.rightId) : null;
-
-      if (!arrow.isNull && !right) continue;
-
-      const x1 = left.x;
-      const y1 = left.y;
-      const x2 = right?.x ?? left.x + 64;
-      const y2 = right?.y ?? left.y;
-
-      next.push({
-        key: arrow.key,
-        x1,
-        y1,
-        x2,
-        y2,
-        length: Math.max(1, Math.hypot(x2 - x1, y2 - y1)),
-        isNull: arrow.isNull,
-        drawing: arrow.drawing,
-      });
-    }
-
-    setSize({ w: sr.width, h: sr.height });
-    setResolved(next);
-  }, [stageRef, arrows, leftAnchors, rightAnchors, anchorKey]);
-
-  if (resolved.length === 0 || size.w <= 0) return null;
-
+/**
+ * SVG connectors for the JOIN canvas. Drawing paths start hidden; the JOIN
+ * animator draws them on via the controller (so pause/speed apply). Completed
+ * paths recede to low opacity.
+ */
+export default function JoinArrowOverlay({ width, height, arrows, overlayUid }: Props) {
+  if (arrows.length === 0 || width <= 0) return null;
   const markerId = `${overlayUid}-a`;
   const nullMarkerId = `${overlayUid}-an`;
 
   return (
     <svg
       className="pointer-events-none absolute inset-0 z-20 overflow-visible"
-      width={size.w}
-      height={size.h}
+      width={width}
+      height={height}
       aria-hidden
+      data-join-arrows
     >
       <defs>
-        <marker
-          id={markerId}
-          markerWidth="6"
-          markerHeight="6"
-          refX="5"
-          refY="3"
-          orient="auto"
-        >
-          <path d="M0,0 L0,6 L6,3 z" fill="var(--color-join-matched)" fillOpacity="0.9" />
+        <marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="var(--color-join-matched)" />
         </marker>
-        <marker
-          id={nullMarkerId}
-          markerWidth="6"
-          markerHeight="6"
-          refX="5"
-          refY="3"
-          orient="auto"
-        >
-          <path d="M0,0 L0,6 L6,3 z" fill="var(--color-join-null)" fillOpacity="0.75" />
+        <marker id={nullMarkerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="var(--color-join-null)" />
         </marker>
       </defs>
-
-      {resolved.map((arrow) => (
-        <line
-          key={arrow.key}
-          x1={arrow.x1}
-          y1={arrow.y1}
-          x2={arrow.x2}
-          y2={arrow.y2}
-          stroke={arrow.isNull ? "var(--color-join-null)" : "var(--color-join-matched)"}
-          strokeWidth={1.25}
-          strokeOpacity={arrow.drawing ? 0.9 : 0.58}
+      {arrows.map((a) => (
+        <path
+          key={a.key}
+          data-arrow-key={a.key}
+          data-status={a.status}
+          d={arrowPath(a)}
+          fill="none"
+          stroke={a.isNull ? "var(--color-join-null)" : "var(--color-join-matched)"}
+          strokeWidth={a.status === "done" ? 1.25 : 1.75}
           strokeLinecap="round"
-          strokeDasharray={arrow.isNull ? "4 3" : `${arrow.length} ${arrow.length}`}
-          strokeDashoffset={
-            arrow.isNull ? undefined : arrow.drawing ? arrow.length : 0
-          }
-          markerEnd={
-            arrow.isNull ? `url(#${nullMarkerId})` : `url(#${markerId})`
-          }
-          className={cn(
-            !arrow.isNull && arrow.drawing && "pb-join-arrow-draw",
-            arrow.isNull && arrow.drawing && "pb-join-arrow-null-draw"
-          )}
-          style={
-            !arrow.isNull && arrow.drawing
-              ? ({ "--arrow-length": `${arrow.length}px` } as CSSProperties)
-              : undefined
-          }
+          strokeDasharray={a.isNull ? "4 3" : undefined}
+          markerEnd={`url(#${a.isNull ? nullMarkerId : markerId})`}
+          className="pb-path"
+          style={{ opacity: a.status === "drawing" ? 0 : STATUS_OPACITY[a.status] }}
         />
       ))}
     </svg>

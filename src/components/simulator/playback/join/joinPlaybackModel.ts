@@ -173,7 +173,34 @@ export function buildJoinMatchSteps(
     return step;
   };
 
-  if (leftKey && rightKey && joinedRows.length > 0) {
+  const keysOnSources =
+    !!leftKey &&
+    !!rightKey &&
+    leftRows.length > 0 &&
+    rightRows.length > 0 &&
+    leftKey in leftRows[0] &&
+    rightKey in rightRows[0];
+
+  // Equi-join pairs come straight from the source rows: joined rows from
+  // `SELECT *` can collapse same-named columns (e.g. two `id`s), and a
+  // reverse lookup by key value would only ever find the first right match.
+  if (keysOnSources) {
+    const rightByKey = new Map<string, TrackedRow[]>();
+    for (const r of rightRows) {
+      const v = r[rightKey];
+      if (v === null || v === undefined) continue;
+      const list = rightByKey.get(String(v));
+      if (list) list.push(r);
+      else rightByKey.set(String(v), [r]);
+    }
+    leftRows.forEach((left, leftIndex) => {
+      const v = left[leftKey];
+      const matches = v === null || v === undefined ? [] : rightByKey.get(String(v)) ?? [];
+      if (matches.length === 0) return;
+      const step = ensureStep(left, leftIndex);
+      for (const r of matches) step.pairs.push({ rightId: r._rowId });
+    });
+  } else if (leftKey && rightKey && joinedRows.length > 0) {
     const rightCols =
       rightRows.length > 0
         ? Object.keys(rightRows[0]).filter((k) => k !== "_rowId")

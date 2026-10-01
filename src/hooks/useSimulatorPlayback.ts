@@ -1,155 +1,159 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  AnimationState,
+  PlaybackDirection,
+} from "../components/simulator/playback/animation/stageAnimationTypes";
+import { playbackDebug } from "../components/simulator/playback/animation/playbackDebug";
 
 export type PlaybackSpeed = 0.5 | 1 | 2 | 4;
-export type TransitionPhase =
-  | "idle"
-  | "departing"
-  | "transforming"
-  | "arriving"
-  | "settled";
 
-/** ms each stage is held before auto-advancing */
-export const HOLD_MS: Record<PlaybackSpeed, number> = {
-  0.5: 5000,
-  1: 3000,
-  2: 1800,
-  4: 900,
+/**
+ * Reading time after a stage has *finished* animating, before autoplay moves
+ * on. This is a dwell, not an animation-completion guess.
+ */
+export const DWELL_MS: Record<PlaybackSpeed, number> = {
+  0.5: 2400,
+  1: 1400,
+  2: 800,
+  4: 350,
 };
-
-/** CSS animation duration shrinks at high speeds so rows finish before advance */
-export const ANIM_MS: Record<PlaybackSpeed, number> = {
-  0.5: 1000,
-  1: 700,
-  2: 450,
-  4: 260,
-};
-
-export const STAGGER_MS: Record<PlaybackSpeed, number> = {
-  0.5: 60,
-  1: 40,
-  2: 25,
-  4: 15,
-};
-
-export const REMOVE_MS: Record<PlaybackSpeed, number> = {
-  0.5: 600,
-  1: 400,
-  2: 260,
-  4: 150,
-};
-
-export const ENTRY_MS: Record<PlaybackSpeed, number> = {
-  0.5: 500,
-  1: 350,
-  2: 220,
-  4: 130,
-};
-
-function debugLog(...args: unknown[]): void {
-  if (
-    typeof localStorage !== "undefined" &&
-    localStorage.getItem("simulator:debug") === "1"
-  ) {
-    console.log("[Simulator Playback]", ...args);
-  }
-}
 
 export type PlaybackState = {
   activeIndex: number;
   isPlaying: boolean;
   speed: PlaybackSpeed;
-  /** Incremented on every navigation — used as `key` on animated table bodies */
-  animationKey: number;
-  /** True while React is committing the new stage (marks update as non-urgent) */
-  isPending: boolean;
-  transitionPhase: TransitionPhase;
-  isTransitioning: boolean;
+  /** Incremented on every navigation / replay — starts a new stage run. */
+  runKey: number;
+  direction: PlaybackDirection;
+  /** |new − old| stage index of the last navigation (0 = re-layout). */
+  distance: number;
+  animationState: AnimationState;
+  /** User paused an in-flight animation. */
+  animationPaused: boolean;
+  skipToken: number;
   stepMode: boolean;
+  focusOnChanges: boolean;
   navigate: (newIndex: number) => void;
-  setTransitionPhase: (phase: TransitionPhase) => void;
   togglePlay: () => void;
   toggleStepMode: () => void;
   restart: () => void;
+  replay: () => void;
+  skip: () => void;
   setSpeed: (s: PlaybackSpeed) => void;
+  toggleFocusOnChanges: () => void;
+  reportAnimationState: (s: AnimationState, runKey: number) => void;
 };
 
+const FOCUS_KEY = "simulator:focusOnChanges";
+
+function readFocusPref(): boolean {
+  try {
+    return localStorage.getItem(FOCUS_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
 /**
- * Manages playback state for the simulator visualization canvas.
+ * Playback state for the simulator visualisation.
  *
- * Responsibilities:
- * - Track active stage index and increment animationKey on every change.
- * - Drive auto-advance via setInterval at HOLD_MS[speed].
- * - Stop auto-play when the last stage is reached; restart from 0 if play is
- *   triggered again at the last stage.
- * - Emit debug logs only when localStorage key "simulator:debug" === "1".
+ * - Autoplay advances only when the stage animation reports "complete", the
+ *   user has not paused, and there is a next stage.
+ * - Navigation is always allowed; the stage host cancels the active animation.
+ * - Space pauses/resumes an in-flight animation; otherwise it steps (step
+ *   mode) or toggles autoplay.
  */
 export function useSimulatorPlayback(totalStages: number): PlaybackState {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeedState] = useState<PlaybackSpeed>(1);
-  const [animationKey, setAnimKey] = useState(0);
-  const [transitionPhase, setTransitionPhaseState] = useState<TransitionPhase>("idle");
+  const [runKey, setRunKey] = useState(0);
+  const [direction, setDirection] = useState<PlaybackDirection>("forward");
+  const [distance, setDistance] = useState(1);
+  const [animationState, setAnimationState] = useState<AnimationState>("idle");
+  const [animationPaused, setAnimationPaused] = useState(false);
+  const [skipToken, setSkipToken] = useState(0);
   const [stepMode, setStepMode] = useState(true);
-  const [isPending, startTransition] = useTransition();
+  const [focusOnChanges, setFocusOnChanges] = useState(readFocusPref);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stateRef = useRef({ activeIndex, animationState, totalStages });
+  stateRef.current = { activeIndex, animationState, totalStages };
 
-  const isTransitioning = transitionPhase !== "idle";
-
-  const setTransitionPhase = useCallback((phase: TransitionPhase) => {
-    setTransitionPhaseState(phase);
+  // Updated synchronously so a stale run's late report is rejected even
+  // before React re-renders with the new key.
+  const runKeyRef = useRef(runKey);
+  const bumpRunKey = useCallback(() => {
+    runKeyRef.current += 1;
+    setRunKey(runKeyRef.current);
   }, []);
 
-  // Stable navigate so it can be called from effects and event handlers
+  const startRun = useCallback(
+    (index: number, dir: PlaybackDirection, dist: number) => {
+      setDirection(dir);
+      setDistance(dist);
+      setAnimationPaused(false);
+      setAnimationState("idle");
+      setActiveIndex(index);
+      bumpRunKey();
+    },
+    [bumpRunKey]
+  );
+
   const navigate = useCallback(
     (newIndex: number) => {
-      if (isTransitioning) return;
-      const clamped = Math.max(0, Math.min(totalStages - 1, newIndex));
-      debugLog("navigate →", clamped, "speed:", speed);
-      setAnimKey((k) => k + 1);
-      setTransitionPhaseState("idle");
-      startTransition(() => setActiveIndex(clamped));
+      const { activeIndex: current, animationState: anim, totalStages: total } = stateRef.current;
+      const clamped = Math.max(0, Math.min(total - 1, newIndex));
+      if (clamped === current) return;
+      if (anim === "running" || anim === "paused") {
+        playbackDebug("navigation interruption", { from: current, to: clamped });
+      }
+      playbackDebug("navigate", { from: current, to: clamped });
+      startRun(clamped, clamped < current ? "backward" : "forward", Math.abs(clamped - current));
     },
-    [isTransitioning, totalStages, speed, startTransition]
+    [startRun]
   );
 
   const togglePlay = useCallback(() => {
-    if (stepMode) {
-      navigate(activeIndex + 1);
+    const { activeIndex: current, animationState: anim, totalStages: total } = stateRef.current;
+    if (anim === "running") {
+      setAnimationPaused(true);
+      setIsPlaying(false);
       return;
     }
-    setIsPlaying((playing) => {
-      if (playing) {
-        debugLog("pause");
-        return false;
-      }
-      // If sitting at the last stage, rewind first
-      setActiveIndex((i) => {
-        if (i >= totalStages - 1) {
-          debugLog("restart from end");
-          setAnimKey((k) => k + 1);
-          return 0;
-        }
-        return i;
-      });
-      debugLog("play");
-      return true;
-    });
-  }, [activeIndex, navigate, stepMode, totalStages]);
+    if (anim === "paused") {
+      setAnimationPaused(false);
+      if (!stepMode) setIsPlaying(true);
+      return;
+    }
+    if (stepMode) {
+      navigate(current + 1);
+      return;
+    }
+    if (isPlaying) {
+      setIsPlaying(false);
+      return;
+    }
+    if (current >= total - 1) {
+      playbackDebug("navigate", { from: current, to: 0, reason: "restart from end" });
+      startRun(0, "forward", 1);
+    }
+    setIsPlaying(true);
+  }, [isPlaying, navigate, startRun, stepMode]);
 
   const restart = useCallback(() => {
-    debugLog("restart");
     setIsPlaying(false);
-    setAnimKey((k) => k + 1);
-    setTransitionPhaseState("idle");
-    startTransition(() => setActiveIndex(0));
-  }, [startTransition]);
+    startRun(0, "forward", 1);
+  }, [startRun]);
+
+  const replay = useCallback(() => {
+    playbackDebug("replay", { stage: stateRef.current.activeIndex });
+    startRun(stateRef.current.activeIndex, "forward", 1);
+  }, [startRun]);
+
+  const skip = useCallback(() => {
+    setAnimationPaused(false);
+    setSkipToken((t) => t + 1);
+  }, []);
 
   const toggleStepMode = useCallback(() => {
     setStepMode((prev) => {
@@ -160,68 +164,76 @@ export function useSimulatorPlayback(totalStages: number): PlaybackState {
   }, []);
 
   const setSpeed = useCallback((s: PlaybackSpeed) => {
-    debugLog("speed →", s);
+    playbackDebug("speed", { speed: s });
     setSpeedState(s);
   }, []);
 
-  // ── Auto-advance interval ────────────────────────────────────────────────
-  useEffect(() => {
-    if (!isPlaying) {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+  const toggleFocusOnChanges = useCallback(() => {
+    setFocusOnChanges((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(FOCUS_KEY, next ? "1" : "0");
+      } catch {
+        /* storage unavailable */
       }
+      return next;
+    });
+    // Re-layout the current stage to its settled state with the new policy.
+    setDirection("forward");
+    setDistance(0);
+    bumpRunKey();
+  }, [bumpRunKey]);
+
+  const reportAnimationState = useCallback((s: AnimationState, fromRunKey: number) => {
+    if (fromRunKey !== runKeyRef.current) return;
+    setAnimationState(s);
+  }, []);
+
+  // ── Autoplay: advance only after the stage animation completes ───────────
+  useEffect(() => {
+    if (!isPlaying || stepMode || animationPaused || animationState !== "complete") return;
+    if (activeIndex >= totalStages - 1) {
+      setIsPlaying(false);
       return;
     }
-
-    if (stepMode) return;
-    intervalRef.current = setInterval(() => {
-      if (transitionPhase !== "idle") return;
-      setActiveIndex((i) => {
-        const next = i + 1;
-        if (next >= totalStages) {
-          debugLog("auto-play finished at last stage");
-          setIsPlaying(false);
-          return i;
-        }
-        debugLog("auto-advance →", next);
-        setAnimKey((k) => k + 1);
-        return next;
-      });
-    }, HOLD_MS[speed]);
-
-    return () => {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isPlaying, speed, stepMode, totalStages, transitionPhase]);
+    const timer = setTimeout(() => {
+      playbackDebug("autoplay advance", { from: activeIndex, to: activeIndex + 1 });
+      startRun(activeIndex + 1, "forward", 1);
+    }, DWELL_MS[speed]);
+    return () => clearTimeout(timer);
+  }, [isPlaying, stepMode, animationPaused, animationState, activeIndex, totalStages, speed, startRun]);
 
   // ── Reset when a new simulation result arrives ───────────────────────────
+  const firstRender = useRef(true);
   useEffect(() => {
-    debugLog("new simulation — reset to stage 0");
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     setIsPlaying(false);
-    setAnimKey((k) => k + 1);
-    setTransitionPhaseState("idle");
-    startTransition(() => setActiveIndex(0));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalStages]);
+    startRun(0, "forward", 1);
+  }, [totalStages, startRun]);
 
   return {
     activeIndex,
     isPlaying,
     speed,
-    animationKey,
-    isPending,
-    transitionPhase,
-    isTransitioning,
+    runKey,
+    direction,
+    distance,
+    animationState,
+    animationPaused,
+    skipToken,
     stepMode,
+    focusOnChanges,
     navigate,
-    setTransitionPhase,
     togglePlay,
     toggleStepMode,
     restart,
+    replay,
+    skip,
     setSpeed,
+    toggleFocusOnChanges,
+    reportAnimationState,
   };
 }

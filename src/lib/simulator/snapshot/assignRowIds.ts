@@ -25,7 +25,15 @@ export function assignRowIds(
   }
 
   const usedPrevIds = new Set<string>();
+  // Earlier expansions (e.g. a previous JOIN) may already own "row-new-N" ids.
+  const takenIds = new Set(prevRows.map((r) => r._rowId));
   let newCount = 0;
+  const freshId = () => {
+    let id = `row-new-${newCount++}`;
+    while (takenIds.has(id)) id = `row-new-${newCount++}`;
+    takenIds.add(id);
+    return id;
+  };
 
   return currentRows.map((row) => {
     // Columns that exist in both the current row and the previous rows,
@@ -51,6 +59,6 @@ export function assignRowIds(
       return { ...row, _rowId: match._rowId };
     }
 
-    return { ...row, _rowId: `row-new-${newCount++}` };
+    return { ...row, _rowId: freshId() };
   });
 }

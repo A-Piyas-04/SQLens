@@ -1,6 +1,0 @@
-FROM: row-0,row-1,row-2 dup=false
-JOIN: row-0,row-new-0,row-new-1,row-new-2 dup=false
-JOIN: row-0,row-new-0,row-new-0,row-new-1,row-new-2,row-new-3 dup=true
-GROUP_BY: row-new-1,row-new-2,row-0 dup=false
-SELECT: row-new-1,row-new-2,row-0 dup=false
-ORDER_BY: row-0,row-new-2,row-new-1 dup=false

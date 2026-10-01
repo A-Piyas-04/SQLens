@@ -1,9 +1,12 @@
 import {
   ChevronLeft,
   ChevronRight,
+  Crosshair,
   FastForward,
   Pause,
   Play,
+  RotateCcw,
+  SkipForward,
 } from "lucide-react";
 import { cn } from "../../../lib/utils/cn";
 import {
@@ -25,12 +28,19 @@ type Props = Pick<
   | "setSpeed"
   | "toggleStepMode"
   | "stepMode"
+  | "animationState"
+  | "replay"
+  | "skip"
+  | "focusOnChanges"
+  | "toggleFocusOnChanges"
 > & {
   totalStages: number;
-  isTransitioning: boolean;
   activeStageType: SimulatorStageType;
   stageTypes: SimulatorStageType[];
 };
+
+const iconBtn =
+  "flex size-8 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-secondary transition-colors hover:text-ink disabled:cursor-default disabled:text-ink-muted disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-accent";
 
 export default function PlaybackControls({
   activeIndex,
@@ -41,14 +51,21 @@ export default function PlaybackControls({
   setSpeed,
   toggleStepMode,
   stepMode,
-  isTransitioning,
+  animationState,
+  replay,
+  skip,
+  focusOnChanges,
+  toggleFocusOnChanges,
   activeStageType,
   stageTypes,
   totalStages,
 }: Props) {
   const isFirst = activeIndex === 0;
-  const isLast  = activeIndex >= totalStages - 1;
+  const isLast = activeIndex >= totalStages - 1;
   const stageColor = STAGE_COLORS[activeStageType];
+  const animating = animationState === "running";
+  const animPaused = animationState === "paused";
+  const showPause = animating || (isPlaying && !animPaused);
   const speedLabels: Record<PlaybackSpeed, string> = {
     0.5: "Slow",
     1: "Normal",
@@ -61,91 +78,85 @@ export default function PlaybackControls({
       <div
         className="grid gap-1 px-3 pt-2"
         style={{ gridTemplateColumns: `repeat(${Math.max(totalStages, 1)}, minmax(0, 1fr))` }}
+        aria-hidden
       >
         {Array.from({ length: totalStages }).map((_, index) => {
           const segmentColor = STAGE_COLORS[stageTypes[index] ?? activeStageType].dot;
           return (
-          <div
-            key={index}
-            className={cn(
-              "h-1.5 rounded-full transition-all",
-              index < activeIndex
-                ? segmentColor
-                : index === activeIndex
-                  ? cn(segmentColor, "animate-pulse")
-                  : "bg-surface-muted/70"
-            )}
-          />
-        );})}
+            <div
+              key={index}
+              className={cn(
+                "h-1.5 rounded-full transition-colors",
+                index <= activeIndex ? segmentColor : "bg-surface-muted/70",
+                index === activeIndex && "opacity-80"
+              )}
+            />
+          );
+        })}
       </div>
 
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* ← Prev */}
-        <button
-          aria-label="Previous stage"
-          disabled={isFirst || isTransitioning}
-          onClick={() => navigate(activeIndex - 1)}
-          className={cn(
-            "flex size-8 items-center justify-center rounded-sm border transition-colors",
-            isFirst
-              ? "border-line text-ink-muted cursor-default"
-              : "border-line bg-surface-muted text-ink-secondary hover:bg-surface-muted"
-          )}
-        >
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+        <button aria-label="Previous stage" disabled={isFirst} onClick={() => navigate(activeIndex - 1)} className={iconBtn}>
           <ChevronLeft className="size-4" aria-hidden />
         </button>
 
-        {/* Play / Pause */}
         <button
-          aria-label={isPlaying ? "Pause" : "Play"}
+          aria-label={showPause ? "Pause" : animPaused ? "Resume" : "Play"}
           onClick={togglePlay}
-          className="flex size-9 items-center justify-center rounded-sm border border-accent bg-accent-muted text-accent-ink transition-colors hover:bg-accent-muted hover:text-accent-ink"
+          className="flex size-9 items-center justify-center rounded-sm border border-accent bg-accent-muted text-accent-ink transition-colors focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {isPlaying ? (
-            <Pause className="size-4" aria-hidden />
-          ) : (
-            <Play className="size-4" aria-hidden />
-          )}
+          {showPause ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
         </button>
 
-        {/* Step mode */}
         <button
-          aria-label="Toggle step mode"
+          aria-label={stepMode ? "Switch to autoplay" : "Switch to step mode"}
+          aria-pressed={!stepMode}
+          title={stepMode ? "Step mode — Space advances one stage" : "Autoplay — stages advance after each animation"}
           onClick={toggleStepMode}
-          className="flex size-8 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink-secondary"
+          className={iconBtn}
         >
           {stepMode ? <Play className="size-3.5" aria-hidden /> : <FastForward className="size-3.5" aria-hidden />}
         </button>
 
-        {/* → Next */}
-        <button
-          aria-label="Next stage"
-          disabled={isLast || isTransitioning}
-          onClick={() => navigate(activeIndex + 1)}
-          className={cn(
-            "flex size-8 items-center justify-center rounded-sm border transition-colors",
-            isLast
-              ? "border-line text-ink-muted cursor-default"
-              : "border-line bg-surface-muted text-ink-secondary hover:bg-surface-muted"
-          )}
-        >
+        <button aria-label="Next stage" disabled={isLast} onClick={() => navigate(activeIndex + 1)} className={iconBtn}>
           <ChevronRight className="size-4" aria-hidden />
         </button>
 
-        {/* Stage counter */}
-        <span className="ml-1 inline-flex items-center gap-1 text-xs tabular-nums text-ink-muted">
+        <span className="mx-1 h-5 w-px bg-line" aria-hidden />
+
+        <button
+          aria-label="Skip animation"
+          title="Skip to the result of this stage"
+          disabled={!animating && !animPaused}
+          onClick={skip}
+          className={iconBtn}
+        >
+          <SkipForward className="size-3.5" aria-hidden />
+        </button>
+        <button aria-label="Replay stage" title="Replay this stage" onClick={replay} className={iconBtn}>
+          <RotateCcw className="size-3.5" aria-hidden />
+        </button>
+        <button
+          aria-label="Focus on changes"
+          aria-pressed={focusOnChanges}
+          title={focusOnChanges ? "Showing changed rows + summary" : "Showing all rows"}
+          onClick={toggleFocusOnChanges}
+          className={cn(iconBtn, focusOnChanges && "border-accent bg-accent-muted text-accent-ink")}
+        >
+          <Crosshair className="size-3.5" aria-hidden />
+        </button>
+
+        <span className="ml-1 inline-flex items-center gap-1 text-xs tabular-nums text-ink-muted" aria-live="polite">
           <span className={cn("inline-block size-2 rounded-full", stageColor.dot)} />
-          Stage{" "}
-          <span className="font-semibold text-ink-secondary">{activeIndex + 1}</span>
-          {" "}of{" "}
+          Stage <span className="font-semibold text-ink-secondary">{activeIndex + 1}</span> of{" "}
           <span className="font-semibold text-ink-secondary">{totalStages}</span>:{" "}
           <span className="font-semibold text-ink-secondary">{activeStageType}</span>
+          {animPaused && <span className="ml-1 rounded-sm border border-line px-1 text-[10px]">paused</span>}
         </span>
 
-        {/* Speed selector */}
         <div className="ml-auto flex items-center gap-1">
           <span className="mr-1 text-[10px] text-ink-muted">Speed</span>
-          <div className="flex rounded-sm border border-line overflow-hidden">
+          <div className="flex overflow-hidden rounded-sm border border-line">
             {SPEEDS.map((s) => (
               <button
                 key={s}
@@ -156,7 +167,7 @@ export default function PlaybackControls({
                   "px-2.5 py-1.5 text-[11px] font-medium transition-colors",
                   speed === s
                     ? "bg-accent-muted text-accent-ink"
-                    : "bg-transparent text-ink-muted hover:text-ink-secondary hover:bg-surface-muted"
+                    : "bg-transparent text-ink-muted hover:bg-surface-muted hover:text-ink-secondary"
                 )}
               >
                 {speedLabels[s]}

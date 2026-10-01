@@ -12,18 +12,28 @@ import PlaybackStage from "./PlaybackStage";
 import PlaybackControls from "./PlaybackControls";
 import type { SimulatorSnapshot, StageDiff } from "../../../lib/simulator";
 import SqlContextPanel from "./SqlContextPanel";
-import LessonPanel from "./LessonPanel";
+import LessonPanel, { LESSON_PANEL_ID } from "./LessonPanel";
+import { cn } from "../../../lib/utils/cn";
 
 type Props = {
   snapshots: SimulatorSnapshot[];
   diffs:     StageDiff[];
   originalSql: string;
   onClose:   () => void;
+  /** Test hook: force reduced-motion choreography. */
+  reducedMotionOverride?: boolean;
 };
 
 const SIDEBAR_WIDTH_MIN = 160;
 const SIDEBAR_WIDTH_MAX = 480;
 const SIDEBAR_WIDTH_DEFAULT = 220;
+
+export const LESSON_COLLAPSED_KEY = "simulator:lessonPanelCollapsed";
+export const LESSON_WIDTH_KEY = "simulator:lessonPanelWidth";
+const LESSON_WIDTH_DEFAULT = 320;
+const LESSON_WIDTH_MIN = 300;
+const LESSON_WIDTH_MAX = 340;
+export const LESSON_RAIL_WIDTH = 48;
 
 function readSidebarWidth(): number {
   if (typeof localStorage === "undefined") return SIDEBAR_WIDTH_DEFAULT;
@@ -31,6 +41,24 @@ function readSidebarWidth(): number {
   const n = raw ? Number.parseInt(raw, 10) : SIDEBAR_WIDTH_DEFAULT;
   if (!Number.isFinite(n)) return SIDEBAR_WIDTH_DEFAULT;
   return Math.min(SIDEBAR_WIDTH_MAX, Math.max(SIDEBAR_WIDTH_MIN, n));
+}
+
+function readLessonCollapsed(): boolean {
+  try {
+    return localStorage.getItem(LESSON_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function readLessonWidth(): number {
+  try {
+    const n = Number.parseInt(localStorage.getItem(LESSON_WIDTH_KEY) ?? "", 10);
+    if (!Number.isFinite(n)) return LESSON_WIDTH_DEFAULT;
+    return Math.min(LESSON_WIDTH_MAX, Math.max(LESSON_WIDTH_MIN, n));
+  } catch {
+    return LESSON_WIDTH_DEFAULT;
+  }
 }
 
 /**
@@ -41,7 +69,7 @@ function readSidebarWidth(): number {
  * Keyboard shortcuts (Space, ←, →, R) are handled here and forwarded to the
  * playback hook.
  */
-export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, onClose }: Props) {
+export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, onClose, reducedMotionOverride }: Props) {
   const pb = useSimulatorPlayback(snapshots.length);
   const { activeIndex, navigate, togglePlay, restart } = pb;
   const [showRowIds, setShowRowIds] = useState<boolean>(() => localStorage.getItem("simulator:showRowIds") === "1");
@@ -49,6 +77,8 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
   const [showLessonMobile, setShowLessonMobile] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(readSidebarWidth);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [lessonCollapsed, setLessonCollapsed] = useState(readLessonCollapsed);
+  const [lessonWidth] = useState(readLessonWidth);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -64,16 +94,35 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
     closeButtonRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("simulator:showRowIds", showRowIds ? "1" : "0");
+  }, [showRowIds]);
+
+  const toggleLessonCollapsed = useCallback(() => {
+    setLessonCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(LESSON_COLLAPSED_KEY, next ? "1" : "0");
+        localStorage.setItem(LESSON_WIDTH_KEY, String(lessonWidth));
+      } catch {
+        /* storage unavailable */
+      }
+      return next;
+    });
+  }, [lessonWidth]);
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Ignore when user is typing in an input
-      if ((e.target as HTMLElement).tagName === "INPUT") return;
+      const target = e.target as HTMLElement;
+      // Ignore when user is typing or operating a focused control.
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
       switch (e.key) {
         case "Escape":
           e.preventDefault();
-          onClose();
+          if (showLessonMobile) setShowLessonMobile(false);
+          else onClose();
           break;
         case " ":
           e.preventDefault();
@@ -81,12 +130,10 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
           break;
         case "ArrowRight":
           e.preventDefault();
-          if (pb.isTransitioning) return;
           navigate(activeIndex + 1);
           break;
         case "ArrowLeft":
           e.preventDefault();
-          if (pb.isTransitioning) return;
           navigate(activeIndex - 1);
           break;
         case "r":
@@ -98,26 +145,13 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
           break;
       }
     },
-    [activeIndex, navigate, togglePlay, restart, onClose, pb.isTransitioning]
+    [activeIndex, navigate, togglePlay, restart, onClose, showLessonMobile]
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
-
-  // ── Derived data ──────────────────────────────────────────────────────────
-  const snapshot     = snapshots[activeIndex];
-  const prevSnapshot = activeIndex > 0 ? snapshots[activeIndex - 1] : null;
-  const diff         = diffs[activeIndex - 1] ?? null; // diffs[i] = prev→curr for stage i+1
-  if (!snapshot) return null;
-
-  const dbLabel = snapshot?.label.replace(/^FROM\s+/i, "") ?? "query";
-  const joinStageIndex = snapshots.slice(0, activeIndex + 1).filter((s) => s.stageType === "JOIN").length - 1;
-
-  useEffect(() => {
-    localStorage.setItem("simulator:showRowIds", showRowIds ? "1" : "0");
-  }, [showRowIds]);
 
   const handleSidebarResizeStart = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -153,6 +187,15 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
     },
     [sidebarWidth]
   );
+
+  // ── Derived data (after all hooks) ────────────────────────────────────────
+  const snapshot     = snapshots[activeIndex];
+  const prevSnapshot = activeIndex > 0 ? snapshots[activeIndex - 1] : null;
+  const diff         = diffs[activeIndex - 1] ?? null; // diffs[i] = prev→curr for stage i+1
+  if (!snapshot) return null;
+
+  const dbLabel = snapshot.label.replace(/^FROM\s+/i, "") || "query";
+  const joinStageIndex = snapshots.slice(0, activeIndex + 1).filter((s) => s.stageType === "JOIN").length - 1;
 
   // ── Render ────────────────────────────────────────────────────────────────
   const modal = (
@@ -230,49 +273,64 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
             />
           </div>
 
-          {snapshot && (
-            <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-              <div className="flex items-center gap-2 border-b border-line px-4 py-2 lg:hidden">
-                <button
-                  onClick={() => setShowSqlMobile((v) => !v)}
-                  className="rounded-sm border border-line bg-surface-muted px-2 py-1 text-xs text-ink-secondary"
-                >
-                  Show SQL
-                </button>
-                <button
-                  onClick={() => setShowLessonMobile((v) => !v)}
-                  className="rounded-sm border border-line bg-surface-muted px-2 py-1 text-xs text-ink-secondary"
-                >
-                  Lesson
-                </button>
-              </div>
-              <PlaybackStage
-                snapshot={snapshot}
-                prevSnapshot={prevSnapshot}
-                diff={diff}
-                animationKey={pb.animationKey}
-                speed={pb.speed}
-                transitionPhase={pb.transitionPhase}
-                setTransitionPhase={pb.setTransitionPhase}
-                showRowIds={showRowIds}
-              />
-            </main>
-          )}
+          <main
+            data-playback-center
+            data-lesson-collapsed={lessonCollapsed || undefined}
+            className="flex min-h-0 min-w-0 flex-1 flex-col"
+          >
+            <div className="flex items-center gap-2 border-b border-line px-4 py-2 lg:hidden">
+              <button
+                onClick={() => setShowSqlMobile((v) => !v)}
+                aria-expanded={showSqlMobile}
+                className="rounded-sm border border-line bg-surface-muted px-2 py-1 text-xs text-ink-secondary"
+              >
+                Show SQL
+              </button>
+              <button
+                onClick={() => setShowLessonMobile(true)}
+                aria-expanded={showLessonMobile}
+                aria-controls={`${LESSON_PANEL_ID}-drawer`}
+                className="rounded-sm border border-line bg-surface-muted px-2 py-1 text-xs text-ink-secondary"
+              >
+                Lesson
+              </button>
+            </div>
+            <PlaybackStage
+              snapshot={snapshot}
+              prevSnapshot={prevSnapshot}
+              diff={diff}
+              originalSql={originalSql}
+              runKey={pb.runKey}
+              direction={pb.direction}
+              distance={pb.distance}
+              speed={pb.speed}
+              paused={pb.animationPaused}
+              skipToken={pb.skipToken}
+              focusOnChanges={pb.focusOnChanges}
+              showRowIds={showRowIds}
+              onAnimationStateChange={pb.reportAnimationState}
+              reducedMotionOverride={reducedMotionOverride}
+            />
+          </main>
 
-          <div className="hidden w-[280px] shrink-0 lg:block">
-            {snapshot && (
-              <LessonPanel
-                snapshot={snapshot}
-                prevSnapshot={prevSnapshot}
-                diff={diff}
-                showRowIds={showRowIds}
-                onToggleRowIds={setShowRowIds}
-              />
-            )}
+          <div
+            data-lesson-container
+            className="pb-lesson-container hidden shrink-0 lg:block"
+            style={{ width: lessonCollapsed ? LESSON_RAIL_WIDTH : lessonWidth }}
+          >
+            <LessonPanel
+              snapshot={snapshot}
+              prevSnapshot={prevSnapshot}
+              diff={diff}
+              showRowIds={showRowIds}
+              onToggleRowIds={setShowRowIds}
+              collapsed={lessonCollapsed}
+              onToggleCollapsed={toggleLessonCollapsed}
+            />
           </div>
         </div>
 
-        {showSqlMobile && snapshot && (
+        {showSqlMobile && (
           <div className="border-t border-line lg:hidden">
             <SqlContextPanel
               originalSql={originalSql}
@@ -286,17 +344,41 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
           </div>
         )}
 
-        {showLessonMobile && snapshot && (
-          <div className="max-h-[50vh] border-t border-line lg:hidden">
+        {/* Small screens: Lesson as an overlay drawer instead of squeezing the stage. */}
+        <div
+          className={cn("pb-lesson-drawer lg:hidden", showLessonMobile && "pb-lesson-drawer-open")}
+          aria-hidden={!showLessonMobile}
+          inert={!showLessonMobile}
+        >
+          <button
+            type="button"
+            aria-label="Close lesson"
+            tabIndex={-1}
+            className="pb-lesson-drawer-backdrop"
+            onClick={() => setShowLessonMobile(false)}
+          />
+          <div className="pb-lesson-drawer-panel">
+            <div className="flex items-center justify-between border-b border-line bg-surface-raised px-3 py-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Lesson</span>
+              <button
+                type="button"
+                onClick={() => setShowLessonMobile(false)}
+                aria-label="Close lesson"
+                className="flex size-7 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-muted"
+              >
+                <X className="size-3.5" aria-hidden />
+              </button>
+            </div>
             <LessonPanel
               snapshot={snapshot}
               prevSnapshot={prevSnapshot}
               diff={diff}
               showRowIds={showRowIds}
               onToggleRowIds={setShowRowIds}
+              panelId={`${LESSON_PANEL_ID}-drawer`}
             />
           </div>
-        )}
+        </div>
 
         {/* Controls bar */}
         <PlaybackControls
@@ -308,7 +390,11 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
           setSpeed={pb.setSpeed}
           toggleStepMode={pb.toggleStepMode}
           stepMode={pb.stepMode}
-          isTransitioning={pb.isTransitioning}
+          animationState={pb.animationState}
+          replay={pb.replay}
+          skip={pb.skip}
+          focusOnChanges={pb.focusOnChanges}
+          toggleFocusOnChanges={pb.toggleFocusOnChanges}
           activeStageType={snapshot.stageType}
           stageTypes={snapshots.map((s) => s.stageType)}
           totalStages={snapshots.length}

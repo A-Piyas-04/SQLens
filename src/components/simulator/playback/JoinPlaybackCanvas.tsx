@@ -1,592 +1,283 @@
 /**
- * Join playback — one bridge flow per match (multi-join aware).
+ * JOIN playback canvas — LEFT | MATCH LANE | RIGHT, then the joined result.
+ * Purely presentational: the JOIN animator drives `view` through the global
+ * stage controller, so pause, speed, cancel and completion are shared.
  */
 
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../../../lib/utils/cn";
 import type { TrackedRow } from "../../../lib/simulator";
-import type { PlaybackSpeed } from "../../../hooks/useSimulatorPlayback";
 import { getIntermediateResultColumns } from "../stageConstants";
-import JoinArrowOverlay, { type PersistentArrow } from "./join/JoinArrowOverlay";
-import JoinMatchBridge from "./join/JoinMatchBridge";
-import {
-  buildJoinMatchSteps,
-  countJoinLayers,
-  resolvePlaybackJoinKeys,
-  type ActiveBridgeLink,
-  type JoinMatchStep,
-  type MatchPair,
-} from "./join/joinPlaybackModel";
+import JoinArrowOverlay, { type ArrowGeometry } from "./join/JoinArrowOverlay";
+import type { JoinViewState } from "./animation/stageAnimationTypes";
+import { JOIN_PANEL_ROWS, type JoinModel } from "./animation/joinModel";
+import { formatValue } from "./animation/groupModel";
+import { windowRows } from "./animation/rowWindow";
 
-const MAX_ANIMATED_STEPS = 6;
+type Anchor = { x: number; y: number };
 
-type JoinPhase = "idle" | "tables" | "keys" | "matching" | "result" | "done";
-
-const MAX_ROWS = 14;
-
-type RowAnchor = { x: number; y: number };
-
-type KeyTableProps = {
+type PanelProps = {
   side: "left" | "right";
   title: string;
-  subtitle: string;
   rows: TrackedRow[];
   joinKey: string | null;
-  rowRefs: React.MutableRefObject<Map<string, HTMLTableCellElement>>;
-  visible: boolean;
-  activeRowId: string | null;
-  matchedRowIds: Set<string>;
-  pendingRowIds: Set<string>;
-  pulseHeader: boolean;
-  matchCountByRowId: Map<string, number>;
+  identity: string | null;
+  cellRefs: React.MutableRefObject<Map<string, HTMLElement>>;
+  activeId: string | null;
+  matchedIds: Set<string>;
+  keysFocused: boolean;
 };
 
-function KeyTable({
-  side,
-  title,
-  subtitle,
-  rows,
-  joinKey,
-  rowRefs,
-  visible,
-  activeRowId,
-  matchedRowIds,
-  pendingRowIds,
-  pulseHeader,
-  matchCountByRowId,
-}: KeyTableProps) {
-  const display = rows.slice(0, MAX_ROWS);
-  const overflow = rows.length - display.length;
-
+function KeyPanel({ side, title, rows, joinKey, identity, cellRefs, activeId, matchedIds, keysFocused }: PanelProps) {
+  const important = activeId ? [activeId, ...matchedIds] : [...matchedIds];
+  const win = windowRows(rows, important, JOIN_PANEL_ROWS);
   return (
-    <div
-      className={cn(
-        "min-w-0",
-        side === "left" ? "pb-join-left-row" : "pb-join-right-row"
-      )}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible
-          ? "translateX(0)"
-          : side === "left"
-            ? "translateX(-28px)"
-            : "translateX(28px)",
-        transition: "opacity 380ms ease, transform 380ms cubic-bezier(0.22,1,0.36,1)",
-      }}
-    >
+    <div data-join-panel={side} className="min-w-0">
       <div className="mb-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-          {title}
-        </p>
-        <p className="text-[10px] text-ink-muted">{subtitle}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">{title}</p>
+        <p className="text-[10px] text-ink-muted">{rows.length} rows</p>
       </div>
-
-      <div
-        className={cn(
-          "overflow-hidden rounded-sm border",
-          activeRowId && side === "left"
-            ? "border-join-matched-border"
-            : "border-line"
-        )}
-      >
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr className="bg-surface-muted">
-              <th
-                className={cn(
-                  "border-b border-b-accent bg-accent-muted px-3 py-2 text-left font-semibold text-accent-ink",
-                  pulseHeader && "pb-key-pulse"
-                )}
+      <div role="table" aria-label={title} className="overflow-hidden rounded-sm border border-line">
+        <div role="row" className="pb-join-panel-row bg-surface-muted">
+          <div
+            role="columnheader"
+            data-join-key-header
+            data-focused={keysFocused || undefined}
+            className="pb-join-key-header"
+          >
+            {joinKey ?? "key"}
+          </div>
+          {identity && (
+            <div role="columnheader" className="px-3 py-2 text-left font-semibold text-ink-muted">
+              {identity}
+            </div>
+          )}
+        </div>
+        {win.rows.map((row) => {
+          const active = activeId === row._rowId;
+          const matched = matchedIds.has(row._rowId);
+          const val = joinKey ? row[joinKey] : undefined;
+          return (
+            <div
+              key={row._rowId}
+              role="row"
+              data-join-row={row._rowId}
+              data-state={active ? "active" : matched ? "matched" : undefined}
+              className="pb-join-panel-row"
+              aria-current={active || undefined}
+            >
+              <div
+                role="cell"
+                ref={(el) => {
+                  if (el) cellRefs.current.set(row._rowId, el);
+                  else cellRefs.current.delete(row._rowId);
+                }}
+                className={cn("px-3 py-1.5 font-mono", val === null && "italic text-join-null")}
               >
-                {joinKey ?? "key"}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {display.map((row) => {
-              const active = activeRowId === row._rowId;
-              const matched = matchedRowIds.has(row._rowId);
-              const pending = pendingRowIds.has(row._rowId);
-              const count = matchCountByRowId.get(row._rowId) ?? 0;
-              const val = joinKey ? row[joinKey] : null;
-
-              return (
-                <tr
-                  key={row._rowId}
-                  className={cn(
-                    "border-b border-line/50 transition-all duration-200",
-                    active && "bg-join-matched-bg ring-1 ring-inset ring-join-matched-border",
-                    !active && matched && "bg-join-matched-bg/60",
-                    !active && !matched && pending && "opacity-50",
-                    !active && !matched && !pending && "opacity-30"
-                  )}
-                >
-                  <td
-                    ref={(el) => {
-                      if (el) rowRefs.current.set(row._rowId, el);
-                      else rowRefs.current.delete(row._rowId);
-                    }}
-                    className={cn(
-                      "relative px-3 py-2 font-mono",
-                      active || matched ? "font-semibold text-ink" : "text-ink-muted",
-                      val === null && "italic text-join-null"
-                    )}
-                  >
-                    {val === null ? "NULL" : val !== undefined ? String(val) : "—"}
-                    {count > 1 && matched && (
-                      <span className="ml-2 rounded-sm border border-join-matched-border bg-join-matched-bg px-1.5 text-[9px] text-accent-ink">
-                        ×{count}
-                      </span>
-                    )}
-                    {active && side === "left" && (
-                      <span
-                        className={cn(
-                          "absolute top-1/2 -translate-y-1/2 size-2 rounded-full bg-accent",
-                          side === "left" ? "-right-3" : "-left-3"
-                        )}
-                      />
-                    )}
-                    {active && side === "right" && (
-                      <span className="absolute -left-3 top-1/2 size-2 -translate-y-1/2 rounded-full bg-accent" />
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {overflow > 0 && (
-              <tr>
-                <td className="px-3 py-2 text-center text-[10px] italic text-ink-muted">
-                  +{overflow} more rows
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                {val === undefined ? "—" : formatValue(val)}
+              </div>
+              {identity && (
+                <div role="cell" className="truncate px-3 py-1.5 text-ink-secondary">
+                  {formatValue(row[identity])}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {win.hiddenCount > 0 && (
+          <div role="row" className="px-3 py-1.5 text-center text-[10px] italic text-ink-muted">
+            <div role="cell">+{win.hiddenCount} more rows</div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 type Props = {
-  leftRows: TrackedRow[];
-  rightRows: TrackedRow[];
-  joinedRows: TrackedRow[];
-  joinType: string;
-  joinSql: string;
-  joinIndex?: number;
-  joinRightTable?: string | null;
-  animationKey: number;
-  speed: PlaybackSpeed;
+  model: JoinModel;
+  view: JoinViewState;
 };
 
-export default function JoinPlaybackCanvas({
-  leftRows,
-  rightRows,
-  joinedRows,
-  joinType,
-  joinSql,
-  joinIndex = 0,
-  joinRightTable,
-  animationKey,
-  speed,
-}: Props) {
-  const bridgeUid = useId().replace(/:/g, "");
-  const isLeftJoin = joinType.toUpperCase().includes("LEFT");
-  const joinLayerTotal = useMemo(() => countJoinLayers(joinSql), [joinSql]);
-
-  const panelKeys = useMemo(
-    () =>
-      resolvePlaybackJoinKeys(
-        joinSql,
-        joinIndex,
-        joinLayerTotal,
-        joinRightTable ?? null,
-        leftRows,
-        rightRows
-      ),
-    [joinSql, joinIndex, joinLayerTotal, joinRightTable, leftRows, rightRows]
-  );
-
-  const matchSteps = useMemo(
-    () =>
-      buildJoinMatchSteps(
-        leftRows,
-        rightRows,
-        joinedRows,
-        panelKeys.leftKey,
-        panelKeys.rightKey,
-        isLeftJoin
-      ),
-    [leftRows, rightRows, joinedRows, panelKeys.leftKey, panelKeys.rightKey, isLeftJoin]
-  );
-
-  const resultColumns = useMemo(
-    () => (joinedRows.length > 0 ? getIntermediateResultColumns(joinedRows[0]) : []),
-    [joinedRows]
-  );
-
-  const matchCountByRowId = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const step of matchSteps) {
-      if (step.pairs.length > 0) {
-        m.set(step.leftId, step.pairs.length);
-      }
-    }
-    return m;
-  }, [matchSteps]);
-
-  const [phase, setPhase] = useState<JoinPhase>("idle");
-  const [stepIndex, setStepIndex] = useState(-1);
-  const [pairIndex, setPairIndex] = useState(0);
-  const [persistentArrows, setPersistentArrows] = useState<PersistentArrow[]>([]);
-  const [completedSteps, setCompletedSteps] = useState(0);
-  const [summaryFlash, setSummaryFlash] = useState(false);
-  const [leftAnchors, setLeftAnchors] = useState<Map<string, RowAnchor>>(new Map());
-  const [rightAnchors, setRightAnchors] = useState<Map<string, RowAnchor>>(new Map());
-
+export default function JoinPlaybackCanvas({ model, view }: Props) {
+  const uid = useId().replace(/:/g, "");
   const stageRef = useRef<HTMLDivElement>(null);
-  const leftRowRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
-  const rightRowRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
+  const leftRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const rightRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const [geometry, setGeometry] = useState<{ w: number; h: number; arrows: ArrowGeometry[] }>({
+    w: 0,
+    h: 0,
+    arrows: [],
+  });
 
-  const ms = (n: number) => Math.round(n / speed);
-  const tablesMs = ms(380);
-  const keysMs = ms(320);
-  const connectMs = ms(520);
-  const holdMs = ms(180);
-  const betweenPairsMs = ms(120);
+  const { keys, animatedSteps } = model;
+  const currentStep = view.stepIndex >= 0 ? animatedSteps[view.stepIndex] : undefined;
+  const currentPair = currentStep?.pairs[view.pairIndex];
+  const matching = view.joinPhase === "matching";
+  const activeLeftId = matching ? currentStep?.leftId ?? null : null;
+  const activeRightId = matching && currentPair && "rightId" in currentPair ? currentPair.rightId : null;
 
-  const animSteps = useMemo(
-    () => matchSteps.filter((s) => s.pairs.length > 0),
-    [matchSteps]
-  );
-  const stepsToAnimate = useMemo(
-    () => animSteps.slice(0, MAX_ANIMATED_STEPS),
-    [animSteps]
-  );
-  const skippedStepCount = Math.max(0, animSteps.length - stepsToAnimate.length);
+  const matchedLeft = useMemo(() => {
+    const s = new Set<string>();
+    for (let i = 0; i < view.completedSteps && i < animatedSteps.length; i++) s.add(animatedSteps[i].leftId);
+    return s;
+  }, [view.completedSteps, animatedSteps]);
 
-  const currentStep: JoinMatchStep | undefined =
-    stepIndex >= 0 ? stepsToAnimate[stepIndex] : undefined;
-  const currentPair: MatchPair | undefined = currentStep?.pairs[pairIndex];
+  const matchedRight = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of view.arrows) if (a.rightId && a.status !== "drawing") s.add(a.rightId);
+    return s;
+  }, [view.arrows]);
 
-  const activeLink: ActiveBridgeLink | null = useMemo(() => {
-    if (!currentStep || !currentPair || phase !== "matching") return null;
-    return {
-      leftId: currentStep.leftId,
-      rightId: "rightId" in currentPair ? currentPair.rightId : null,
-      isNull: "null" in currentPair,
-      pairIndex,
-      pairCount: currentStep.pairs.length,
-    };
-  }, [currentStep, currentPair, phase, pairIndex]);
-
-  const measureAnchors = useCallback(() => {
+  const measure = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
-
     const sr = stage.getBoundingClientRect();
-
-    const measureSide = (
-      refs: Map<string, HTMLTableCellElement>,
-      side: "left" | "right"
-    ) => {
-      const out = new Map<string, RowAnchor>();
-      refs.forEach((cell, id) => {
-        const r = cell.getBoundingClientRect();
-        const pad = 2;
-        out.set(id, {
-          x: (side === "left" ? r.right - pad : r.left + pad) - sr.left,
-          y: r.top + r.height / 2 - sr.top,
-        });
-      });
-      return out;
+    const anchor = (el: HTMLElement | undefined, side: "left" | "right"): Anchor | null => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        x: (side === "left" ? r.right - 2 : r.left + 2) - sr.left,
+        y: r.top + r.height / 2 - sr.top,
+      };
     };
-
-    setLeftAnchors(measureSide(leftRowRefs.current, "left"));
-    setRightAnchors(measureSide(rightRowRefs.current, "right"));
-  }, []);
+    const arrows: ArrowGeometry[] = [];
+    for (const a of view.arrows) {
+      const l = anchor(leftRefs.current.get(a.leftId), "left");
+      if (!l) continue;
+      const r = a.isNull ? { x: l.x + 56, y: l.y } : anchor(a.rightId ? rightRefs.current.get(a.rightId) : undefined, "right");
+      if (!r) continue;
+      arrows.push({ key: a.key, x1: l.x, y1: l.y, x2: r.x, y2: r.y, isNull: a.isNull, status: a.status });
+    }
+    setGeometry({ w: sr.width, h: sr.height, arrows });
+  }, [view.arrows]);
 
   useLayoutEffect(() => {
-    if (phase === "idle") return;
-    measureAnchors();
-    const raf = requestAnimationFrame(measureAnchors);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, stepIndex, pairIndex, persistentArrows, measureAnchors, animationKey]);
+    measure();
+  }, [measure, view.joinPhase]);
 
-  useEffect(() => {
-    if (phase === "idle") return;
+  // Re-measure on resize so connectors never point at stale coordinates.
+  useLayoutEffect(() => {
     const stage = stageRef.current;
-    if (!stage) return;
-    const ro = new ResizeObserver(() => measureAnchors());
+    if (!stage || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => measure());
     ro.observe(stage);
     return () => ro.disconnect();
-  }, [phase, measureAnchors]);
+  }, [measure]);
 
-  useEffect(() => {
-    setPhase("idle");
-    setStepIndex(-1);
-    setPairIndex(0);
-    setPersistentArrows([]);
-    setCompletedSteps(0);
-    setSummaryFlash(false);
-    setLeftAnchors(new Map());
-    setRightAnchors(new Map());
+  const resultColumns = useMemo(
+    () => (model.joinedRows.length > 0 ? getIntermediateResultColumns(model.joinedRows[0]) : []),
+    [model.joinedRows]
+  );
+  const resultVisible = view.joinPhase === "result";
+  const keysFocused = view.joinPhase !== "tables";
+  const leftTitle = (model.keys.joinIndex ?? 0) > 0 ? `Working set (after join ${keys.joinIndex})` : "Working set";
+  const rightTitle = keys.rightTableName ? `New table — ${keys.rightTableName}` : "New table";
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const schedule = (fn: () => void, delay: number) => {
-      timers.push(setTimeout(fn, delay));
-    };
-
-    let t = 60;
-    schedule(() => setPhase("tables"), t);
-    t += tablesMs;
-    schedule(() => setPhase("keys"), t);
-    t += keysMs;
-    schedule(() => setPhase("matching"), t);
-
-    const matchingStart = t;
-    let cursor = matchingStart;
-
-    for (let si = 0; si < stepsToAnimate.length; si++) {
-      const step = stepsToAnimate[si];
-
-      for (let pi = 0; pi < step.pairs.length; pi++) {
-        const pair = step.pairs[pi];
-        const arrowKey =
-          "null" in pair
-            ? `${step.leftId}-null-${pi}`
-            : `${step.leftId}-${pair.rightId}`;
-
-        schedule(() => {
-          setStepIndex(si);
-          setPairIndex(pi);
-          setPersistentArrows((prev) => [
-            ...prev.map((a) => ({ ...a, drawing: false })),
-            {
-              key: arrowKey,
-              leftId: step.leftId,
-              rightId: "rightId" in pair ? pair.rightId : null,
-              isNull: "null" in pair,
-              drawing: true,
-            },
-          ]);
-        }, cursor);
-        cursor += connectMs;
-        schedule(() => {
-          setPersistentArrows((prev) =>
-            prev.map((a) => (a.key === arrowKey ? { ...a, drawing: false } : a))
-          );
-        }, cursor);
-        cursor += holdMs;
-        if (pi < step.pairs.length - 1) cursor += betweenPairsMs;
-      }
-      schedule(() => setCompletedSteps(si + 1), cursor);
-      cursor += betweenPairsMs;
-    }
-
-    if (skippedStepCount > 0) {
-      schedule(() => setSummaryFlash(true), cursor);
-      cursor += ms(700);
-    }
-
-    if (stepsToAnimate.length === 0) {
-      cursor += ms(400);
-    }
-
-    schedule(() => setPhase("result"), cursor + ms(80));
-    schedule(() => setPhase("done"), cursor + ms(520));
-
-    return () => timers.forEach(clearTimeout);
-  }, [
-    animationKey,
-    speed,
-    stepsToAnimate,
-    skippedStepCount,
-    tablesMs,
-    keysMs,
-    connectMs,
-    holdMs,
-    betweenPairsMs,
-  ]);
-
-  const tablesVisible = phase !== "idle";
-  const keysPulse = phase === "keys";
-  const resultVisible = phase === "result" || phase === "done";
-  const panelsDimmed = resultVisible;
-
-  const activeLeftId = phase === "matching" ? currentStep?.leftId ?? null : null;
-  const activeRightId =
-    phase === "matching" && currentPair && "rightId" in currentPair
-      ? currentPair.rightId
-      : null;
-
-  const matchedLeftIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (let i = 0; i < completedSteps && i < stepsToAnimate.length; i++) {
-      ids.add(stepsToAnimate[i].leftId);
-    }
-    return ids;
-  }, [completedSteps, stepsToAnimate]);
-
-  const matchedRightIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (let i = 0; i < completedSteps && i < stepsToAnimate.length; i++) {
-      for (const p of stepsToAnimate[i].pairs) {
-        if ("rightId" in p) ids.add(p.rightId);
-      }
-    }
-    if (phase === "matching" && currentStep) {
-      for (let pi = 0; pi <= pairIndex; pi++) {
-        const p = currentStep.pairs[pi];
-        if (p && "rightId" in p) ids.add(p.rightId);
-      }
-    }
-    return ids;
-  }, [completedSteps, stepsToAnimate, phase, currentStep, pairIndex]);
-
-  const pendingLeftIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (let i = completedSteps; i < animSteps.length; i++) {
-      ids.add(animSteps[i].leftId);
-    }
-    return ids;
-  }, [completedSteps, animSteps]);
-
-  const leftTitle =
-    joinIndex > 0 ? `Working set (after join ${joinIndex})` : "Working set";
-  const rightTitle = panelKeys.rightTableName
-    ? `New table — ${panelKeys.rightTableName}`
-    : "New table";
+  const activeLeftRow = activeLeftId ? model.leftRows.find((r) => r._rowId === activeLeftId) : undefined;
+  const activeRightRow = activeRightId ? model.rightRows.find((r) => r._rowId === activeRightId) : undefined;
+  const ident = (row: TrackedRow | undefined, col: string | null, key: string | null) =>
+    row ? formatValue(row[col ?? key ?? ""] ?? row[key ?? ""]) : "";
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-2 rounded-sm border border-line bg-surface-raised px-4 py-2.5">
-        <span className="rounded-sm border border-orange-300 bg-orange-100 px-2.5 py-1 text-[11px] font-semibold text-orange-900">
-          {joinType}
-        </span>
-        {joinLayerTotal > 1 && (
-          <span className="rounded-sm border border-line-strong bg-surface-muted px-2 py-1 text-[10px] text-ink-muted">
-            Layer {panelKeys.joinLayer} of {panelKeys.joinLayerTotal}
-          </span>
-        )}
-        {panelKeys.display ? (
-          <span className="font-mono text-[11px] text-ink-secondary">
-            <span className="text-ink-muted">ON </span>
-            <span className="text-accent-ink">{panelKeys.display}</span>
-          </span>
-        ) : null}
-      </div>
-
+    <div className="flex flex-col gap-4">
       <div
         ref={stageRef}
+        data-join-stage
         className={cn(
-          "relative grid grid-cols-[minmax(0,1fr)_minmax(88px,140px)_minmax(0,1fr)] items-stretch gap-2 sm:gap-3",
-          panelsDimmed && "opacity-45"
+          "relative grid grid-cols-[minmax(0,1fr)_minmax(110px,170px)_minmax(0,1fr)] items-start gap-3",
+          resultVisible && "pb-join-receded"
         )}
-        style={{ transition: "opacity 400ms ease" }}
       >
-        {phase === "idle" ? (
-          <>
-            <div className="h-32 animate-pulse rounded-sm bg-surface-muted" />
-            <div className="h-32 animate-pulse rounded-sm bg-surface-muted" />
-            <div className="h-32 animate-pulse rounded-sm bg-surface-muted" />
-          </>
+        <KeyPanel
+          side="left"
+          title={leftTitle}
+          rows={model.leftRows}
+          joinKey={keys.leftKey}
+          identity={model.leftIdentity}
+          cellRefs={leftRefs}
+          activeId={activeLeftId}
+          matchedIds={matchedLeft}
+          keysFocused={keysFocused}
+        />
+
+        <div className="pb-join-lane" aria-live="polite">
+          <div className="pb-join-lane-line" aria-hidden />
+          {matching && currentStep && (
+            <div className="pb-join-lane-card">
+              <p className="font-mono text-[11px] text-ink">
+                {formatValue(currentStep.leftKeyValue)}
+                {currentPair && "rightId" in currentPair && activeRightRow && keys.rightKey
+                  ? ` = ${formatValue(activeRightRow[keys.rightKey])}`
+                  : ""}
+              </p>
+              {view.laneMessage && (
+                <p data-join-lane-message className="pb-join-lane-message">
+                  {view.laneMessage}
+                </p>
+              )}
+              {view.laneMessage && activeLeftRow && (
+                <p className="mt-1 truncate text-[10px] text-ink-secondary">
+                  {ident(activeLeftRow, model.leftIdentity, keys.leftKey)}
+                  {" + "}
+                  {activeRightRow ? ident(activeRightRow, model.rightIdentity, keys.rightKey) : "NULL"}
+                </p>
+              )}
+              {currentStep.pairs.length > 1 && (
+                <p className="mt-1 text-[9px] text-ink-muted">
+                  match {view.pairIndex + 1} of {currentStep.pairs.length}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {model.rightRows.length === 0 ? (
+          <div data-join-panel="right" className="rounded-sm border border-line bg-surface-muted px-3 py-8 text-center text-[11px] italic text-ink-muted">
+            Right table unavailable
+          </div>
         ) : (
-          <>
-            <KeyTable
-              side="left"
-              title={leftTitle}
-              subtitle={`${leftRows.length} rows`}
-              rows={leftRows}
-              joinKey={panelKeys.leftKey}
-              rowRefs={leftRowRefs}
-              visible={tablesVisible}
-              activeRowId={activeLeftId}
-              matchedRowIds={matchedLeftIds}
-              pendingRowIds={pendingLeftIds}
-              pulseHeader={keysPulse}
-              matchCountByRowId={matchCountByRowId}
-            />
-
-            <JoinMatchBridge link={activeLink} />
-
-            {rightRows.length === 0 ? (
-              <div className="rounded-sm border border-line bg-surface-muted px-3 py-8 text-center text-[11px] italic text-ink-muted">
-                Right table unavailable
-              </div>
-            ) : (
-              <KeyTable
-                side="right"
-                title={rightTitle}
-                subtitle={`${rightRows.length} rows`}
-                rows={rightRows}
-                joinKey={panelKeys.rightKey}
-                rowRefs={rightRowRefs}
-                visible={tablesVisible}
-                activeRowId={activeRightId}
-                matchedRowIds={matchedRightIds}
-                pendingRowIds={new Set()}
-                pulseHeader={keysPulse}
-                matchCountByRowId={new Map()}
-              />
-            )}
-          </>
-        )}
-
-        {persistentArrows.length > 0 &&
-          (phase === "matching" || phase === "result" || phase === "done") && (
-          <JoinArrowOverlay
-            stageRef={stageRef}
-            arrows={persistentArrows}
-            leftAnchors={leftAnchors}
-            rightAnchors={rightAnchors}
-            overlayUid={bridgeUid}
+          <KeyPanel
+            side="right"
+            title={rightTitle}
+            rows={model.rightRows}
+            joinKey={keys.rightKey}
+            identity={model.rightIdentity}
+            cellRefs={rightRefs}
+            activeId={activeRightId}
+            matchedIds={matchedRight}
+            keysFocused={keysFocused}
           />
         )}
+
+        <JoinArrowOverlay width={geometry.w} height={geometry.h} arrows={geometry.arrows} overlayUid={uid} />
       </div>
 
-      {summaryFlash && skippedStepCount > 0 && (
+      {view.showSkippedSummary && model.skippedStepCount > 0 && (
         <p className="text-center text-[10px] italic text-ink-muted">
-          +{skippedStepCount} more matched row{skippedStepCount !== 1 ? "s" : ""} in the
-          result below
+          +{model.skippedStepCount} more matched row{model.skippedStepCount !== 1 ? "s" : ""} — see the result below
         </p>
       )}
 
-      {joinedRows.length > 0 && (
-        <div
-          style={{
-            opacity: resultVisible ? 1 : 0,
-            transform: resultVisible ? "translateY(0)" : "translateY(28px)",
-            transition: "opacity 420ms ease, transform 420ms cubic-bezier(0.22,1,0.36,1)",
-          }}
-        >
-          <div className="mb-3 flex items-center gap-3">
-            <div className="h-px flex-1 bg-surface-muted/40" />
+      {resultVisible && model.joinedRows.length > 0 && (
+        <div data-join-result>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="h-px flex-1 bg-line" />
             <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-              Intermediate result — {joinedRows.length} rows
+              Joined result — {model.joinedRows.length} rows
             </span>
-            <div className="h-px flex-1 bg-surface-muted/40" />
+            <div className="h-px flex-1 bg-line" />
           </div>
-
-          <div className="max-h-[300px] overflow-auto rounded-sm border border-line">
+          <div className="max-h-[320px] overflow-auto rounded-sm border border-line">
             <table className="w-full border-collapse text-xs">
-              <thead className="sticky top-0 bg-surface-muted ">
+              <thead className="sticky top-0 bg-surface-muted">
                 <tr>
                   {resultColumns.map(({ key, label }) => (
                     <th
                       key={key}
                       className={cn(
                         "border-b px-3 py-2 text-left font-semibold whitespace-nowrap",
-                        key === panelKeys.leftKey || key === panelKeys.rightKey
+                        key === keys.leftKey || key === keys.rightKey
                           ? "border-b-accent bg-accent-muted text-accent-ink"
                           : "border-b-line text-ink-secondary"
                       )}
@@ -597,20 +288,14 @@ export default function JoinPlaybackCanvas({
                 </tr>
               </thead>
               <tbody>
-                {joinedRows.map((row, i) => (
-                  <tr
-                    key={row._rowId}
-                    className="pb-join-result-row border-b border-line/40"
-                    style={{ animationDelay: `${i * 45}ms` } as CSSProperties}
-                  >
+                {model.joinedRows.map((row) => (
+                  <tr key={row._rowId} data-row-id={row._rowId} className="border-b border-line/40">
                     {resultColumns.map(({ key }) => (
                       <td
                         key={key}
                         className={cn(
                           "px-3 py-1.5 font-mono whitespace-nowrap",
-                          key === panelKeys.leftKey || key === panelKeys.rightKey
-                            ? "font-semibold text-accent-ink"
-                            : "text-ink-secondary",
+                          key === keys.leftKey || key === keys.rightKey ? "font-semibold text-accent-ink" : "text-ink-secondary",
                           row[key] === null && "italic text-join-null"
                         )}
                       >
@@ -624,10 +309,6 @@ export default function JoinPlaybackCanvas({
           </div>
         </div>
       )}
-
-      <p className="text-[10px] text-ink-muted">
-        Arrows stay visible through the intermediate result; lines clear on the next query.
-      </p>
     </div>
   );
 }

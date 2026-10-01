@@ -15,7 +15,7 @@ import type { SimulatorStageType } from "../types/simulatorTypes";
  * The diff captures:
  *   - removed  — rows present in prev but absent in curr
  *   - added    — rows present in curr but absent in prev
- *   - reordered — same _rowId but at a different index
+ *   - reordered — same _rowId whose order relative to other survivors changed
  *   - null-introduced — same _rowId but a column transitioned non-NULL → NULL
  *   - unchanged — same _rowId, same index, no NULL changes
  *
@@ -40,6 +40,16 @@ export function diffSnapshots(
   );
 
   const rowDiffs: RowDiff[] = [];
+
+  // Survivors whose relative order is preserved form the longest increasing
+  // subsequence of previous indices; only rows outside it actually moved.
+  const survivorIds = currRows
+    .map((r) => r._rowId)
+    .filter((id) => prevIndexById.has(id));
+  const stableIds = findStableIds(
+    survivorIds,
+    survivorIds.map((id) => prevIndexById.get(id)!)
+  );
 
   // ── Removed rows (in prev, absent from curr) ──────────────────────────────
   for (const [rowId, prevIndex] of prevIndexById) {
@@ -86,7 +96,7 @@ export function diffSnapshots(
       let status: RowStatus;
       if (nullIntroduced.length > 0) {
         status = "null-introduced";
-      } else if (prevIndex !== currIndex) {
+      } else if (!stableIds.has(rowId)) {
         status = "reordered";
       } else {
         status = "unchanged";
@@ -132,6 +142,37 @@ export function diffSnapshots(
     rowDiffs,
     columnDiffs,
   };
+}
+
+/**
+ * Returns the ids that belong to one longest increasing subsequence of
+ * `prevIndices` (O(n log n) patience sort). Ids outside it are true movers.
+ */
+export function findStableIds(ids: string[], prevIndices: number[]): Set<string> {
+  const n = prevIndices.length;
+  const tailIdx: number[] = [];
+  const parent = new Array<number>(n).fill(-1);
+
+  for (let i = 0; i < n; i++) {
+    const v = prevIndices[i];
+    let lo = 0;
+    let hi = tailIdx.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (prevIndices[tailIdx[mid]] < v) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo > 0) parent[i] = tailIdx[lo - 1];
+    tailIdx[lo] = i;
+  }
+
+  const stable = new Set<string>();
+  let k = tailIdx.length > 0 ? tailIdx[tailIdx.length - 1] : -1;
+  while (k >= 0) {
+    stable.add(ids[k]);
+    k = parent[k];
+  }
+  return stable;
 }
 
 // ── Reason builders ──────────────────────────────────────────────────────────

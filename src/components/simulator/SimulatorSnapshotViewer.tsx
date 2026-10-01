@@ -7,7 +7,6 @@ import SimulatorJoinCanvas from "./SimulatorJoinCanvas";
 import { cn } from "../../lib/utils/cn";
 import type { SimulatorSnapshot, StageDiff } from "../../lib/simulator/types/snapshotTypes";
 import StageStepList from "./StageStepList";
-import StageEntryBanner from "./playback/StageEntryBanner";
 import { STAGE_COLORS, STAGE_ICONS } from "./stageConstants";
 
 type Props = {
@@ -92,7 +91,6 @@ export default function SimulatorSnapshotViewer({ snapshots, diffs }: Props) {
             colors.border
           )}
         >
-          <StageEntryBanner stageType={active.stageType} animationKey={activeIndex} />
         {/* Stage header */}
         <div
           className={cn(

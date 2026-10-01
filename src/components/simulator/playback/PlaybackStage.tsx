@@ -1,188 +1,162 @@
-import { memo, useEffect, useRef, type CSSProperties } from "react";
-import type {
-  SimulatorSnapshot,
-  StageDiff,
-  SimulatorStageType,
-} from "../../../lib/simulator";
-import {
-  ANIM_MS,
-  ENTRY_MS,
-  STAGGER_MS,
-  type PlaybackSpeed,
-  type TransitionPhase,
-} from "../../../hooks/useSimulatorPlayback";
-import PlaybackTable from "./PlaybackTable";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import type { SimulatorSnapshot, StageDiff } from "../../../lib/simulator";
+import PlaybackDataGrid from "./PlaybackDataGrid";
 import JoinPlaybackCanvas from "./JoinPlaybackCanvas";
-import StageEntryBanner from "./StageEntryBanner";
-
-const ACT1_RATIO = 0.4;
-const ACT2_RATIO = 0.8;
-const ACT3_RATIO = 0.3;
+import PlaybackOperationBar from "./PlaybackOperationBar";
+import type {
+  AnimationState,
+  PlaybackDirection,
+  StageAnimationContext,
+  StageViewState,
+} from "./animation/stageAnimationTypes";
+import type { JoinModel } from "./animation/joinModel";
+import { buildStageModel, countLabels } from "./animation/stageModel";
+import { extractStageExpression, STAGE_LABEL } from "./animation/stageSqlParts";
+import { runStageAnimation } from "./animation/runStageAnimation";
+import { useReducedMotion, useStageAnimationController } from "./animation/useStageAnimationController";
 
 type Props = {
   snapshot: SimulatorSnapshot;
   prevSnapshot: SimulatorSnapshot | null;
   diff: StageDiff | null;
-  animationKey: number;
-  speed: PlaybackSpeed;
-  transitionPhase: TransitionPhase;
-  setTransitionPhase: (phase: TransitionPhase) => void;
+  originalSql: string;
+  /** Incremented on every navigation / replay; starts a new stage run. */
+  runKey: number;
+  direction: PlaybackDirection;
+  distance: number;
+  speed: number;
+  paused: boolean;
+  skipToken: number;
+  focusOnChanges: boolean;
   showRowIds: boolean;
+  onAnimationStateChange: (state: AnimationState, runKey: number) => void;
+  /** Test hook: force reduced-motion choreography. */
+  reducedMotionOverride?: boolean;
 };
 
-function extractJoinType(annotation: string, label?: string): string {
-  const src = label ?? annotation;
-  const m = src.match(/\b(INNER|LEFT|RIGHT|FULL(?: OUTER)?|CROSS)?\s*JOIN\b/i);
-  return m ? m[0].trim().toUpperCase() : "JOIN";
-}
+type Committed = { view: StageViewState; join: JoinModel | null };
 
-function parseStageIndex(stageId: string): number {
-  const m = stageId.match(/^stage-(\d+)/);
-  return m ? Number(m[1]) : 0;
-}
-
-function usesPrevRowsDuringTransform(stageType: SimulatorStageType): boolean {
-  return (
-    stageType === "WHERE" ||
-    stageType === "HAVING" ||
-    stageType === "LIMIT" ||
-    stageType === "GROUP_BY" ||
-    stageType === "SELECT"
-  );
-}
-
-function shouldChoreograph(
-  stageType: SimulatorStageType,
-  prevSnapshot: SimulatorSnapshot | null
-): boolean {
-  if (stageType === "JOIN") return false;
-  if (!prevSnapshot) return stageType === "FROM";
-  return true;
-}
-
+/**
+ * Stage choreography host. Mounts one stable visualisation tree, hands the
+ * active stage animator a `commit()` that updates the DOM synchronously (so
+ * FLIP can measure FIRST/LAST), and reports the controller state upward.
+ */
 const PlaybackStage = memo(function PlaybackStage({
   snapshot,
   prevSnapshot,
   diff,
-  animationKey,
+  originalSql,
+  runKey,
+  direction,
+  distance,
   speed,
-  transitionPhase,
-  setTransitionPhase,
+  paused,
+  skipToken,
+  focusOnChanges,
   showRowIds,
+  onAnimationStateChange,
+  reducedMotionOverride,
 }: Props) {
-  const isJoin = snapshot.stageType === "JOIN";
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const prevStageIndexRef = useRef(parseStageIndex(snapshot.stageId));
+  const systemReduced = useReducedMotion();
+  const reducedMotion = reducedMotionOverride ?? systemReduced;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [committed, setCommitted] = useState<Committed | null>(null);
+  const committedRef = useRef<Committed | null>(null);
 
-  const animMs = ANIM_MS[speed];
-  const act1Ms = Math.round(animMs * ACT1_RATIO);
-  const act2Ms = Math.round(animMs * ACT2_RATIO);
-  const act3Ms = Math.round(animMs * ACT3_RATIO);
+  const model = useMemo(
+    () => buildStageModel({ snapshot, prevSnapshot, diff, originalSql, focusOnChanges }),
+    [snapshot, prevSnapshot, diff, originalSql, focusOnChanges]
+  );
+  const modelRef = useRef(model);
+  modelRef.current = model;
+  const runOpts = useRef({ direction, distance });
+  runOpts.current = { direction, distance };
 
-  const clearTimeouts = () => {
-    for (const id of timeoutsRef.current) clearTimeout(id);
-    timeoutsRef.current = [];
-  };
+  const commit = useCallback((view: StageViewState) => {
+    const next = { view, join: modelRef.current.join };
+    committedRef.current = next;
+    flushSync(() => setCommitted(next));
+  }, []);
 
-  const schedule = (fn: () => void, ms: number) => {
-    const id = setTimeout(fn, ms);
-    timeoutsRef.current.push(id);
-  };
+  const run = useCallback(
+    async (ctl: StageAnimationContext["ctl"]) => {
+      const root = rootRef.current;
+      if (!root) return;
+      const ctx: StageAnimationContext = {
+        ctl,
+        root,
+        model: modelRef.current,
+        reducedMotion: ctl.reducedMotion,
+        commit,
+        getView: () => committedRef.current?.view ?? null,
+      };
+      await runStageAnimation(ctx, runOpts.current);
+    },
+    [commit]
+  );
 
-  useEffect(() => {
-    clearTimeouts();
+  const [animState, setAnimState] = useState<{ state: AnimationState; runKey: number }>({ state: "idle", runKey });
 
-    const newIndex = parseStageIndex(snapshot.stageId);
-    const isBackward = newIndex < prevStageIndexRef.current;
-    prevStageIndexRef.current = newIndex;
+  useStageAnimationController({
+    runKey,
+    label: `${snapshot.stageId}:${snapshot.stageType}`,
+    speed,
+    paused,
+    skipToken,
+    reducedMotion,
+    onStateChange: (state, key) => {
+      setAnimState({ state, runKey: Number(key) });
+      onAnimationStateChange(state, Number(key));
+    },
+    run,
+  });
 
-    if (isBackward || !shouldChoreograph(snapshot.stageType, prevSnapshot)) {
-      setTransitionPhase("idle");
-      return;
-    }
-
-    const finish = () => {
-      setTransitionPhase("settled");
-      schedule(() => setTransitionPhase("idle"), 50);
-    };
-
-    if (!prevSnapshot && snapshot.stageType === "FROM") {
-      setTransitionPhase("transforming");
-      schedule(() => setTransitionPhase("arriving"), act2Ms);
-      schedule(() => finish(), act2Ms + act3Ms);
-      return;
-    }
-
-    setTransitionPhase("departing");
-    schedule(() => setTransitionPhase("transforming"), act1Ms);
-    schedule(() => setTransitionPhase("arriving"), act1Ms + act2Ms);
-    schedule(() => finish(), act1Ms + act2Ms + act3Ms);
-
-    return clearTimeouts;
-  }, [animationKey, snapshot.stageId, snapshot.stageType, prevSnapshot, speed, setTransitionPhase, act1Ms, act2Ms, act3Ms]);
-
-  const showPrev =
-    transitionPhase === "departing" ||
-    (transitionPhase === "transforming" &&
-      usesPrevRowsDuringTransform(snapshot.stageType));
-
-  const displayRows = showPrev
-    ? (prevSnapshot?.rows ?? snapshot.rows)
-    : snapshot.rows;
-
-  const displayPrevRows = prevSnapshot?.rows ?? [];
-  const limitValue =
-    snapshot.stageType === "LIMIT"
-      ? (diff?.rowDiffs.find((d) => d.status === "removed")?.reason?.match(/LIMIT (\d+)/i)?.[1] ??
-        String(snapshot.rowCount))
-      : undefined;
+  const view = committed?.view ?? null;
+  const stageComplete = animState.runKey === runKey && animState.state === "complete";
+  // "Done" only once the controller has completed; trailing result holds read as "Result".
+  const phase = stageComplete ? "settled" : view?.phase === "settled" ? "result" : view?.phase ?? "focus";
+  const counts = countLabels(model);
+  const expression = useMemo(
+    () => extractStageExpression(originalSql, snapshot.stageType, snapshot.joinIndex ?? 0),
+    [originalSql, snapshot.stageType, snapshot.joinIndex]
+  );
 
   return (
-    <div
-      className="pb-stage-wrapper relative flex flex-1 flex-col min-h-0"
-      style={
-        {
-          "--pb-anim-ms": `${animMs}ms`,
-          "--pb-stagger-ms": `${STAGGER_MS[speed]}ms`,
-          "--pb-act1-ms": `${act1Ms}ms`,
-          "--pb-act2-ms": `${act2Ms}ms`,
-          "--pb-act3-ms": `${act3Ms}ms`,
-          "--pb-remove-ms": `${act2Ms}ms`,
-          "--pb-entry-ms": `${ENTRY_MS[speed]}ms`,
-        } as CSSProperties
-      }
-    >
-      <StageEntryBanner stageType={snapshot.stageType} animationKey={animationKey} />
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-        {isJoin ? (
-          <JoinPlaybackCanvas
-            leftRows={prevSnapshot?.rows ?? []}
-            rightRows={snapshot.rightTableRows ?? []}
-            joinedRows={snapshot.rows}
-            joinType={extractJoinType(snapshot.annotation, snapshot.label)}
-            joinSql={snapshot.sql}
-            joinIndex={snapshot.joinIndex ?? 0}
-            joinRightTable={snapshot.joinRightTable ?? null}
-            animationKey={animationKey}
-            speed={speed}
-          />
-        ) : (
-          <PlaybackTable
-            rows={displayRows}
-            targetRows={snapshot.rows}
-            prevRows={displayPrevRows}
-            diff={diff}
-            animationKey={animationKey}
-            speed={speed}
-            stageType={snapshot.stageType}
-            transitionPhase={transitionPhase}
-            showRowIds={showRowIds}
-            prevRowCount={prevSnapshot?.rowCount ?? snapshot.rowCount}
-            targetRowCount={snapshot.rowCount}
-            limitValue={limitValue}
-            stageSql={snapshot.sql}
-          />
-        )}
+    <div className="pb-stage relative flex min-h-0 flex-1 flex-col" data-stage-type={snapshot.stageType}>
+      <PlaybackOperationBar
+        stageType={snapshot.stageType}
+        expression={expression}
+        beforeLabel={counts.before}
+        afterLabel={counts.after}
+        countPhase={view?.countPhase ?? "before"}
+        phase={phase}
+        showBefore={prevSnapshot !== null}
+      />
+      <div ref={rootRef} data-stage-root className="min-h-0 flex-1 overflow-auto p-4 lg:p-5">
+        <div data-stage-content>
+          {view?.kind === "join" && committed?.join ? (
+            <JoinPlaybackCanvas model={committed.join} view={view} />
+          ) : view?.kind === "grid" ? (
+            <div className="flex flex-col gap-2">
+              {view.hiddenColumnsLabel && (
+                <p data-hidden-columns className="text-[10px] text-ink-muted">
+                  {view.hiddenColumnsLabel}
+                </p>
+              )}
+              <PlaybackDataGrid
+                view={view}
+                showRowIds={showRowIds}
+                label={`${STAGE_LABEL[snapshot.stageType]} intermediate result`}
+              />
+              {view.caption && (
+                <p data-caption className="text-xs text-ink-secondary">
+                  {view.caption}
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
