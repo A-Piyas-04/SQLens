@@ -38,7 +38,7 @@ export default function QueryToolbar({
         onClick={onRun}
         disabled={isRunning}
         className={cn(
-          !isRunning && "shadow-[2px_2px_0_0_var(--color-text)]",
+          !isRunning && "shadow-[2px_2px_0_0_var(--color-retro-edge)]",
           variant === "default" && "sm:min-w-[168px]"
         )}
       >

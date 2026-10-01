@@ -32,19 +32,19 @@ export default function Panel({
       className={cn(
         "retro-panel bg-surface-raised",
         "transition-[background-color,transform,box-shadow] duration-100 ease-out",
-        interactive && "hover:-translate-x-px hover:-translate-y-px hover:bg-surface-elevated hover:shadow-[5px_5px_0_0_var(--color-text)]",
+        interactive && "hover:-translate-x-px hover:-translate-y-px hover:bg-surface-elevated hover:shadow-[5px_5px_0_0_var(--color-retro-edge)]",
         raised && "surface-3d",
         className
       )}
     >
       {(title || action) && (
-        <header className="relative z-[1] flex items-center gap-3 border-b border-ink bg-ink px-4 py-2 text-surface sm:px-5">
+        <header className="relative z-[1] flex items-center gap-3 border-b border-retro-chrome-dark bg-retro-chrome px-4 py-2 text-white sm:px-5">
           {title ? (
-            <h2 className="min-w-0 shrink truncate font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-surface">
+            <h2 className="min-w-0 shrink truncate font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-white">
               {title}
             </h2>
           ) : null}
-          <span className="min-w-6 flex-1 border-t border-dashed border-surface/40" aria-hidden />
+          <span className="min-w-6 flex-1 border-t border-dashed border-white/40" aria-hidden />
           {action}
         </header>
       )}

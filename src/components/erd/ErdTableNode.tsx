@@ -51,7 +51,7 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
   });
 
   return (
-    <div className="min-w-[248px] overflow-hidden border-2 border-ink bg-surface-elevated shadow-[4px_4px_0_var(--color-text)]">
+    <div className="min-w-[248px] overflow-hidden border-2 border-retro-edge bg-surface-elevated shadow-[4px_4px_0_var(--color-retro-edge)]">
       {columnHandles}
 
       <div className="flex items-center gap-2 border-b border-line bg-accent-soft px-3 py-2.5">

@@ -59,7 +59,7 @@ function ProblemFilters({
         />
       </div>
 
-      <div className="grid grid-cols-4 gap-1 bg-ink p-1">
+      <div className="grid grid-cols-4 gap-1 bg-retro-chrome p-1">
         {(["all", "easy", "medium", "hard"] as const).map((d) => (
           <button
             key={d}
@@ -147,7 +147,7 @@ function ProblemList({
               className={cn(
                 "flex w-full items-start gap-2 border px-2.5 py-2 text-left text-sm transition-[background-color,color,box-shadow,transform]",
                 isActive
-                  ? "translate-x-0.5 translate-y-0.5 border-ink bg-ink text-surface shadow-[inset_2px_2px_0_rgb(0_0_0/0.35)]"
+                  ? "translate-x-0.5 translate-y-0.5 border-retro-chrome-dark bg-retro-chrome text-white shadow-[inset_2px_2px_0_rgb(0_0_0/0.2)]"
                   : "border-line bg-surface-elevated shadow-[2px_2px_0_var(--color-border-strong)] hover:border-ink hover:bg-surface-muted"
               )}
             >
@@ -162,10 +162,10 @@ function ProblemList({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="line-clamp-2 font-medium">
-                  <span className={isActive ? "text-surface/65" : "text-ink-muted"}>{problem.leetcodeId}. </span>
+                  <span className={isActive ? "text-white/70" : "text-ink-muted"}>{problem.leetcodeId}. </span>
                   {problem.title}
                 </span>
-                <span className={cn("mt-0.5 block font-mono text-[10px] uppercase", isActive ? "text-surface/65" : "text-ink-muted")}>
+                <span className={cn("mt-0.5 block font-mono text-[10px] uppercase", isActive ? "text-white/70" : "text-ink-muted")}>
                   {problem.difficulty}
                 </span>
               </span>

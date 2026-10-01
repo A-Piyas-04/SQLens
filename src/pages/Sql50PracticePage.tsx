@@ -218,7 +218,7 @@ export default function Sql50PracticePage() {
     <AppBootGate db={workspace.db} className="h-dvh">
       <Sql50PageLayout
         header={
-          <header className="flex shrink-0 items-center justify-between gap-4 border-b-2 border-ink bg-surface-raised px-4 py-2.5 shadow-[0_3px_0_var(--color-border-strong)] sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-4 border-b-2 border-retro-edge bg-surface-raised px-4 py-2.5 shadow-[0_3px_0_var(--color-border-strong)] sm:px-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <GraduationCap className="size-5 shrink-0 text-accent" aria-hidden />
               <div className="min-w-0">

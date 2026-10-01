@@ -73,7 +73,7 @@ function Sql50ResizableAside({
         className={cn(
           "flex h-full min-h-0 flex-col bg-surface-raised",
           borderClass,
-          "border-ink",
+          "border-retro-edge",
           isResizing && "outline outline-2 outline-accent"
         )}
         aria-label={ariaLabel}
@@ -158,7 +158,7 @@ export default function Sql50PageLayout({
           {left}
         </Sql50ResizableAside>
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-x-2 border-ink bg-surface">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-x-2 border-retro-edge bg-surface">
           {center}
         </main>
 
@@ -247,7 +247,7 @@ export function Sql50WorkbenchTop({ children, className }: WorkbenchSectionProps
   return (
     <div
       className={cn(
-        "shrink-0 border-b-2 border-ink bg-surface-raised px-3 py-3 sm:px-5",
+        "shrink-0 border-b-2 border-retro-edge bg-surface-raised px-3 py-3 sm:px-5",
         className
       )}
     >
@@ -265,7 +265,7 @@ export function Sql50WorkbenchEditor({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden border-b-2 border-ink bg-surface-inset",
+        "flex h-full min-h-0 flex-col overflow-hidden border-b-2 border-retro-edge bg-surface-inset",
         className
       )}
     >

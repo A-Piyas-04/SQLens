@@ -22,6 +22,10 @@
   --color-accent-muted: #d6e0de;
   --color-accent-soft: #cad6d4;
   --color-accent-ink: #0a554f;
+  /* Retro hardware chrome — softer than black, distinct from action teal. */
+  --color-retro-chrome: #315f59;
+  --color-retro-chrome-dark: #274d48;
+  --color-retro-edge: #514b42;
   --color-danger: #a61c1c;
   --color-success: #166534;
   --color-danger-surface: #efe4e4;
@@ -43,7 +47,7 @@
   /* Flat surfaces; floating layers get a crisp offset shadow, never a blur glow. */
   --shadow-card: none;
   --shadow-elevate: 3px 3px 0 0 rgb(28 25 22 / 0.14);
-  --shadow-hard: 4px 4px 0 0 var(--color-text);
+  --shadow-hard: 4px 4px 0 0 var(--color-retro-edge);
   --onboarding-scrim: rgb(28 25 22 / 0.45);
 }
 
@@ -66,6 +70,9 @@
   --color-accent-muted: var(--color-accent-muted);
   --color-accent-soft: var(--color-accent-soft);
   --color-accent-ink: var(--color-accent-ink);
+  --color-retro-chrome: var(--color-retro-chrome);
+  --color-retro-chrome-dark: var(--color-retro-chrome-dark);
+  --color-retro-edge: var(--color-retro-edge);
   --color-danger-surface: var(--color-danger-surface);
   --color-danger-ink: var(--color-danger);
   --color-success-surface: var(--color-success-surface);
@@ -97,7 +104,7 @@
  */
 .retro-panel {
   position: relative;
-  border: 2px solid var(--color-text);
+  border: 2px solid var(--color-retro-edge);
   border-radius: 2px;
   background-color: var(--color-bg-subtle);
   box-shadow: var(--shadow-hard);
@@ -135,13 +142,13 @@
 
 .retro-button {
   border-radius: 2px;
-  box-shadow: 2px 2px 0 var(--color-text);
+  box-shadow: 2px 2px 0 var(--color-retro-edge);
   transform: translate(0, 0);
 }
 
 .retro-button:hover:not(:disabled) {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--color-text);
+  box-shadow: 3px 3px 0 var(--color-retro-edge);
 }
 
 .retro-button:active:not(:disabled),
@@ -154,8 +161,8 @@
   display: flex;
   gap: 3px;
   padding: 3px;
-  border: 1px solid var(--color-text);
-  background-color: var(--color-text);
+  border: 1px solid var(--color-retro-edge);
+  background-color: var(--color-retro-chrome);
 }
 
 .retro-tab {
@@ -191,14 +198,14 @@
 }
 
 .retro-segment[aria-pressed="true"] {
-  border-color: var(--color-text);
-  background-color: var(--color-accent);
+  border-color: var(--color-retro-chrome-dark);
+  background-color: var(--color-retro-chrome);
   color: white;
   box-shadow: inset 2px 2px 0 rgb(0 0 0 / 0.25);
 }
 
 .retro-grip {
-  border: 1px solid var(--color-text);
+  border: 1px solid var(--color-retro-edge);
   border-radius: 1px;
   background:
     repeating-linear-gradient(
@@ -243,7 +250,7 @@
  */
 .surface-3d {
   position: relative;
-  border: 2px solid var(--color-text);
+  border: 2px solid var(--color-retro-edge);
   border-radius: 2px;
   background-color: var(--color-bg-subtle);
   background-image:

@@ -70,7 +70,7 @@ export default function Sql50ActionBar({
           size="sm"
           className={cn(
             rail && "w-full justify-center",
-            !isRunning && "shadow-[2px_2px_0_0_var(--color-text)]"
+            !isRunning && "shadow-[2px_2px_0_0_var(--color-retro-edge)]"
           )}
           onClick={onRun}
           disabled={isRunning}

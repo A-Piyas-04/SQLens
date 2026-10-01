@@ -30,12 +30,12 @@ export default function Sql50ResultsPanel({ rows, children }: Props) {
     <div className="retro-inset flex h-full min-h-0 flex-col overflow-hidden">
       <header
         ref={headerRef}
-        className="flex shrink-0 items-center gap-3 border-b border-ink bg-ink px-3 py-1.5 text-surface"
+        className="flex shrink-0 items-center gap-3 border-b border-retro-chrome-dark bg-retro-chrome px-3 py-1.5 text-white"
       >
         <h2 className="font-mono text-[10px] font-bold uppercase tracking-[0.14em]">Results</h2>
-        <span className="flex-1 border-t border-dashed border-surface/40" aria-hidden />
+        <span className="flex-1 border-t border-dashed border-white/40" aria-hidden />
         {rowLabel ? (
-          <span className="shrink-0 font-mono text-[10px] text-surface/70">{rowLabel}</span>
+          <span className="shrink-0 font-mono text-[10px] text-white/70">{rowLabel}</span>
         ) : null}
       </header>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-2 scrollbar-thin">

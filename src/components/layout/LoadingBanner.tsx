@@ -22,7 +22,7 @@ export default function LoadingBanner({ isVisible }: Props) {
         role="status"
         aria-live="polite"
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-ink">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-retro-chrome">
           <Terminal className="size-3.5 animate-pulse text-surface" aria-hidden />
         </span>
         <div className="min-w-0">

@@ -202,14 +202,14 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
   const modal = (
     // Backdrop
     <div
-      className="fixed inset-0 z-50 flex items-stretch bg-ink/40 "
+      className="retro-scrim fixed inset-0 z-50 flex items-stretch"
       role="dialog"
       aria-modal="true"
       aria-label="SQL Execution Playback"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Panel */}
-      <div className="relative flex flex-1 flex-col overflow-hidden bg-surface-elevated ring-1 ring-line m-3 rounded-sm shadow-md">
+      <div className="retro-panel relative m-3 flex flex-1 flex-col overflow-hidden bg-surface-elevated">
         {/* Header */}
         <header className="flex items-center gap-3 border-b border-line bg-surface-raised px-5 py-3">
           <div className="flex items-center gap-2 min-w-0">

@@ -15,15 +15,15 @@ export type OnboardingTheme = {
 };
 
 const guideTheme: OnboardingTheme = {
-  card: "border-ink shadow-[4px_4px_0_0_var(--color-text)]",
+  card: "border-retro-edge shadow-[4px_4px_0_0_var(--color-retro-edge)]",
   heroBorder: "border-line",
   iconBox: "border-ink bg-surface",
   iconText: "text-ink",
   badge: "border-line-strong text-ink-muted",
   stepLabel: "text-ink-muted",
-  progressActive: "bg-ink",
+  progressActive: "bg-retro-chrome",
   titleClass: "text-ink",
-  bulletClass: "bg-ink",
+  bulletClass: "bg-retro-chrome",
   primaryButton:
     "border-accent bg-accent text-white hover:bg-accent-ink hover:border-accent-ink",
   badgeLabel: "Tour guide",

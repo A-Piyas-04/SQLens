@@ -66,7 +66,7 @@ const PlaybackOperationBar = memo(function PlaybackOperationBar({
         data-phase-label
         className={cn(
           "shrink-0 rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
-          done ? "border-ink bg-ink text-surface" : "border-line-strong text-ink-secondary"
+          done ? "border-retro-chrome-dark bg-retro-chrome text-white" : "border-line-strong text-ink-secondary"
         )}
       >
         {PHASE_LABEL[phase]}

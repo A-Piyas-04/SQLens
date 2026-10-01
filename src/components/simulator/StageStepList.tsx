@@ -51,7 +51,7 @@ export default function StageStepList({
                 {isActive ? (
                   <StageGlyph stageType={snap.stageType} className="relative" />
                 ) : isCompleted ? (
-                  <span className="relative flex size-[18px] items-center justify-center border border-ink bg-ink text-surface">
+                  <span className="relative flex size-[18px] items-center justify-center border border-retro-chrome-dark bg-retro-chrome text-white">
                     <Check className="size-3" aria-hidden />
                   </span>
                 ) : (

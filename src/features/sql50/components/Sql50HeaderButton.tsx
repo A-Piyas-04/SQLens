@@ -14,10 +14,10 @@ export default function Sql50HeaderButton({ className }: Props) {
       className={cn(
         "group relative inline-flex items-center gap-2 overflow-hidden rounded-sm",
         "border border-accent bg-accent px-4 py-2.5",
-        "text-sm font-semibold text-white shadow-[3px_3px_0_0_var(--color-text)]",
+        "text-sm font-semibold text-white shadow-[3px_3px_0_0_var(--color-retro-edge)]",
         "transition-[transform,box-shadow,background-color] duration-150 ease-out",
-        "hover:bg-accent-ink hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_0_var(--color-text)]",
-        "active:translate-x-0 active:translate-y-0 active:shadow-[1px_1px_0_0_var(--color-text)]",
+        "hover:bg-accent-ink hover:-translate-x-px hover:-translate-y-px hover:shadow-[4px_4px_0_0_var(--color-retro-edge)]",
+        "active:translate-x-0 active:translate-y-0 active:shadow-[1px_1px_0_0_var(--color-retro-edge)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
         "motion-reduce:transition-none",
         className
