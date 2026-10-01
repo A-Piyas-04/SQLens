@@ -121,6 +121,7 @@ const SqlEditor = forwardRef<SqlEditorHandle, Props>(function SqlEditor(
       title="SQL Editor"
       action={toolbar}
       interactive
+      raised
       dataTour="sql-editor"
     >
       <div className="overflow-hidden rounded-sm border border-line bg-surface-inset transition-colors duration-200 hover:border-line-strong/70">

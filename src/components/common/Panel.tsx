@@ -9,6 +9,8 @@ type Props = {
   children: ReactNode;
   className?: string;
   interactive?: boolean;
+  /** Extruded 3D slab look for top-level workspace cards. */
+  raised?: boolean;
   /** Target for onboarding spotlight (`data-tour`) */
   dataTour?: string;
 };
@@ -20,6 +22,7 @@ export default function Panel({
   children,
   className,
   interactive = false,
+  raised = false,
   dataTour,
 }: Props) {
   return (
@@ -30,6 +33,7 @@ export default function Panel({
         "rounded-sm border border-line bg-surface-inset",
         "transition-colors duration-150 ease-out",
         interactive && "hover:border-line-strong hover:bg-surface-raised",
+        raised && "surface-3d",
         className
       )}
     >

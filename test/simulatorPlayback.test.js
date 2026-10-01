@@ -47,9 +47,14 @@ async function clickButtonWithText(driver, text) {
     return btn;
 }
 
+async function clickSimulate(driver) {
+    const btn = await driver.wait(until.elementLocated(By.css('[data-tour="simulator-panel"] button.retro-key')), 20000);
+    await driver.wait(until.elementIsEnabled(btn), 20000);
+    await btn.click();
+}
+
 async function openPlayback(driver) {
-    await clickButtonWithText(driver, 'Simulate Query');
-    await clickButtonWithText(driver, 'Play Simulation');
+    await clickSimulate(driver);
     return driver.wait(until.elementLocated(By.css('[role="dialog"][aria-label="SQL Execution Playback"]')), 20000);
 }
 
@@ -178,7 +183,7 @@ describe('Simulator playback (fullscreen) E2E', function () {
     it('persists the collapsed lesson panel across close/reopen', async function () {
         await driver.findElement(By.css('body')).sendKeys(Key.ESCAPE);
         await driver.wait(async () => (await driver.findElements(By.css('[role="dialog"]'))).length === 0, 5000);
-        await clickButtonWithText(driver, 'Play Simulation');
+        await clickSimulate(driver);
         await driver.wait(until.elementLocated(By.css('[data-lesson-rail]')), 10000);
         await (await button(driver, 'Expand lesson panel')).click();
         await driver.wait(async () => (await driver.findElements(By.css('[data-lesson-rail]'))).length === 0, 5000);

@@ -17,8 +17,8 @@ export default function AppHeader({ actions, promo, onStartTour }: Props) {
   const hasToolbar = Boolean(onStartTour || actions || promo);
 
   return (
-    <header className="border-b border-line bg-surface-inset">
-      <div className="flex min-h-[4rem] items-center gap-4 py-3 sm:gap-6">
+    <header className="surface-3d rounded-sm border border-line bg-surface-inset">
+      <div className="flex min-h-[4rem] items-center gap-4 px-4 py-3 sm:gap-6 sm:px-5">
         {/* Brand */}
         <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
           <SqlensLogo size={34} className="shrink-0" aria-hidden />

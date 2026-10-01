@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 
 import OnboardingTour from "./components/onboarding/OnboardingTour";
 import AiSqlGeneratorPopover from "./components/ai/AiSqlGeneratorPopover";
-import SimulatorPanel from "./components/simulator/SimulatorPanel";
+import SimulateButton from "./components/simulator/SimulateButton";
 import AppBootGate from "./components/layout/AppBootGate";
 import AppHeader from "./components/layout/AppHeader";
 import LoadingBanner from "./components/layout/LoadingBanner";
@@ -192,13 +192,14 @@ export default function App() {
             <StatusMessage variant="success" message={workspace.message} />
           ) : null}
 
-          <ResultTable rows={workspace.rows} />
-
-          <SimulatorPanel
-            query={workspace.query}
-            selectedText={workspace.selectedText}
-            db={db}
-          />
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] md:items-stretch">
+            <ResultTable rows={workspace.rows} />
+            <SimulateButton
+              query={workspace.query}
+              selectedText={workspace.selectedText}
+              db={db}
+            />
+          </div>
 
           <QueryHistory
             items={workspace.history}
@@ -210,6 +211,7 @@ export default function App() {
             dataTour="erd-section"
             title="Entity Relationship Diagram"
             className="scroll-mt-6"
+            raised
           >
             <ErdViewer
               tables={workspace.tables}

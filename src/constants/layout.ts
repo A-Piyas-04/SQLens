@@ -3,6 +3,8 @@ export const SIDEBAR_STORAGE_KEY = "sqlens-sidebar-width";
 export const SIDEBAR_MIN_WIDTH = 240;
 export const SIDEBAR_MAX_WIDTH = 520;
 export const SIDEBAR_DEFAULT_WIDTH = 300;
+export const SIDEBAR_COLLAPSED_STORAGE_KEY = "sqlens-sidebar-collapsed";
+export const SIDEBAR_COLLAPSED_WIDTH = 56;
 
 export const SQL50_LEFT_SIDEBAR_STORAGE_KEY = "sql50-left-sidebar-width";
 export const SQL50_RIGHT_SIDEBAR_STORAGE_KEY = "sql50-right-sidebar-width";

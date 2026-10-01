@@ -14,7 +14,7 @@ export default function QueryHistory({ items, onSelect }: Props) {
 
   return (
     <AnimatedReveal>
-      <Panel title="Query History">
+      <Panel title="Query History" raised>
         <div className="space-y-2">
           {items.map((item, index) => (
             <button

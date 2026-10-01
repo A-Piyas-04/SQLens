@@ -22,8 +22,8 @@ export default function ResultTable({ rows, embedded = false }: Props) {
     }
 
     return (
-      <Panel title="Results" dataTour="results-panel">
-        <div className="flex flex-col items-center justify-center rounded-sm border border-dashed border-accent/35 bg-surface-inset px-6 py-10 text-center">
+      <Panel title="Results" dataTour="results-panel" raised className="h-full">
+        <div className="flex min-h-[180px] flex-col items-center justify-center rounded-sm border border-dashed border-accent/35 bg-surface-inset px-6 py-10 text-center">
           <p className="text-sm font-medium text-accent-ink">No results yet</p>
           <p className="mt-1 max-w-sm text-xs leading-relaxed text-ink-muted">
             Run a query to see rows here. Use Ctrl+Enter or the Run button in the editor.
@@ -132,10 +132,12 @@ export default function ResultTable({ rows, embedded = false }: Props) {
   }
 
   return (
-    <AnimatedReveal>
+    <AnimatedReveal className="h-full">
       <Panel
         title="Results"
         dataTour="results-panel"
+        raised
+        className="h-full"
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" size="sm" onClick={copyResults}>

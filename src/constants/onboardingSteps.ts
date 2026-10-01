@@ -97,7 +97,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     highlights: [
       "Stage-by-stage playback (FROM → JOIN → WHERE → …)",
       "Rows animate as they're filtered, joined, or aggregated",
-      "Run Simulate Query, then scrub the timeline at your pace",
+      "Press Simulate to open fullscreen playback, then scrub at your pace",
     ],
   },
   {

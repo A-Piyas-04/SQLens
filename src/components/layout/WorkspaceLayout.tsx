@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 
+import { useCollapsibleSidebar } from "../../hooks/useCollapsibleSidebar";
 import { cn } from "../../lib/utils/cn";
 import ResizableSidebar from "./ResizableSidebar";
 
@@ -18,6 +20,8 @@ export default function WorkspaceLayout({
   onResizeStart,
   children,
 }: Props) {
+  const { collapsed, toggle } = useCollapsibleSidebar();
+
   return (
     <div
       className={cn(
@@ -28,9 +32,24 @@ export default function WorkspaceLayout({
       <div className="lg:hidden">
         <aside
           data-tour="workspace-sidebar"
-          className="rounded-sm border border-line bg-surface-raised p-4 shadow-sm"
+          className="surface-3d rounded-sm border border-line bg-surface-raised"
         >
-          {sidebar}
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={!collapsed}
+            className="flex w-full items-center justify-between px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted hover:text-ink"
+          >
+            Projects · Schema
+            <ChevronDown
+              className={cn(
+                "size-4 transition-transform duration-200",
+                collapsed && "-rotate-90"
+              )}
+              aria-hidden
+            />
+          </button>
+          {collapsed ? null : <div className="px-4 pb-4">{sidebar}</div>}
         </aside>
       </div>
 
@@ -38,6 +57,8 @@ export default function WorkspaceLayout({
         width={sidebarWidth}
         isResizing={isResizing}
         onResizeStart={onResizeStart}
+        collapsed={collapsed}
+        onToggleCollapsed={toggle}
       >
         {sidebar}
       </ResizableSidebar>
