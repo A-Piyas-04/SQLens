@@ -93,7 +93,7 @@ export default function ProblemStatementModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="shrink-0 rounded-sm border border-danger-ink bg-danger-ink p-1 text-white transition-colors hover:border-red-800 hover:bg-red-800"
             aria-label="Close"
           >
             <X className="size-4" aria-hidden />

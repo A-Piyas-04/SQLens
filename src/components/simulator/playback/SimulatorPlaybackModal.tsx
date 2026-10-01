@@ -238,7 +238,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
             ref={closeButtonRef}
             aria-label="Close playback"
             onClick={onClose}
-            className="flex size-7 shrink-0 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            className="flex size-7 shrink-0 items-center justify-center rounded-sm border border-danger-ink bg-danger-ink text-white transition-colors hover:border-red-800 hover:bg-red-800"
           >
             <X className="size-3.5" aria-hidden />
           </button>
@@ -365,7 +365,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
                 type="button"
                 onClick={() => setShowLessonMobile(false)}
                 aria-label="Close lesson"
-                className="flex size-7 items-center justify-center rounded-sm border border-line bg-surface-muted text-ink-muted"
+                className="flex size-7 items-center justify-center rounded-sm border border-danger-ink bg-danger-ink text-white transition-colors hover:border-red-800 hover:bg-red-800"
               >
                 <X className="size-3.5" aria-hidden />
               </button>

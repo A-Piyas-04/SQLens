@@ -96,7 +96,7 @@ export default function AiCoachPanel({
         <button
           type="button"
           onClick={onToggle}
-          className="rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
+          className="rounded-sm border border-danger-ink bg-danger-ink p-1 text-white transition-colors hover:border-red-800 hover:bg-red-800"
           aria-label="Close AI coach"
         >
           <X className="size-4" aria-hidden />

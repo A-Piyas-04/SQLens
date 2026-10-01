@@ -194,7 +194,7 @@ export default function ProjectSwitcher({
                             e.stopPropagation();
                             setConfirmDeleteId(null);
                           }}
-                          className="shrink-0 rounded bg-surface-muted px-2 py-0.5 text-xs text-ink-muted hover:bg-surface-muted"
+                          className="shrink-0 rounded-sm border border-danger-ink bg-danger-ink px-2 py-0.5 text-xs font-medium text-white hover:bg-red-800"
                         >
                           Cancel
                         </button>

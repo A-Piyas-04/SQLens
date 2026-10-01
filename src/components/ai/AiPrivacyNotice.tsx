@@ -29,7 +29,7 @@ export default function AiPrivacyNotice({ onContinue, onCancel }: Props) {
         Do not include passwords, credentials, production secrets, or sensitive personal data.
       </p>
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+        <Button type="button" variant="danger-solid" size="sm" onClick={onCancel}>
           Cancel
         </Button>
         <Button type="button" variant="primary" size="sm" onClick={onContinue}>

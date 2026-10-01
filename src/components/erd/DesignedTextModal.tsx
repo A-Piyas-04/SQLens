@@ -73,9 +73,9 @@ export default function DesignedTextModal({ text, onClose }: Props) {
             type="button"
             onClick={onClose}
             className={cn(
-              "shrink-0 rounded-sm p-2 text-ink-muted",
-              "transition-colors hover:bg-surface-muted hover:text-ink",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              "shrink-0 rounded-sm border border-danger-ink bg-danger-ink p-2 text-white",
+              "transition-colors hover:border-red-800 hover:bg-red-800",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-ink"
             )}
             aria-label="Close"
           >

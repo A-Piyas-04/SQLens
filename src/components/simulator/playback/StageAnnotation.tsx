@@ -93,7 +93,7 @@ export default function StageAnnotation({ snapshot, diff, animationKey }: Props)
       <button
         aria-label="Dismiss explanation"
         onClick={() => setVisible(false)}
-        className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-sm text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink-secondary"
+        className="absolute right-2.5 top-2.5 flex size-5 items-center justify-center rounded-sm border border-danger-ink bg-danger-ink text-white transition-colors hover:border-red-800 hover:bg-red-800"
       >
         <X className="size-3" aria-hidden />
       </button>

@@ -148,7 +148,7 @@ export default function PracticeRadialMenu({
                 <button
                   type="button"
                   onClick={() => onSelectCategory(null)}
-                  className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
+                  className="shrink-0 rounded-sm border border-danger-ink bg-danger-ink p-1 text-white transition-colors hover:border-red-800 hover:bg-red-800"
                   aria-label="Back to categories"
                 >
                   <X className="size-4" aria-hidden />
@@ -233,7 +233,9 @@ export default function PracticeRadialMenu({
         )}
       >
         {isOpen ? (
-          <X className="size-4 shrink-0" aria-hidden />
+          <span className="inline-flex shrink-0 items-center justify-center rounded-sm border border-danger-ink bg-danger-ink p-0.5 text-white">
+            <X className="size-4" aria-hidden />
+          </span>
         ) : (
           <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} className={cn("shrink-0", headerActionIconAccentClass)} />
         )}
