@@ -211,7 +211,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
       {/* Panel */}
       <div className="retro-panel relative m-3 flex flex-1 flex-col overflow-hidden bg-surface-elevated">
         {/* Header */}
-        <header className="flex items-center gap-3 border-b border-line bg-surface-raised px-5 py-3">
+        <header className="flex items-center gap-3 border-b border-dashed border-retro-edge/40 px-6 py-3.5">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
               Query Execution Simulation

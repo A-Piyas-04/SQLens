@@ -44,7 +44,7 @@ export default function ResizableSidebar({
             aria-label="Expand sidebar"
             title="Expand sidebar"
             className={cn(
-              "group flex h-full w-full flex-col items-center gap-4 py-4",
+              "group flex h-full w-full flex-col items-center gap-4 py-6",
               "text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-ink"
             )}
           >
@@ -56,7 +56,7 @@ export default function ResizableSidebar({
             </span>
           </button>
         ) : (
-          <div className="h-full overflow-y-auto p-4 scrollbar-thin">
+          <div className="h-full overflow-y-auto px-5 py-6 scrollbar-thin">
             {children}
           </div>
         )}

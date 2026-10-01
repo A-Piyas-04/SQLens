@@ -26,13 +26,6 @@ type SimulateState =
       sql: string;
     };
 
-const SCREW_POSITIONS = [
-  "left-2 top-2",
-  "right-2 top-2",
-  "left-2 bottom-2",
-  "right-2 bottom-2",
-];
-
 export default function SimulateButton({ query, selectedText, db }: Props) {
   const [state, setState] = useState<SimulateState>({ status: "idle" });
 
@@ -80,10 +73,6 @@ export default function SimulateButton({ query, selectedText, db }: Props) {
 
   return (
     <div className="retro-console" data-tour="simulator-panel">
-      {SCREW_POSITIONS.map((pos) => (
-        <span key={pos} className={`retro-console__screw ${pos}`} aria-hidden />
-      ))}
-
       <div className="retro-console__label">
         <span>Exec · Sim</span>
         <span className="retro-led" data-state={ledState} aria-hidden />

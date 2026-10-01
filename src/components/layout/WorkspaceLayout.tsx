@@ -38,7 +38,7 @@ export default function WorkspaceLayout({
             type="button"
             onClick={toggle}
             aria-expanded={!collapsed}
-            className="flex w-full items-center justify-between px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted hover:text-ink"
+            className="flex w-full items-center justify-between px-6 py-3.5 font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted hover:text-ink"
           >
             Projects · Schema
             <ChevronDown
@@ -49,7 +49,7 @@ export default function WorkspaceLayout({
               aria-hidden
             />
           </button>
-          {collapsed ? null : <div className="px-4 pb-4">{sidebar}</div>}
+          {collapsed ? null : <div className="px-5 pb-6">{sidebar}</div>}
         </aside>
       </div>
 

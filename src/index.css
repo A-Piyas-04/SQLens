@@ -102,19 +102,86 @@
  * Solid surfaces, hard shadows, inset wells, and mechanical controls replace
  * translucent cards, soft elevation, underline tabs, and pill-shaped grips.
  */
-.retro-panel {
-  border: 2px solid var(--color-retro-edge);
-  border-radius: 2px;
-  background-color: var(--color-bg-subtle);
-  box-shadow: var(--shadow-hard);
-}
-
-.retro-panel::before {
-  content: "";
-  pointer-events: none;
-  position: absolute;
-  inset: 3px;
-  border: 1px solid rgb(28 25 22 / 0.12);
+/*
+ * Screwed-down hardware board: warm gradient face, fine grain, a stacked
+ * bottom edge, and four corner screws painted as background layers so any
+ * element (fixed, absolute, or static) gets them without extra markup.
+ * Children with their own background paint over the screws.
+ */
+.retro-panel,
+.surface-3d,
+.retro-console {
+  --board-screw-head: radial-gradient(
+    circle 4.5px at 45% 45%,
+    #f6f1e7 0,
+    #c9c0ae 1.5px,
+    #9c9382 3.6px,
+    #6f675a 4.2px,
+    transparent 4.5px
+  );
+  --board-screw-slot: linear-gradient(
+    145deg,
+    transparent 42%,
+    rgb(28 25 22 / 0.5) 42% 58%,
+    transparent 58%
+  );
+  border: 1px solid #a89f8e;
+  border-radius: 10px;
+  background-color: #e4dccb;
+  background-image:
+    var(--board-screw-slot),
+    var(--board-screw-slot),
+    var(--board-screw-slot),
+    var(--board-screw-slot),
+    var(--board-screw-head),
+    var(--board-screw-head),
+    var(--board-screw-head),
+    var(--board-screw-head),
+    repeating-linear-gradient(0deg, rgb(28 25 22 / 0.025) 0 2px, transparent 2px 4px),
+    linear-gradient(180deg, #efe8da 0%, #ddd4c2 100%);
+  background-position:
+    left 10px top 10px,
+    right 10px top 10px,
+    left 10px bottom 10px,
+    right 10px bottom 10px,
+    left 8px top 8px,
+    right 8px top 8px,
+    left 8px bottom 8px,
+    right 8px bottom 8px,
+    0 0,
+    0 0;
+  background-size:
+    6px 6px,
+    6px 6px,
+    6px 6px,
+    6px 6px,
+    10px 10px,
+    10px 10px,
+    10px 10px,
+    10px 10px,
+    auto,
+    auto;
+  background-repeat:
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    repeat,
+    no-repeat;
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.75),
+    inset 0 -2px 0 rgb(28 25 22 / 0.08),
+    0 1px 0 #b9b09f,
+    0 2px 0 #b3aa98,
+    0 3px 0 #ada492,
+    0 4px 0 #a79e8b,
+    0 5px 0 #a19885,
+    0 6px 0 #9b927f,
+    0 16px 22px -10px rgb(28 25 22 / 0.45);
 }
 
 .retro-inset {
@@ -292,25 +359,8 @@
   box-shadow: var(--shadow-card);
 }
 
-/*
- * Extruded slab: a lit top edge, a stacked solid "thickness" below,
- * and a soft contact shadow so the card reads as a raised block.
- */
 .surface-3d {
   position: relative;
-  border: 2px solid var(--color-retro-edge);
-  border-radius: 2px;
-  background-color: var(--color-bg-subtle);
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgb(28 25 22 / 0.025) 0 1px,
-      transparent 1px 3px
-    );
-  box-shadow:
-    inset 0 0 0 3px var(--color-bg-subtle),
-    inset 0 0 0 4px var(--color-border-strong),
-    var(--shadow-hard);
 }
 
 /* Retro hardware "Simulate" button */
@@ -322,45 +372,6 @@
   flex-direction: column;
   gap: 0.9rem;
   padding: 1.1rem 1rem 1rem;
-  border: 1px solid #a89f8e;
-  border-radius: 10px;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgb(28 25 22 / 0.025) 0 2px,
-      transparent 2px 4px
-    ),
-    linear-gradient(180deg, #efe8da 0%, #ddd4c2 100%);
-  box-shadow:
-    inset 0 2px 0 rgb(255 255 255 / 0.75),
-    inset 0 -2px 0 rgb(28 25 22 / 0.08),
-    0 1px 0 #b9b09f,
-    0 2px 0 #b3aa98,
-    0 3px 0 #ada492,
-    0 4px 0 #a79e8b,
-    0 5px 0 #a19885,
-    0 6px 0 #9b927f,
-    0 16px 22px -10px rgb(28 25 22 / 0.45);
-}
-
-.retro-console__screw {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 9999px;
-  background: radial-gradient(circle at 35% 35%, #f6f1e7, #9c9382 70%);
-  box-shadow: inset 0 0 0 1px rgb(28 25 22 / 0.25);
-}
-
-.retro-console__screw::after {
-  content: "";
-  position: absolute;
-  left: 1px;
-  right: 1px;
-  top: 50%;
-  height: 1px;
-  background: rgb(28 25 22 / 0.45);
-  transform: rotate(-35deg);
 }
 
 .retro-console__label {

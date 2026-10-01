@@ -134,7 +134,7 @@ export default function PracticeRadialMenu({
               className={cn(
                 "practice-radial-panel pointer-events-auto absolute z-50",
                 "w-[min(calc(100vw-2rem),280px)]",
-                "retro-panel bg-surface-elevated p-4",
+                "retro-panel p-5",
                 "right-full top-0 mr-3 max-sm:fixed max-sm:right-4 max-sm:top-16 max-sm:mr-0"
               )}
             >
