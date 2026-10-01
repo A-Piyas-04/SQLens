@@ -24,6 +24,7 @@ dist-ssr
 
 # Internal security notes
 Docs/SECURITY_ISSUES.md
+Docs/SQLens_Public_Security_Implementation_Plan.md
 
 # Editor directories and files
 .vscode/*

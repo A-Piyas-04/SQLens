@@ -195,8 +195,11 @@ export default function PracticeRadialMenu({
                 >
                   <span
                     className={cn(
-                      "max-w-[8.5rem] truncate text-right text-xs font-medium leading-tight",
-                      isActive ? "text-accent-ink" : "text-ink"
+                      "whitespace-nowrap rounded-sm border px-2 py-1 font-mono text-[10px] font-semibold uppercase leading-none tracking-[0.12em]",
+                      "shadow-[2px_2px_0_0_var(--color-retro-edge)] transition-colors duration-100",
+                      isActive
+                        ? "border-retro-chrome-dark bg-retro-chrome text-white"
+                        : "border-retro-edge bg-[#efe8da] text-ink group-hover:bg-surface-elevated"
                     )}
                   >
                     {category.title}
