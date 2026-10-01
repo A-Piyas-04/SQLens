@@ -79,6 +79,35 @@ describe("buildJoinMatchSteps", () => {
     expect(steps.find((s) => s.leftId === "l1")?.pairs).toEqual([{ rightId: "r1" }]);
     expect(steps.find((s) => s.leftId === "l2")?.pairs).toEqual([{ rightId: "r2" }]);
   });
+
+  it("fans out one-to-many matches", () => {
+    const leftRows = [row("d1", { id: 1 }), row("d2", { id: 2 })];
+    const rightRows = [
+      row("e1", { id: 1, department_id: 1 }),
+      row("e2", { id: 2, department_id: 1 }),
+      row("e3", { id: 3, department_id: 2 }),
+    ];
+    const steps = buildJoinMatchSteps(leftRows, rightRows, [], "id", "department_id", false);
+    expect(steps[0].pairs).toEqual([{ rightId: "e1" }, { rightId: "e2" }]);
+    expect(steps[1].pairs).toEqual([{ rightId: "e3" }]);
+  });
+
+  it("is not fooled by joined rows whose duplicate column names collapsed", () => {
+    const leftRows = [row("d1", { id: 1 }), row("d4", { id: 4 })];
+    const rightRows = [row("e1", { id: 1, department_id: 1 }), row("e4", { id: 4, department_id: 3 })];
+    // SELECT * collapsed d.id and e.id into the employee id.
+    const joined = [row("j1", { id: 1, department_id: 1 }), row("j2", { id: null, department_id: null })];
+    const steps = buildJoinMatchSteps(leftRows, rightRows, joined, "id", "department_id", true);
+    expect(steps[0].pairs).toEqual([{ rightId: "e1" }]);
+    expect(steps[1].pairs).toEqual([{ null: true }]);
+  });
+
+  it("NULL keys never match", () => {
+    const leftRows = [row("l1", { k: null })];
+    const rightRows = [row("r1", { k: null })];
+    const steps = buildJoinMatchSteps(leftRows, rightRows, [], "k", "k", false);
+    expect(steps[0].pairs).toEqual([]);
+  });
 });
 
 describe("resolvePlaybackJoinKeys", () => {

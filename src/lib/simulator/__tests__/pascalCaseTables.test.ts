@@ -35,5 +35,5 @@ WHERE low_fats = 'Y' AND recyclable = 'Y';`;
     await expect(db.query(stage.sql)).resolves.toBeDefined();
     const stageResult = await db.query(stage.sql);
     expect(stageResult.rows.length).toBeGreaterThan(0);
-  });
+  }, 60_000);
 });

@@ -262,6 +262,18 @@ describe("assignRowIds", () => {
     expect(tracked.map((r) => r._rowId)).toEqual(["row-0", "row-1", "row-2"]);
   });
 
+  it("a second expansion never reuses a row-new id from an earlier one", () => {
+    const prev = [
+      { _rowId: "row-0", k: 1 },
+      { _rowId: "row-new-0", k: 1 },
+      { _rowId: "row-new-1", k: 2 },
+    ];
+    const current = [{ k: 1 }, { k: 1 }, { k: 1 }, { k: 2 }, { k: 2 }];
+    const ids = assignRowIds(current, prev).map((r) => r._rowId);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.slice(0, 2)).toEqual(["row-0", "row-new-0"]);
+  });
+
   it("WHERE stage: preserves IDs for matching rows", () => {
     const prev = assignRowIds(baseRows, null);
     const filtered = [baseRows[0], baseRows[2]]; // Alice and Carla
@@ -341,7 +353,40 @@ describe("diffSnapshots", () => {
 
     const diff = diffSnapshots(prev, curr);
     const reordered = diff.rowDiffs.filter((d) => d.status === "reordered");
-    expect(reordered).toHaveLength(2);
+    // Swapping two rows is one move relative to the other survivor.
+    expect(reordered).toHaveLength(1);
+  });
+
+  it("removing a row does not mark following survivors reordered", () => {
+    const rows = makeTracked([{ v: "A" }, { v: "B" }, { v: "C" }, { v: "D" }]);
+    const prev = makeSnapshot("from", rows);
+    const curr = { ...makeSnapshot("where", [rows[0], rows[2], rows[3]]), stageType: "WHERE" as const };
+
+    const diff = diffSnapshots(prev, curr);
+    expect(diff.rowDiffs.filter((d) => d.status === "reordered")).toHaveLength(0);
+    expect(diff.rowDiffs.find((d) => d.rowId === "row-2")?.status).toBe("unchanged");
+    expect(diff.rowDiffs.find((d) => d.rowId === "row-3")?.status).toBe("unchanged");
+  });
+
+  it("detects the actual mover in A C B D", () => {
+    const rows = makeTracked([{ v: "A" }, { v: "B" }, { v: "C" }, { v: "D" }]);
+    const prev = makeSnapshot("select", rows);
+    const curr = makeSnapshot("order_by", [rows[0], rows[2], rows[1], rows[3]]);
+
+    const diff = diffSnapshots(prev, curr);
+    const movers = diff.rowDiffs.filter((d) => d.status === "reordered").map((d) => d.rowId);
+    expect(movers).toHaveLength(1);
+    expect(["row-1", "row-2"]).toContain(movers[0]);
+    expect(diff.rowDiffs.find((d) => d.rowId === "row-0")?.status).toBe("unchanged");
+    expect(diff.rowDiffs.find((d) => d.rowId === "row-3")?.status).toBe("unchanged");
+  });
+
+  it("full reversal marks all but one row reordered", () => {
+    const rows = makeTracked([{ v: 1 }, { v: 2 }, { v: 3 }, { v: 4 }]);
+    const prev = makeSnapshot("select", rows);
+    const curr = makeSnapshot("order_by", [...rows].reverse());
+    const diff = diffSnapshots(prev, curr);
+    expect(diff.rowDiffs.filter((d) => d.status === "reordered")).toHaveLength(3);
   });
 
   it("detects null-introduced columns (LEFT JOIN)", () => {
