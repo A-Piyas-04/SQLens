@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "mocha",
+    "test:unit": "vitest run",
     "test:ui": "vitest --ui"
   },
   "devDependencies": {
@@ -34,9 +35,11 @@
     "html-to-image": "^1.11.11",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.16.0",
+    "mocha": "^11.8.0",
     "node-sql-parser": "^5.4.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "selenium-webdriver": "^4.47.0"
   }
 }
