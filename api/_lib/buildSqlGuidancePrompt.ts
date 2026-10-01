@@ -1,3 +1,5 @@
+import { UNTRUSTED_CONTENT_NOTICE, wrapUntrustedContent } from "./untrustedContent";
+
 const MAX_SCHEMA_CHARS = 4_000;
 
 export function buildSqlGuidancePrompt(
@@ -9,11 +11,12 @@ export function buildSqlGuidancePrompt(
       ? `\nActive database schema (use only these tables/columns when naming objects):\n${schema.trim().slice(0, MAX_SCHEMA_CHARS)}\n`
       : "\nNo schema was provided. Use generic PostgreSQL concepts and table names only if the user mentioned them.\n";
 
-  return `You are a PostgreSQL learning tutor for SQLens (PGlite in the browser). The student describes a query goal in natural language. You suggest HOW to approach the problem — you do NOT write SQL for them.
+  const untrusted = wrapUntrustedContent(`Student goal:\n${userPrompt}\n${schemaBlock}`);
 
-Student goal:
-${userPrompt}
-${schemaBlock}
+  return `APPLICATION INSTRUCTIONS
+You are a PostgreSQL learning tutor for SQLens (PGlite in the browser). The student describes a query goal in natural language. You suggest HOW to approach the problem — you do NOT write SQL for them.
+
+${UNTRUSTED_CONTENT_NOTICE}
 
 Respond with ONLY a single JSON object (no markdown, no code fences, no prose before or after) matching this exact shape:
 {
@@ -38,5 +41,9 @@ Rules:
 - Compare JOIN types or GROUP BY vs HAVING when relevant; do not pick one final query for the student.
 - techniques must have at least 2 items when multiple clauses apply.
 - problemBreakdown, tablesAndColumns, and pitfalls must each have at least 1 item.
-- Ground table/column names in the provided schema when available.`;
+- Ground table/column names in the provided schema when available.
+
+${untrusted}
+
+Reply with the JSON object described in the application instructions.`;
 }

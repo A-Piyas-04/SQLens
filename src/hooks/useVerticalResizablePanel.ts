@@ -5,6 +5,7 @@ import {
   SQL50_RESULTS_MAX_HEIGHT_RATIO,
   SQL50_RESULTS_MIN_HEIGHT,
 } from "../constants/layout";
+import { safeSetLocalStorage } from "../lib/storage/safeStorage";
 
 export type VerticalResizablePanelOptions = {
   minHeight?: number;
@@ -115,7 +116,7 @@ export function useVerticalResizablePanel(
   }, [getMaxHeight, isResizing, resolved.minHeight]);
 
   useEffect(() => {
-    window.localStorage.setItem(resolved.storageKey, String(height));
+    safeSetLocalStorage(resolved.storageKey, String(height));
   }, [height, resolved.storageKey]);
 
   useEffect(() => {

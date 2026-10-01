@@ -77,12 +77,12 @@ export default function App() {
     editorRef.current?.insertAtCursor(text);
   }
 
-  function handleClearLocalData() {
+  async function handleClearLocalData() {
     const confirmed = window.confirm(
-      "This will remove all local SQLens data on this browser (projects, drafts, query history, and simulator preferences). Continue?"
+      "This will remove all local SQLens data on this browser (projects, their databases, drafts, query history, SQL50 progress, and preferences). Continue?"
     );
     if (!confirmed) return;
-    clearAllLocalData();
+    await clearAllLocalData();
     window.location.reload();
   }
 

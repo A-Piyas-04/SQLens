@@ -1,5 +1,6 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import toast from "react-hot-toast";
 
 import { DEFAULT_QUERY } from "../constants/queries";
 import { getSampleDatabaseById } from "../data/sampleDatabases";
@@ -78,7 +79,12 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   }, [projectId, refreshSchema, startUiTransition]);
 
   useEffect(() => {
-    setProjectDraft(projectId, query);
+    if (setProjectDraft(projectId, query) === "too-large") {
+      toast("This script is too large to auto-save, but you can still run it.", {
+        id: "sqlens-draft-too-large",
+        icon: "ℹ️",
+      });
+    }
   }, [projectId, query]);
 
   const applyQueryResult = useCallback(

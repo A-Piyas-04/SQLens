@@ -1,266 +1,157 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 
 import { buildSqlGenerationPrompt } from "../prompts/sqlPrompt";
 import { buildSqlGuidancePrompt } from "../prompts/sqlGuidancePrompt";
+import { buildSql50CoachingPrompt } from "../prompts/sql50CoachingPrompt";
+import { generateWithGemini } from "../services/gemini";
+import { consumeDailyAiQuota } from "../utils/dailyAiQuota";
 import {
-  buildSql50CoachingPrompt,
-  type Sql50CoachingContext,
-} from "../prompts/sql50CoachingPrompt";
-import {
-  AiModelUnavailableError,
-  AiQuotaExceededError,
-  generateWithGemini,
-} from "../services/gemini";
+  AiResponseFormatError,
+  resolveSafeAiError,
+  SAFE_AI_MESSAGES,
+} from "../utils/safeApiError";
 import {
   GUIDANCE_SQL_REJECTED_MESSAGE,
   sanitizeGuidance,
 } from "../utils/sanitizeGuidance";
 import { sanitizeGeneratedSql } from "../utils/sanitizeSql";
+import {
+  validateCoachingRequest,
+  validateGuidanceRequest,
+  validatePromptRequest,
+} from "../utils/validateAiRequest";
 
 const router = Router();
-const MAX_PROMPT_CHARS = 2_000;
-const MAX_SCHEMA_CHARS = 4_000;
 
-function parsePrompt(body: unknown): string {
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    !("prompt" in body) ||
-    typeof (body as { prompt: unknown }).prompt !== "string"
-  ) {
-    throw new Error("Request body must include a non-empty string prompt.");
-  }
-
-  const prompt = (body as { prompt: string }).prompt.trim();
-
-  if (!prompt) {
-    throw new Error("Request body must include a non-empty string prompt.");
-  }
-
-  if (prompt.length > MAX_PROMPT_CHARS) {
-    throw new Error(
-      `Prompt is too long. Maximum length is ${MAX_PROMPT_CHARS} characters.`
-    );
-  }
-
-  return prompt;
+/** Legacy direct-SQL endpoint; the UI uses guidance routes, so production exposure is opt-in. */
+function isLegacyGenerateSqlEnabled(): boolean {
+  return (
+    process.env.NODE_ENV !== "production" ||
+    process.env.ENABLE_LEGACY_GENERATE_SQL === "true"
+  );
 }
 
-type GuidanceBody = {
-  prompt: string;
-  schema?: string;
+/** Model output that fails validation is a provider problem, not a client error. */
+function sanitizeGuidanceOutput(raw: string) {
+  try {
+    return sanitizeGuidance(raw);
+  } catch (error) {
+    if (error instanceof Error && error.message === GUIDANCE_SQL_REJECTED_MESSAGE) {
+      throw error;
+    }
+    throw new AiResponseFormatError();
+  }
+}
+
+type AiRouteOptions<T> = {
+  route: string;
+  parse: (body: unknown) => T;
+  measure: (input: T) => { promptChars: number; schemaChars: number };
+  execute: (input: T) => Promise<Record<string, unknown>>;
 };
 
-function parseGuidanceBody(body: unknown): GuidanceBody {
-  if (typeof body !== "object" || body === null) {
-    throw new Error("Request body must include a non-empty string prompt.");
+/** Metadata only — never prompts, schemas, SQL, or credentials. */
+function logAiRequest(entry: Record<string, unknown>): void {
+  const line = JSON.stringify(entry);
+  if (typeof entry.status === "number" && entry.status >= 500) {
+    console.error("[ai]", line);
+  } else {
+    console.info("[ai]", line);
   }
-
-  const record = body as Record<string, unknown>;
-
-  if (typeof record.prompt !== "string") {
-    throw new Error("Request body must include a non-empty string prompt.");
-  }
-
-  const prompt = record.prompt.trim();
-  if (!prompt) {
-    throw new Error("Request body must include a non-empty string prompt.");
-  }
-  if (prompt.length > MAX_PROMPT_CHARS) {
-    throw new Error(
-      `Prompt is too long. Maximum length is ${MAX_PROMPT_CHARS} characters.`
-    );
-  }
-
-  let schema: string | undefined;
-  if (record.schema !== undefined) {
-    if (typeof record.schema !== "string") {
-      throw new Error("schema must be a string when provided.");
-    }
-    schema = record.schema.trim().slice(0, MAX_SCHEMA_CHARS) || undefined;
-  }
-
-  return { prompt, schema };
 }
 
-function parseSql50CoachingBody(body: unknown): Sql50CoachingContext {
-  if (typeof body !== "object" || body === null) {
-    throw new Error("Request body must be a JSON object.");
-  }
+function aiRoute<T>(options: AiRouteOptions<T>) {
+  return async (req: Request, res: Response): Promise<void> => {
+    const startedAt = Date.now();
+    const log: Record<string, unknown> = { route: options.route };
+    res.setHeader("Cache-Control", "no-store");
 
-  const record = body as Record<string, unknown>;
+    try {
+      const input = options.parse(req.body);
+      Object.assign(log, options.measure(input));
 
-  const requiredStrings = ["problemTitle", "problemDescription", "userPrompt"] as const;
-  for (const key of requiredStrings) {
-    if (typeof record[key] !== "string" || !record[key].trim()) {
-      throw new Error(`Request body must include a non-empty string ${key}.`);
+      const dailyQuota = consumeDailyAiQuota();
+      if (!dailyQuota.ok) {
+        res.setHeader("Retry-After", String(dailyQuota.retryAfterSeconds));
+        res.status(429).json({ error: SAFE_AI_MESSAGES.dailyLimit });
+        logAiRequest({ ...log, status: 429, decision: "daily_limit", durationMs: Date.now() - startedAt });
+        return;
+      }
+
+      const payload = await options.execute(input);
+      res.json(payload);
+      logAiRequest({ ...log, status: 200, decision: "allowed", durationMs: Date.now() - startedAt });
+    } catch (error) {
+      const safe = resolveSafeAiError(error);
+      if (safe.status >= 500) {
+        console.error(
+          `[ai] ${options.route} ${safe.category}:`,
+          error instanceof Error ? `${error.name}: ${error.message.slice(0, 200)}` : "non-error thrown"
+        );
+      }
+      res.status(safe.status).json({ error: safe.message });
+      logAiRequest({
+        ...log,
+        status: safe.status,
+        errorCategory: safe.category,
+        durationMs: Date.now() - startedAt,
+      });
     }
-  }
-
-  const topics = Array.isArray(record.topics)
-    ? record.topics.filter((t): t is string => typeof t === "string")
-    : [];
-
-  const unlockedHints = Array.isArray(record.unlockedHints)
-    ? record.unlockedHints.filter((h): h is string => typeof h === "string")
-    : [];
-
-  let schema: string | undefined;
-  if (record.schema !== undefined) {
-    if (typeof record.schema !== "string") {
-      throw new Error("schema must be a string when provided.");
-    }
-    schema = record.schema.trim().slice(0, MAX_SCHEMA_CHARS) || undefined;
-  }
-
-  const hintsUsed =
-    typeof record.hintsUsed === "number" && record.hintsUsed >= 0
-      ? record.hintsUsed
-      : 0;
-
-  return {
-    problemTitle: (record.problemTitle as string).trim(),
-    problemDescription: (record.problemDescription as string).trim(),
-    topics,
-    userPrompt: (record.userPrompt as string).trim(),
-    userError:
-      typeof record.userError === "string"
-        ? record.userError.trim() || undefined
-        : undefined,
-    hintsUsed,
-    unlockedHints,
-    schema,
   };
 }
 
-const QUOTA_ERROR_MESSAGE =
-  "AI quota exceeded on all configured Gemini models. Please wait a bit or add another model via GEMINI_MODEL_FALLBACKS.";
-
-const MODEL_ERROR_MESSAGE =
-  "No configured Gemini model is available for this API key. Set GEMINI_MODEL and optionally GEMINI_MODEL_FALLBACKS in backend/.env.";
-
-function sendAiError(
-  res: Response,
-  error: unknown,
-  fallback: string
-): void {
-  if (error instanceof AiQuotaExceededError) {
-    res.status(429).json({ error: QUOTA_ERROR_MESSAGE });
-    return;
-  }
-
-  if (error instanceof AiModelUnavailableError) {
-    res.status(503).json({ error: MODEL_ERROR_MESSAGE });
-    return;
-  }
-
-  const message = error instanceof Error ? error.message : fallback;
-
-  if (
-    message.includes("prompt") ||
-    message.includes("schema must") ||
-    message.includes("Prompt is too long") ||
-    message.includes("invalid guidance") ||
-    message === GUIDANCE_SQL_REJECTED_MESSAGE ||
-    message.includes("must be a non-empty")
-  ) {
-    res.status(400).json({ error: message });
-    return;
-  }
-
-  if (
-    message.includes("empty SQL") ||
-    message.includes("disallowed destructive")
-  ) {
-    res.status(400).json({ error: message });
-    return;
-  }
-
-  if (
-    message.includes("Missing GEMINI_API_KEY") ||
-    message.includes("Placeholder GEMINI_API_KEY")
-  ) {
-    res.status(503).json({
-      error:
-        "AI is not configured. Set GEMINI_API_KEY in backend/.env (free key: https://aistudio.google.com/apikey), then restart the backend.",
-    });
-    return;
-  }
-
-  if (message.includes("Invalid GEMINI_API_KEY")) {
-    res.status(503).json({
-      error:
-        "Gemini rejected the API key. Verify GEMINI_API_KEY in backend/.env at Google AI Studio, then restart the backend.",
-    });
-    return;
-  }
-
-  if (message.includes("Cannot reach Google Gemini API")) {
-    res.status(503).json({ error: message });
-    return;
-  }
-
-  if (message.includes("Gemini API access denied")) {
-    res.status(503).json({ error: message });
-    return;
-  }
-
-  if (message === "AI request failed. Please try again.") {
-    res.status(502).json({ error: message });
-    return;
-  }
-
-  res.status(500).json({ error: message || fallback });
-}
+const generateSqlHandler = aiRoute({
+  route: "generate-sql",
+  parse: validatePromptRequest,
+  measure: ({ prompt }) => ({ promptChars: prompt.length, schemaChars: 0 }),
+  execute: async ({ prompt }) => {
+    const raw = await generateWithGemini(buildSqlGenerationPrompt(prompt));
+    return { sql: sanitizeGeneratedSql(raw) };
+  },
+});
 
 router.post("/generate-sql", async (req, res) => {
-  try {
-    const userPrompt = parsePrompt(req.body);
-    const raw = await generateWithGemini(buildSqlGenerationPrompt(userPrompt));
-    const sql = sanitizeGeneratedSql(raw);
-
-    res.json({ sql });
-  } catch (error) {
-    sendAiError(res, error, "Failed to generate SQL. Please try again.");
+  if (!isLegacyGenerateSqlEnabled()) {
+    res.status(404).json({ error: "Not found" });
+    return;
   }
+  await generateSqlHandler(req, res);
 });
 
-router.post("/sql-guidance", async (req, res) => {
-  try {
-    const { prompt, schema } = parseGuidanceBody(req.body);
-    const raw = await generateWithGemini(buildSqlGuidancePrompt(prompt, schema), {
-      jsonMode: true,
-    });
-    const guidance = sanitizeGuidance(raw);
-    res.json({ guidance });
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === GUIDANCE_SQL_REJECTED_MESSAGE
-    ) {
-      console.error("[api/sql-guidance] rejected runnable SQL in model output");
-    }
-    sendAiError(res, error, "Failed to get SQL guidance. Please try again.");
-  }
-});
+router.post(
+  "/sql-guidance",
+  aiRoute({
+    route: "sql-guidance",
+    parse: validateGuidanceRequest,
+    measure: ({ prompt, schema }) => ({
+      promptChars: prompt.length,
+      schemaChars: schema?.length ?? 0,
+    }),
+    execute: async ({ prompt, schema }) => {
+      const raw = await generateWithGemini(buildSqlGuidancePrompt(prompt, schema), {
+        jsonMode: true,
+      });
+      return { guidance: sanitizeGuidanceOutput(raw) };
+    },
+  })
+);
 
-router.post("/sql50-coaching", async (req, res) => {
-  try {
-    const ctx = parseSql50CoachingBody(req.body);
-    const raw = await generateWithGemini(buildSql50CoachingPrompt(ctx), {
-      jsonMode: true,
-    });
-    const guidance = sanitizeGuidance(raw);
-    res.json({ guidance });
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message === GUIDANCE_SQL_REJECTED_MESSAGE
-    ) {
-      console.error("[api/sql50-coaching] rejected runnable SQL in model output");
-    }
-    sendAiError(res, error, "Failed to get coaching. Please try again.");
-  }
-});
+router.post(
+  "/sql50-coaching",
+  aiRoute({
+    route: "sql50-coaching",
+    parse: validateCoachingRequest,
+    measure: (ctx) => ({
+      promptChars: ctx.userPrompt.length,
+      schemaChars: ctx.schema?.length ?? 0,
+    }),
+    execute: async (ctx) => {
+      const raw = await generateWithGemini(buildSql50CoachingPrompt(ctx), {
+        jsonMode: true,
+      });
+      return { guidance: sanitizeGuidanceOutput(raw) };
+    },
+  })
+);
 
 export default router;

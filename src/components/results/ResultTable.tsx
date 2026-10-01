@@ -5,6 +5,9 @@ import Button from "../common/Button";
 import Panel from "../common/Panel";
 import { cn } from "../../lib/utils/cn";
 
+/** Query execution is unchanged; only DOM rendering is capped so huge results cannot freeze the tab. */
+export const MAX_RENDERED_ROWS = 1_000;
+
 type Props = {
   rows: Record<string, unknown>[];
   /** Compact layout for SQL50 — no panel chrome or duplicate headings. */
@@ -34,6 +37,14 @@ export default function ResultTable({ rows, embedded = false }: Props) {
   }
 
   const columns = Object.keys(rows[0]);
+  const isRenderCapped = rows.length > MAX_RENDERED_ROWS;
+  const visibleRows = isRenderCapped ? rows.slice(0, MAX_RENDERED_ROWS) : rows;
+  const renderCapNotice = isRenderCapped ? (
+    <p className={cn("text-ink-muted", embedded ? "px-1 text-[10px]" : "mb-2 text-xs")} role="note">
+      Showing first {MAX_RENDERED_ROWS.toLocaleString()} rows for browser performance.
+      Copy and Export include all {rows.length.toLocaleString()} rows.
+    </p>
+  ) : null;
 
   async function copyResults() {
     await navigator.clipboard.writeText(JSON.stringify(rows, null, 2));
@@ -79,7 +90,7 @@ export default function ResultTable({ rows, embedded = false }: Props) {
         </thead>
 
         <tbody>
-          {rows.map((row, index) => (
+          {visibleRows.map((row, index) => (
             <tr
               key={index}
               className={cn(
@@ -126,6 +137,7 @@ export default function ResultTable({ rows, embedded = false }: Props) {
             Export
           </Button>
         </div>
+        {renderCapNotice}
         {table}
       </div>
     );
@@ -155,6 +167,7 @@ export default function ResultTable({ rows, embedded = false }: Props) {
           <span className="font-medium text-ink-secondary">{rows.length}</span> row
           {rows.length === 1 ? "" : "s"} returned
         </p>
+        {renderCapNotice}
         {table}
       </Panel>
     </AnimatedReveal>

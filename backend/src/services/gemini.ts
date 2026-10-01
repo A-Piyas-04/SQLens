@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 
 /** Free-tier-friendly primary; override with GEMINI_MODEL in backend/.env */
 const DEFAULT_PRIMARY_MODEL = "gemini-2.0-flash-lite";
@@ -203,6 +203,29 @@ function getClient(): GoogleGenerativeAI {
   return client;
 }
 
+const DEFAULT_MAX_OUTPUT_TOKENS = 1_024;
+
+function resolveMaxOutputTokens(): number {
+  const parsed = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_MAX_OUTPUT_TOKENS;
+  return Math.min(Math.max(Math.floor(parsed), 64), 8_192);
+}
+
+/**
+ * 2.5 Flash models spend "thinking" tokens out of maxOutputTokens, which can leave
+ * no room for the answer under a tight cap, so thinking is disabled for them.
+ * thinkingConfig is not in this SDK's types but is passed through to the REST API.
+ */
+function buildGenerationConfig(modelName: string, jsonMode: boolean): GenerationConfig {
+  return {
+    maxOutputTokens: resolveMaxOutputTokens(),
+    ...(jsonMode ? { responseMimeType: "application/json" } : {}),
+    ...(/^gemini-2\.5-flash/i.test(modelName)
+      ? { thinkingConfig: { thinkingBudget: 0 } }
+      : {}),
+  } as GenerationConfig;
+}
+
 async function generateWithModel(
   genAI: GoogleGenerativeAI,
   modelName: string,
@@ -211,9 +234,7 @@ async function generateWithModel(
 ): Promise<string> {
   const model = genAI.getGenerativeModel({
     model: modelName,
-    ...(jsonMode
-      ? { generationConfig: { responseMimeType: "application/json" } }
-      : {}),
+    generationConfig: buildGenerationConfig(modelName, jsonMode),
   });
   const result = await model.generateContent(prompt);
   const text = result.response.text();

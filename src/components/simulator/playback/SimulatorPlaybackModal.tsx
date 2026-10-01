@@ -14,6 +14,7 @@ import type { SimulatorSnapshot, StageDiff } from "../../../lib/simulator";
 import SqlContextPanel from "./SqlContextPanel";
 import LessonPanel, { LESSON_PANEL_ID } from "./LessonPanel";
 import { cn } from "../../../lib/utils/cn";
+import { safeSetLocalStorage } from "../../../lib/storage/safeStorage";
 
 type Props = {
   snapshots: SimulatorSnapshot[];
@@ -95,7 +96,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("simulator:showRowIds", showRowIds ? "1" : "0");
+    safeSetLocalStorage("simulator:showRowIds", showRowIds ? "1" : "0");
   }, [showRowIds]);
 
   const toggleLessonCollapsed = useCallback(() => {
@@ -175,7 +176,7 @@ export default function SimulatorPlaybackModal({ snapshots, diffs, originalSql, 
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
         setSidebarWidth((w) => {
-          localStorage.setItem("simulator:playbackSidebarWidth", String(w));
+          safeSetLocalStorage("simulator:playbackSidebarWidth", String(w));
           return w;
         });
       };

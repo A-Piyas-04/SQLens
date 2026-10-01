@@ -4,6 +4,7 @@ import type {
   ProblemPack,
   UserProblemProgress,
 } from "./types";
+import { safeGetLocalStorage, safeSetLocalStorage } from "../storage/safeStorage";
 
 const PROGRESS_KEY_PREFIX = "sqlens-practice-progress-";
 const ACTIVE_KEY_PREFIX = "sqlens-practice-active-";
@@ -43,7 +44,7 @@ function writeProgressMap(
   packId: string,
   map: Record<number, UserProblemProgress>
 ): void {
-  localStorage.setItem(progressStorageKey(packId), JSON.stringify(map));
+  safeSetLocalStorage(progressStorageKey(packId), JSON.stringify(map));
 }
 
 function defaultProgress(problemId: number): UserProblemProgress {
@@ -149,11 +150,11 @@ export function saveDraft(
 }
 
 export function getActiveProblemSlug(packId: string): string | null {
-  return localStorage.getItem(activeProblemStorageKey(packId));
+  return safeGetLocalStorage(activeProblemStorageKey(packId));
 }
 
 export function setActiveProblemSlug(packId: string, slug: string): void {
-  localStorage.setItem(activeProblemStorageKey(packId), slug);
+  safeSetLocalStorage(activeProblemStorageKey(packId), slug);
 }
 
 const MASTERED_THRESHOLD = 0.8;

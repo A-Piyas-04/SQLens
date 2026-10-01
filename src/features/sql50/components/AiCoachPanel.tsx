@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 
 import Button from "../../../components/common/Button";
 import Panel from "../../../components/common/Panel";
-import { requestSql50Coaching } from "../../../lib/api/aiClient";
+import AiPrivacyNotice from "../../../components/ai/AiPrivacyNotice";
+import AiSchemaToggle from "../../../components/ai/AiSchemaToggle";
+import { useAiPrivacy } from "../../../hooks/useAiPrivacy";
+import { MAX_AI_PROMPT_CHARS, requestSql50Coaching } from "../../../lib/api/aiClient";
 import { formatSchemaForAi } from "../../../lib/api/formatSchemaForAi";
 import type { SqlGuidance } from "../../../lib/api/sqlGuidanceTypes";
 import type { SchemaTable } from "../../../lib/db/schema";
@@ -30,6 +33,7 @@ export default function AiCoachPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [guidance, setGuidance] = useState<SqlGuidance | null>(null);
+  const privacy = useAiPrivacy();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,16 +44,21 @@ export default function AiCoachPanel({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onToggle]);
 
-  async function handleAskCoach() {
+  function handleAskCoach() {
+    if (!prompt.trim() || isLoading) return;
+    privacy.runWithConsent(() => void requestCoaching());
+  }
+
+  async function requestCoaching() {
     const trimmed = prompt.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed) return;
 
     setIsLoading(true);
     setError("");
     setGuidance(null);
 
     try {
-      const schema = formatSchemaForAi(tables);
+      const schema = privacy.includeSchema ? formatSchemaForAi(tables) : "";
       const unlockedHints = problem.hints.slice(0, hintsUsed);
       const result = await requestSql50Coaching({
         problemTitle: problem.title,
@@ -103,21 +112,37 @@ export default function AiCoachPanel({
         onChange={(e) => setPrompt(e.target.value)}
         placeholder="What are you stuck on?"
         rows={3}
+        maxLength={MAX_AI_PROMPT_CHARS}
         disabled={isLoading}
         className="mb-3 w-full resize-y rounded-sm border border-line bg-surface-inset px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent"
       />
 
-      <Button
-        type="button"
-        variant="primary"
-        size="sm"
-        className="w-full"
-        disabled={isLoading || !prompt.trim()}
-        onClick={() => void handleAskCoach()}
-      >
-        <Lightbulb className="size-3.5" aria-hidden />
-        {isLoading ? "Thinking…" : "Ask coach"}
-      </Button>
+      <div className="mb-3">
+        <AiSchemaToggle
+          checked={privacy.includeSchema}
+          onChange={privacy.setIncludeSchema}
+          disabled={isLoading}
+        />
+      </div>
+
+      {privacy.isConsentPending ? (
+        <AiPrivacyNotice
+          onContinue={privacy.continueWithConsent}
+          onCancel={privacy.cancelConsent}
+        />
+      ) : (
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          className="w-full"
+          disabled={isLoading || !prompt.trim()}
+          onClick={handleAskCoach}
+        >
+          <Lightbulb className="size-3.5" aria-hidden />
+          {isLoading ? "Thinking…" : "Ask coach"}
+        </Button>
+      )}
 
       {error ? (
         <p className="mt-3 text-xs text-red-600" role="alert">

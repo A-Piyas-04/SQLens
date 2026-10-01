@@ -29,6 +29,25 @@ function wrapFetchError(err: unknown): Error {
 
 const API_BASE = resolveApiBase();
 
+/** Mirrors the server's AI field limits so normal requests are never rejected. */
+const AI_REQUEST_LIMITS = {
+  prompt: 2_000,
+  schema: 4_000,
+  problemTitle: 200,
+  problemDescription: 1_000,
+  lastError: 500,
+  topicCount: 20,
+  topicChars: 80,
+  hintCount: 10,
+  hintChars: 500,
+} as const;
+
+export const MAX_AI_PROMPT_CHARS = AI_REQUEST_LIMITS.prompt;
+
+function clampText(value: string, maxChars: number): string {
+  return value.trim().slice(0, maxChars);
+}
+
 type GuidanceResponse = {
   guidance: SqlGuidance;
 };
@@ -51,9 +70,11 @@ export async function requestSqlGuidance(
   prompt: string,
   schema?: string
 ): Promise<SqlGuidance> {
-  const body: { prompt: string; schema?: string } = { prompt };
+  const body: { prompt: string; schema?: string } = {
+    prompt: clampText(prompt, AI_REQUEST_LIMITS.prompt),
+  };
   if (schema?.trim()) {
-    body.schema = schema.trim();
+    body.schema = clampText(schema, AI_REQUEST_LIMITS.schema);
   }
 
   let response: Response;
@@ -104,6 +125,25 @@ function clientSanitizeGuidance(guidance: SqlGuidance): SqlGuidance {
   return guidance;
 }
 
+function clampCoachingRequest(body: Sql50CoachingRequest): Sql50CoachingRequest {
+  const userError = body.userError ? clampText(body.userError, AI_REQUEST_LIMITS.lastError) : "";
+  const schema = body.schema ? clampText(body.schema, AI_REQUEST_LIMITS.schema) : "";
+  return {
+    problemTitle: clampText(body.problemTitle, AI_REQUEST_LIMITS.problemTitle),
+    problemDescription: clampText(body.problemDescription, AI_REQUEST_LIMITS.problemDescription),
+    topics: body.topics
+      .slice(0, AI_REQUEST_LIMITS.topicCount)
+      .map((topic) => topic.slice(0, AI_REQUEST_LIMITS.topicChars)),
+    userPrompt: clampText(body.userPrompt, AI_REQUEST_LIMITS.prompt),
+    userError: userError || undefined,
+    hintsUsed: body.hintsUsed,
+    unlockedHints: body.unlockedHints
+      .slice(0, AI_REQUEST_LIMITS.hintCount)
+      .map((hint) => hint.slice(0, AI_REQUEST_LIMITS.hintChars)),
+    schema: schema || undefined,
+  };
+}
+
 export async function requestSql50Coaching(
   body: Sql50CoachingRequest
 ): Promise<SqlGuidance> {
@@ -112,7 +152,7 @@ export async function requestSql50Coaching(
     response = await fetch(`${API_BASE}/api/sql50-coaching`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(clampCoachingRequest(body)),
     });
   } catch (err) {
     throw wrapFetchError(err);

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { getDatabase } from "../lib/db/createDatabase";
+import { deleteProjectDatabase, getDatabase } from "../lib/db/createDatabase";
 import {
   createProject,
   deleteProject as deleteProjectInStore,
@@ -72,6 +72,12 @@ export function useActiveProject() {
       }
 
       syncProjects();
+
+      // Deferred so the re-render onto the next project commits before the old
+      // instance is closed; otherwise a render could re-open the deleted database.
+      window.setTimeout(() => {
+        void deleteProjectDatabase(id);
+      }, 0);
     },
     [activeProjectId, projects, syncProjects]
   );

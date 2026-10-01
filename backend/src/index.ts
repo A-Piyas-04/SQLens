@@ -1,5 +1,5 @@
 import cors from "cors";
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
 import "dotenv/config";
 
@@ -61,9 +61,42 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", aiRateLimit, aiRoutes);
 
+app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const type =
+    error && typeof error === "object" && "type" in error
+      ? String((error as { type: unknown }).type)
+      : "";
+
+  if (type === "entity.too.large") {
+    res.status(413).json({ error: "Request is too large." });
+    return;
+  }
+
+  if (type === "entity.parse.failed") {
+    res.status(400).json({ error: "Invalid request." });
+    return;
+  }
+
+  if (error instanceof Error && error.message === "Not allowed by CORS") {
+    res.status(403).json({ error: "Origin not allowed." });
+    return;
+  }
+
+  console.error(
+    "[sqlens] unhandled error:",
+    error instanceof Error ? `${error.name}: ${error.message.slice(0, 200)}` : "non-error thrown"
+  );
+  res.status(500).json({ error: "Internal server error." });
+});
+
 app.listen(PORT, () => {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   console.log(`SQLens backend running on port ${PORT}`);
+  if (!isProduction) {
+    console.warn(
+      "[sqlens] Development mode allows any CORS origin — keep this backend on localhost or a private network."
+    );
+  }
   if (!apiKey) {
     console.warn(
       "[sqlens] GEMINI_API_KEY is missing — SQL Assistant requests will fail until backend/.env is configured."

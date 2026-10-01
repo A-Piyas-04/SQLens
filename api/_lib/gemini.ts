@@ -163,6 +163,29 @@ function extractGeminiText(payload: unknown): string {
   return text;
 }
 
+const DEFAULT_MAX_OUTPUT_TOKENS = 1_024;
+
+export function resolveMaxOutputTokens(): number {
+  const parsed = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_MAX_OUTPUT_TOKENS;
+  return Math.min(Math.max(Math.floor(parsed), 64), 8_192);
+}
+
+/**
+ * 2.5 Flash models spend "thinking" tokens out of maxOutputTokens, which can leave
+ * no room for the answer under a tight cap, so thinking is disabled for them.
+ */
+export function buildGenerationConfig(
+  model: string,
+  jsonMode: boolean
+): Record<string, unknown> {
+  return {
+    maxOutputTokens: resolveMaxOutputTokens(),
+    ...(jsonMode ? { responseMimeType: "application/json" } : {}),
+    ...(/^gemini-2\.5-flash/i.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+  };
+}
+
 async function generateWithModel(
   apiKey: string,
   model: string,
@@ -171,18 +194,17 @@ async function generateWithModel(
 ): Promise<string> {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  )}:generateContent`;
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
     },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      ...(jsonMode
-        ? { generationConfig: { responseMimeType: "application/json" } }
-        : {}),
+      generationConfig: buildGenerationConfig(model, jsonMode),
     }),
   });
 

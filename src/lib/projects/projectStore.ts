@@ -1,5 +1,11 @@
-import { clearOnboardingComplete } from "../onboarding/onboardingStore";
-import { getAllPracticeStorageKeys } from "../practice/progressStore";
+import { SQL50_DB_ID } from "../../features/sql50/types/sql50";
+import { deleteAllSqlensDatabases } from "../db/createDatabase";
+import {
+  listLocalStorageKeys,
+  safeGetLocalStorage,
+  safeRemoveLocalStorage,
+  safeSetLocalStorage,
+} from "../storage/safeStorage";
 
 export type Project = {
   id: string;
@@ -13,9 +19,12 @@ const ACTIVE_PROJECT_KEY = "sqlens-active-project";
 
 export const historyKey = (id: string) => `sqlens-history-${id}`;
 export const draftKey = (id: string) => `sqlens-draft-${id}`;
-const SIMULATOR_SIDEBAR_WIDTH_KEY = "simulator:playbackSidebarWidth";
-const SIMULATOR_SHOW_ROW_IDS_KEY = "simulator:showRowIds";
-const SIMULATOR_DEBUG_KEY = "simulator:debug";
+
+/** Drafts above this size still run; only automatic persistence is skipped. */
+export const MAX_DRAFT_AUTOSAVE_CHARS = 500 * 1024;
+
+/** Every localStorage key SQLens writes starts with one of these prefixes. */
+const SQLENS_STORAGE_PREFIXES = ["sqlens-", "sqlens:", "simulator:", "sql50-"];
 
 function generateId(): string {
   return `proj_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -25,7 +34,7 @@ function generateId(): string {
 
 export function getProjects(): Project[] {
   try {
-    const raw = localStorage.getItem(PROJECTS_KEY);
+    const raw = safeGetLocalStorage(PROJECTS_KEY);
     return raw ? (JSON.parse(raw) as Project[]) : [];
   } catch {
     return [];
@@ -33,17 +42,17 @@ export function getProjects(): Project[] {
 }
 
 function saveProjects(projects: Project[]): void {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  safeSetLocalStorage(PROJECTS_KEY, JSON.stringify(projects));
 }
 
 // ─── Active project ────────────────────────────────────────────────────────
 
 export function getActiveProjectId(): string | null {
-  return localStorage.getItem(ACTIVE_PROJECT_KEY);
+  return safeGetLocalStorage(ACTIVE_PROJECT_KEY);
 }
 
 export function setActiveProjectId(id: string): void {
-  localStorage.setItem(ACTIVE_PROJECT_KEY, id);
+  safeSetLocalStorage(ACTIVE_PROJECT_KEY, id);
 }
 
 // ─── CRUD ──────────────────────────────────────────────────────────────────
@@ -73,40 +82,41 @@ export function renameProject(id: string, name: string): void {
   saveProjects(projects);
 }
 
+/** Removes project metadata, draft, and history. The PGlite database is removed separately. */
 export function deleteProject(id: string): void {
   saveProjects(getProjects().filter((p) => p.id !== id));
-  localStorage.removeItem(historyKey(id));
-  localStorage.removeItem(draftKey(id));
+  safeRemoveLocalStorage(historyKey(id));
+  safeRemoveLocalStorage(draftKey(id));
 }
 
 // ─── Per-project editor state ──────────────────────────────────────────────
 
 export function getProjectDraft(id: string): string {
-  return localStorage.getItem(draftKey(id)) ?? "";
+  return safeGetLocalStorage(draftKey(id)) ?? "";
 }
 
-export function setProjectDraft(id: string, sql: string): void {
-  localStorage.setItem(draftKey(id), sql);
+export type DraftSaveResult = "saved" | "too-large" | "failed";
+
+export function setProjectDraft(id: string, sql: string): DraftSaveResult {
+  if (sql.length > MAX_DRAFT_AUTOSAVE_CHARS) return "too-large";
+  return safeSetLocalStorage(draftKey(id), sql) ? "saved" : "failed";
 }
 
-export function clearAllLocalData(): void {
-  const projects = getProjects();
+export function getSqlensStorageKeys(): string[] {
+  return listLocalStorageKeys().filter((key) =>
+    SQLENS_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))
+  );
+}
 
-  localStorage.removeItem(PROJECTS_KEY);
-  localStorage.removeItem(ACTIVE_PROJECT_KEY);
+/** Removes all SQLens localStorage data and every SQLens PGlite IndexedDB database. */
+export async function clearAllLocalData(): Promise<void> {
+  const projectIds = [...getProjects().map((project) => project.id), SQL50_DB_ID];
 
-  for (const project of projects) {
-    localStorage.removeItem(historyKey(project.id));
-    localStorage.removeItem(draftKey(project.id));
+  for (const key of getSqlensStorageKeys()) {
+    safeRemoveLocalStorage(key);
   }
 
-  localStorage.removeItem(SIMULATOR_SIDEBAR_WIDTH_KEY);
-  localStorage.removeItem(SIMULATOR_SHOW_ROW_IDS_KEY);
-  localStorage.removeItem(SIMULATOR_DEBUG_KEY);
-  for (const key of getAllPracticeStorageKeys()) {
-    localStorage.removeItem(key);
-  }
-  clearOnboardingComplete();
+  await deleteAllSqlensDatabases(projectIds);
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────

@@ -21,6 +21,19 @@ type GenerateSnapshotsInput = {
   db: PGlite;
 };
 
+/** Simulation runs several derived queries per input and renders every row, so it is bounded. */
+export const SIMULATOR_LIMITS = {
+  maxSqlChars: 50 * 1024,
+  maxRowsPerSnapshot: 1_000,
+} as const;
+
+export const SIMULATION_TOO_LARGE_MESSAGE =
+  "This query is too large to simulate safely. You can still run it normally.";
+
+function tooLargeForSimulation(detail: string): SnapshotResult {
+  return { success: false, error: `${SIMULATION_TOO_LARGE_MESSAGE} (${detail})` };
+}
+
 // ── Annotation builders ──────────────────────────────────────────────────────
 
 function buildAnnotation(
@@ -105,6 +118,10 @@ export async function generateSnapshots({
   sql,
   db,
 }: GenerateSnapshotsInput): Promise<SnapshotResult> {
+  if (sql.length > SIMULATOR_LIMITS.maxSqlChars) {
+    return tooLargeForSimulation("SQL text exceeds 50 KB");
+  }
+
   const parseResult = parseSql(sql);
   if (!parseResult.ok) {
     return { success: false, error: parseResult.error };
@@ -145,6 +162,12 @@ export async function generateSnapshots({
         success: false,
         error: `Stage "${stage.label}" failed: ${queryResult.error ?? "Unknown error"}`,
       };
+    }
+
+    if (queryResult.rows.length > SIMULATOR_LIMITS.maxRowsPerSnapshot) {
+      return tooLargeForSimulation(
+        `stage "${stage.label}" produces ${queryResult.rows.length.toLocaleString()} rows; the limit is ${SIMULATOR_LIMITS.maxRowsPerSnapshot.toLocaleString()}`
+      );
     }
 
     // Assign stable row IDs by matching against the previous stage's rows.
@@ -188,6 +211,14 @@ export async function generateSnapshots({
       const rightSql = buildRightTableSql(select, jIdx);
       if (rightSql) {
         const rightResult = await runQuery(db, rightSql);
+        if (
+          rightResult.success &&
+          rightResult.rows.length > SIMULATOR_LIMITS.maxRowsPerSnapshot
+        ) {
+          return tooLargeForSimulation(
+            `joined table has ${rightResult.rows.length.toLocaleString()} rows; the limit is ${SIMULATOR_LIMITS.maxRowsPerSnapshot.toLocaleString()}`
+          );
+        }
         if (rightResult.success) {
           partialSnapshot.rightTableRows = assignRowIds(
             rightResult.rows,

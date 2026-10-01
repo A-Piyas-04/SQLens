@@ -12,7 +12,9 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 import { GitFork } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import Button from "../common/Button";
 
 import type { SchemaTable } from "../../lib/db/schema";
 import { buildErdGraph, type ErdTableNodeData } from "../../lib/erd/buildErdGraph";
@@ -24,6 +26,9 @@ import ErdRelationLegend from "./ErdRelationLegend";
 import ErdTableNode from "./ErdTableNode";
 
 type ErdNode = Node<ErdTableNodeData, "erdTable">;
+
+/** Above this, Dagre layout + React Flow is deferred until the user asks for it. */
+export const ERD_LARGE_SCHEMA_TABLE_THRESHOLD = 150;
 
 const nodeTypes = { erdTable: ErdTableNode };
 const edgeTypes = { erdCardinality: ErdCardinalityEdge };
@@ -37,10 +42,15 @@ type Props = {
 export default function ErdViewer({ tables, fullscreen = false, projectId }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ErdNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [largeSchemaConfirmed, setLargeSchemaConfirmed] = useState(false);
   const rfInstanceRef = useRef<ReactFlowInstance<ErdNode, Edge> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const awaitingLargeSchemaConfirm =
+    tables.length > ERD_LARGE_SCHEMA_TABLE_THRESHOLD && !largeSchemaConfirmed;
+
   useEffect(() => {
+    if (awaitingLargeSchemaConfirm) return;
     const { nodes: newNodes, edges: newEdges } = buildErdGraph(tables);
     setNodes(newNodes);
     setEdges(newEdges);
@@ -51,7 +61,7 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
         50
       );
     }
-  }, [tables, setNodes, setEdges]);
+  }, [tables, awaitingLargeSchemaConfirm, setNodes, setEdges]);
 
   const onInit = useCallback((instance: ReactFlowInstance<ErdNode, Edge>) => {
     rfInstanceRef.current = instance;
@@ -69,6 +79,27 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
       >
         <GitFork className="size-5 opacity-40" aria-hidden />
         <p className="text-sm">No tables yet — create some to see the ERD.</p>
+      </div>
+    );
+  }
+
+  if (awaitingLargeSchemaConfirm) {
+    return (
+      <div
+        className={
+          fullscreen
+            ? "flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 rounded-sm border border-dashed border-line bg-surface-raised px-6 text-center text-ink-muted"
+            : "flex h-44 flex-col items-center justify-center gap-3 rounded-sm border border-dashed border-line bg-surface-raised px-6 text-center text-ink-muted"
+        }
+        role="status"
+      >
+        <GitFork className="size-5 opacity-40" aria-hidden />
+        <p className="text-sm">
+          Large schema detected ({tables.length} tables). Rendering the full ERD may be slow.
+        </p>
+        <Button type="button" variant="secondary" size="sm" onClick={() => setLargeSchemaConfirmed(true)}>
+          Render ERD
+        </Button>
       </div>
     );
   }

@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Lightbulb, X } from "lucide-react";
 
 import { AiSqlIcon } from "../icons";
-import { requestSqlGuidance } from "../../lib/api/aiClient";
+import AiPrivacyNotice from "./AiPrivacyNotice";
+import AiSchemaToggle from "./AiSchemaToggle";
+import { useAiPrivacy } from "../../hooks/useAiPrivacy";
+import { MAX_AI_PROMPT_CHARS, requestSqlGuidance } from "../../lib/api/aiClient";
 import { formatSchemaForAi } from "../../lib/api/formatSchemaForAi";
 import type { SqlGuidance } from "../../lib/api/sqlGuidanceTypes";
 import type { SchemaTable } from "../../lib/db/schema";
@@ -32,6 +35,7 @@ export default function AiSqlGeneratorPopover({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [guidance, setGuidance] = useState<SqlGuidance | null>(null);
+  const privacy = useAiPrivacy();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,16 +48,21 @@ export default function AiSqlGeneratorPopover({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onToggle]);
 
-  async function handleGetSuggestions() {
+  function handleGetSuggestions() {
+    if (!prompt.trim() || isLoading) return;
+    privacy.runWithConsent(() => void requestSuggestions());
+  }
+
+  async function requestSuggestions() {
     const trimmed = prompt.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed) return;
 
     setIsLoading(true);
     setError("");
     setGuidance(null);
 
     try {
-      const schema = formatSchemaForAi(tables);
+      const schema = privacy.includeSchema ? formatSchemaForAi(tables) : "";
       const result = await requestSqlGuidance(trimmed, schema || undefined);
       setGuidance(result);
     } catch (err) {
@@ -113,22 +122,36 @@ export default function AiSqlGeneratorPopover({
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder='e.g. Show courses taken by students in the CSE department'
                 rows={4}
+                maxLength={MAX_AI_PROMPT_CHARS}
                 disabled={disabled || isLoading}
                 className="min-h-[6.5rem] w-full resize-y rounded-sm border border-line bg-surface-inset px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50 sm:text-base"
               />
             </label>
 
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              className="w-full"
-              disabled={disabled || isLoading || !prompt.trim()}
-              onClick={() => void handleGetSuggestions()}
-            >
-              <Lightbulb className="size-4 shrink-0" aria-hidden />
-              {isLoading ? "Thinking…" : "Get suggestions"}
-            </Button>
+            <AiSchemaToggle
+              checked={privacy.includeSchema}
+              onChange={privacy.setIncludeSchema}
+              disabled={disabled || isLoading}
+            />
+
+            {privacy.isConsentPending ? (
+              <AiPrivacyNotice
+                onContinue={privacy.continueWithConsent}
+                onCancel={privacy.cancelConsent}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                className="w-full"
+                disabled={disabled || isLoading || !prompt.trim()}
+                onClick={handleGetSuggestions}
+              >
+                <Lightbulb className="size-4 shrink-0" aria-hidden />
+                {isLoading ? "Thinking…" : "Get suggestions"}
+              </Button>
+            )}
 
             {error ? (
               <p className="text-xs text-red-600" role="alert">

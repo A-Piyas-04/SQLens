@@ -25,7 +25,7 @@ export function formatSchemaForAi(tables: SchemaTable[]): string {
 
     const block = lines.join("\n");
     if (block.length >= MAX_SCHEMA_CHARS) {
-      return `${block.slice(0, MAX_SCHEMA_CHARS)}\n…`;
+      return `${block.slice(0, MAX_SCHEMA_CHARS - 2)}\n…`;
     }
   }
 

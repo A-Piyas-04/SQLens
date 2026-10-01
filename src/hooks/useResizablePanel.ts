@@ -6,6 +6,7 @@ import {
   SIDEBAR_MIN_WIDTH,
   SIDEBAR_STORAGE_KEY,
 } from "../constants/layout";
+import { safeSetLocalStorage } from "../lib/storage/safeStorage";
 
 export type ResizablePanelEdge = "left" | "right";
 
@@ -105,7 +106,7 @@ export function useResizablePanel(options?: ResizablePanelOptions) {
   }, [edge, isResizing, maxWidth, minWidth]);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, String(width));
+    safeSetLocalStorage(storageKey, String(width));
   }, [storageKey, width]);
 
   return {
