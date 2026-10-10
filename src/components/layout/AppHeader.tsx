@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { SqlensLogo } from "../icons";
 import AppHeaderHelp from "./AppHeaderHelp";
 import {
   headerToolbarClass,
@@ -21,7 +20,14 @@ export default function AppHeader({ actions, promo, onStartTour }: Props) {
       <div className="flex min-h-[4rem] items-center gap-4 px-6 py-3.5 sm:gap-6 sm:px-7">
         {/* Brand */}
         <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:gap-4">
-          <SqlensLogo size={34} className="shrink-0" aria-hidden />
+          <img
+            src="/sqlens-logo.png"
+            alt=""
+            width={40}
+            height={40}
+            className="size-10 shrink-0 rounded-md"
+            aria-hidden
+          />
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -39,9 +45,6 @@ export default function AppHeader({ actions, promo, onStartTour }: Props) {
                 Local
               </span>
             </div>
-            <p className="mt-1 hidden truncate text-sm leading-snug text-ink-muted sm:block md:max-w-md lg:max-w-xl">
-              SQL workspace · schema · stepwise query simulation
-            </p>
           </div>
         </div>
 
