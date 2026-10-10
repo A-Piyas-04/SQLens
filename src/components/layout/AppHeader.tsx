@@ -23,9 +23,9 @@ export default function AppHeader({ actions, promo, onStartTour }: Props) {
           <img
             src="/sqlens-logo.png"
             alt=""
-            width={40}
-            height={40}
-            className="size-10 shrink-0 rounded-md"
+            width={75}
+            height={75}
+            className="size-17 shrink-0 rounded-lg sm:size-19"
             aria-hidden
           />
 
