@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 
 import OnboardingTour from "./components/onboarding/OnboardingTour";
-import AiSqlGeneratorPopover from "./components/ai/AiSqlGeneratorPopover";
 import SimulateButton from "./components/simulator/SimulateButton";
 import AppBootGate from "./components/layout/AppBootGate";
 import AppHeader from "./components/layout/AppHeader";
@@ -31,7 +30,6 @@ export default function App() {
   const editorRef = useRef<SqlEditorHandle>(null);
   const { width, isResizing, onResizeStart } = useResizablePanel();
 
-  const [aiMenuOpen, setAiMenuOpen] = useState(false);
   const [practiceMenuOpen, setPracticeMenuOpen] = useState(false);
   const [practiceCategory, setPracticeCategory] = useState<PracticeCategoryId | null>(
     null
@@ -51,20 +49,11 @@ export default function App() {
   const onboarding = useOnboardingTour();
   const hasSelection = !!workspace.selectedText.trim();
 
-  function handleToggleAiMenu() {
-    setAiMenuOpen((open) => !open);
-    if (!aiMenuOpen) {
-      setPracticeMenuOpen(false);
-      setPracticeCategory(null);
-    }
-  }
-
   function handleTogglePracticeMenu() {
     setPracticeMenuOpen((open) => {
       if (open) setPracticeCategory(null);
       return !open;
     });
-    if (!practiceMenuOpen) setAiMenuOpen(false);
   }
 
   function handleSelectPracticeCategory(id: PracticeCategoryId | null) {
@@ -127,25 +116,17 @@ export default function App() {
           promo={<Sql50HeaderButton />}
           onStartTour={onboarding.restart}
           actions={
-            <>
-              <PracticeRadialMenu
-                isOpen={practiceMenuOpen}
-                activeCategory={practiceCategory}
-                isLoading={workspace.isRunning}
-                onToggle={handleTogglePracticeMenu}
-                onSelectCategory={handleSelectPracticeCategory}
-                onLoadSampleDatabase={workspace.loadSampleDatabase}
-                onLoadQuery={workspace.loadQuery}
-                onInsertSnippet={handleInsertSnippet}
-                onApplyVisualizationPreset={workspace.applyVisualizationPreset}
-              />
-              <AiSqlGeneratorPopover
-                isOpen={aiMenuOpen}
-                onToggle={handleToggleAiMenu}
-                tables={workspace.tables}
-                disabled={workspace.isRunning}
-              />
-            </>
+            <PracticeRadialMenu
+              isOpen={practiceMenuOpen}
+              activeCategory={practiceCategory}
+              isLoading={workspace.isRunning}
+              onToggle={handleTogglePracticeMenu}
+              onSelectCategory={handleSelectPracticeCategory}
+              onLoadSampleDatabase={workspace.loadSampleDatabase}
+              onLoadQuery={workspace.loadQuery}
+              onInsertSnippet={handleInsertSnippet}
+              onApplyVisualizationPreset={workspace.applyVisualizationPreset}
+            />
           }
         />
 

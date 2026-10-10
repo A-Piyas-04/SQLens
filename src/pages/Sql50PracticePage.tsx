@@ -5,7 +5,6 @@ import StatusMessage from "../components/common/StatusMessage";
 import Button from "../components/common/Button";
 import Skeleton from "../components/common/Skeleton";
 import AppBootGate from "../components/layout/AppBootGate";
-import AiCoachPanel from "../features/sql50/components/AiCoachPanel";
 import HintPanel from "../features/sql50/components/HintPanel";
 import ProblemHeader from "../features/sql50/components/ProblemHeader";
 import ProblemStatement from "../features/sql50/components/ProblemStatement";
@@ -53,7 +52,6 @@ export default function Sql50PracticePage() {
 
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [statementOpen, setStatementOpen] = useState(false);
-  const [coachOpen, setCoachOpen] = useState(false);
   const [acceptedScore, setAcceptedScore] = useState<number | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("problems");
 
@@ -176,30 +174,15 @@ export default function Sql50PracticePage() {
         hintsUsed={progress.hintsUsed}
         onUnlockHint={handleUnlockHint}
       />
-      <div className="flex flex-col gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="w-full"
-          onClick={handleRevealSolution}
-        >
-          Reveal Solution
-        </Button>
-        <AiCoachPanel
-          problem={workspace.activeProblem}
-          hintsUsed={progress.hintsUsed}
-          tables={workspace.tables}
-          lastError={
-            workspace.error ||
-            lastResult?.message ||
-            simulationError ||
-            undefined
-          }
-          isOpen={coachOpen}
-          onToggle={() => setCoachOpen((v) => !v)}
-        />
-      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="w-full"
+        onClick={handleRevealSolution}
+      >
+        Reveal Solution
+      </Button>
     </div>
   );
 

@@ -79,16 +79,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     ],
   },
   {
-    id: "ai-sql",
-    title: "AI SQL assistant",
-    body: "Describe your query goal and get tutoring cards — techniques, breakdown, pitfalls. Suggestions only; no SQL is inserted into the editor.",
-    target: "ai-sql",
-    highlights: [
-      "Uses your active project schema",
-      "Requires API key when deployed",
-    ],
-  },
-  {
     id: "simulator",
     accent: "purple",
     title: "SQL Execution Simulator",
@@ -109,7 +99,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "finish",
     title: "You're all set",
-    body: "Try Practice SQL 50, import a .sql file, or ask the AI assistant for concepts. Start with a sample database from the Practice menu, or write your own SQL. Open Help anytime to replay this tour.",
+    body: "Try Practice SQL 50 or import a .sql file. Start with a sample database from the Practice menu, or write your own SQL. Open Help anytime to replay this tour.",
     placement: "center",
   },
 ];

@@ -10,6 +10,7 @@ import { generateWithGemini } from "../gemini";
 import { resetMemoryCountersForTests } from "../limitStore";
 import { SAFE_AI_MESSAGES } from "../safeApiError";
 import guidanceHandler from "../../sql-guidance";
+import coachingHandler from "../../sql50-coaching";
 import generateSqlHandler from "../../generate-sql";
 
 const VALID_GUIDANCE = JSON.stringify({
@@ -70,8 +71,39 @@ async function call(
 
 const mockedGenerate = vi.mocked(generateWithGemini);
 
+describe("AI feature flag", () => {
+  beforeEach(() => {
+    resetMemoryCountersForTests();
+    mockedGenerate.mockReset();
+    mockedGenerate.mockResolvedValue(VALID_GUIDANCE);
+    vi.spyOn(console, "info").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it.each([undefined, "", "false", "TRUE", "1", "yes"])(
+    "returns 404 from every AI route when AI_FEATURES_ENABLED=%s",
+    async (flag) => {
+      if (flag === undefined) delete process.env.AI_FEATURES_ENABLED;
+      else vi.stubEnv("AI_FEATURES_ENABLED", flag);
+      vi.stubEnv("ENABLE_LEGACY_GENERATE_SQL", "true");
+
+      for (const handler of [guidanceHandler, coachingHandler, generateSqlHandler]) {
+        const result = await call(handler, createRequest({ prompt: "list students" }));
+        expect(result.status).toBe(404);
+        expect(result.json).toEqual({ error: "Not found" });
+      }
+      expect(mockedGenerate).not.toHaveBeenCalled();
+    }
+  );
+});
+
 describe("AI route protection", () => {
   beforeEach(() => {
+    vi.stubEnv("AI_FEATURES_ENABLED", "true");
     resetMemoryCountersForTests();
     mockedGenerate.mockReset();
     mockedGenerate.mockResolvedValue(VALID_GUIDANCE);

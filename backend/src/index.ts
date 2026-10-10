@@ -4,6 +4,7 @@ import helmet from "helmet";
 import "dotenv/config";
 
 import aiRoutes from "./routes/aiRoutes";
+import { aiFeatureGate, isAiFeatureEnabled } from "./middleware/aiFeatureGate";
 import { aiRateLimit } from "./middleware/aiRateLimit";
 import { isPlaceholderGeminiKey, resolveModelChain } from "./services/gemini";
 
@@ -59,7 +60,7 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.use("/api", aiRateLimit, aiRoutes);
+app.use("/api", aiFeatureGate, aiRateLimit, aiRoutes);
 
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   const type =
@@ -97,7 +98,9 @@ app.listen(PORT, () => {
       "[sqlens] Development mode allows any CORS origin — keep this backend on localhost or a private network."
     );
   }
-  if (!apiKey) {
+  if (!isAiFeatureEnabled()) {
+    console.info("[sqlens] AI features are disabled (AI_FEATURES_ENABLED is not \"true\") — /api returns 404.");
+  } else if (!apiKey) {
     console.warn(
       "[sqlens] GEMINI_API_KEY is missing — SQL Assistant requests will fail until backend/.env is configured."
     );

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
+import { isAiFeatureEnabled } from "./aiFeatureFlag";
 import { consumeDailyAiQuota } from "./globalAiQuota";
 import { enforceAiRateLimit } from "./rateLimit";
 import {
@@ -64,7 +65,7 @@ export function sanitizeGuidanceOutput(raw: string): SqlGuidance {
 
 /**
  * Shared protection pipeline for AI routes:
- * body budget → validation → per-client limits → global daily quota → route logic.
+ * feature flag → body budget → validation → per-client limits → global daily quota → route logic.
  */
 export async function handleAiRoute<T>(
   req: VercelRequest,
@@ -74,6 +75,12 @@ export async function handleAiRoute<T>(
   const startedAt = Date.now();
   const log: AiRequestLog = { requestId: randomUUID(), route: options.route };
   res.setHeader("Cache-Control", "no-store");
+
+  if (!isAiFeatureEnabled()) {
+    json(res, 404, { error: "Not found" });
+    writeLog({ ...log, status: 404, decision: "ai_disabled" }, startedAt);
+    return;
+  }
 
   if (req.method !== "POST") {
     json(res, 405, { error: "Method not allowed" });
