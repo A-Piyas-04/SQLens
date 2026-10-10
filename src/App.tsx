@@ -20,13 +20,60 @@ import PracticeSidebar from "./components/practice/PracticeSidebar";
 import PracticeRadialMenu from "./components/practice/PracticeRadialMenu";
 import Sql50HeaderButton from "./features/sql50/components/Sql50HeaderButton";
 import type { PracticeCategoryId } from "./constants/practiceCategories";
+import DatabaseInUseScreen from "./components/layout/DatabaseInUseScreen";
+import Button from "./components/common/Button";
 import { useActiveProject } from "./hooks/useActiveProject";
+import { useDatabaseTabLock, useShareSchemaWithOtherTabs } from "./hooks/useDatabaseTabLock";
 import { useOnboardingTour } from "./hooks/useOnboardingTour";
 import { useResizablePanel } from "./hooks/useResizablePanel";
 import { useSqlWorkspace } from "./hooks/useSqlWorkspace";
+import { getDatabase } from "./lib/db/createDatabase";
+import { countDatabasesOpenInOtherTabs } from "./lib/db/tabLock";
 import { clearAllLocalData } from "./lib/projects/projectStore";
 
+type ProjectState = ReturnType<typeof useActiveProject>;
+
 export default function App() {
+  const projectState = useActiveProject();
+  const { projects, activeProject, activeProjectId, switchProject, createProject } = projectState;
+  const lock = useDatabaseTabLock(activeProjectId);
+
+  if (lock.status !== "held") {
+    const others = projects.filter((project) => project.id !== activeProjectId);
+    return (
+      <DatabaseInUseScreen
+        status={lock.status}
+        subject={`"${activeProject?.name ?? "This project"}"`}
+        onTakeOver={lock.takeOver}
+      >
+        <div className="space-y-2 border-t border-line pt-4">
+          <p className="text-xs font-medium text-ink-muted">Or open a different project here:</p>
+          <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto">
+            {others.map((project) => (
+              <Button
+                key={project.id}
+                variant="secondary"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => switchProject(project.id)}
+              >
+                {project.name}
+              </Button>
+            ))}
+            <Button variant="ghost" size="sm" className="w-full" onClick={() => createProject()}>
+              New project
+            </Button>
+          </div>
+        </div>
+      </DatabaseInUseScreen>
+    );
+  }
+
+  return <Workspace key={activeProjectId} projectState={projectState} />;
+}
+
+/** Mounted only while this tab owns the active project's database. */
+function Workspace({ projectState }: { projectState: ProjectState }) {
   const editorRef = useRef<SqlEditorHandle>(null);
   const { width, isResizing, onResizeStart } = useResizablePanel();
 
@@ -38,14 +85,15 @@ export default function App() {
   const {
     projects,
     activeProject,
-    db,
+    activeProjectId,
     createProject,
     renameProject,
     deleteProject,
     switchProject,
-  } = useActiveProject();
+  } = projectState;
 
-  const workspace = useSqlWorkspace(db, activeProject?.id ?? "");
+  const workspace = useSqlWorkspace(getDatabase(activeProjectId), activeProjectId);
+  useShareSchemaWithOtherTabs(activeProjectId, workspace.tables);
   const onboarding = useOnboardingTour();
   const hasSelection = !!workspace.selectedText.trim();
 
@@ -67,6 +115,12 @@ export default function App() {
   }
 
   async function handleClearLocalData() {
+    if ((await countDatabasesOpenInOtherTabs()) > 0) {
+      window.alert(
+        "SQLens is open in another tab. Close the other SQLens tabs first, otherwise they would write their data back after it is cleared."
+      );
+      return;
+    }
     const confirmed = window.confirm(
       "This will remove all local SQLens data on this browser (projects, their databases, drafts, query history, SQL50 progress, and preferences). Continue?"
     );
@@ -104,7 +158,7 @@ export default function App() {
   );
 
   return (
-    <AppBootGate db={db}>
+    <AppBootGate dbId={activeProjectId}>
     <div className="relative z-[1] min-h-screen overflow-x-hidden bg-surface text-ink">
       <div
         className="pointer-events-none absolute inset-0 [background-image:linear-gradient(var(--color-line)_1px,transparent_1px),linear-gradient(90deg,var(--color-line)_1px,transparent_1px)] [background-size:48px_48px] opacity-40"
@@ -178,7 +232,7 @@ export default function App() {
             <SimulateButton
               query={workspace.query}
               selectedText={workspace.selectedText}
-              db={db}
+              dbId={activeProjectId}
             />
           </div>
 
@@ -196,7 +250,7 @@ export default function App() {
           >
             <ErdViewer
               tables={workspace.tables}
-              projectId={activeProject?.id}
+              projectId={activeProjectId}
             />
           </Panel>
         </WorkspaceLayout>

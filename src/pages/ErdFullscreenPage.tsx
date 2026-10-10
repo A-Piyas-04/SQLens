@@ -6,6 +6,7 @@ import AppBootGate from "../components/layout/AppBootGate";
 import Button from "../components/common/Button";
 import { getDatabase } from "../lib/db/createDatabase";
 import { getSchema, type SchemaTable } from "../lib/db/schema";
+import { onTabMessage, postTabMessage, withDatabaseIfFree } from "../lib/db/tabLock";
 import { resolveErdProjectId } from "../lib/erd/erdFullscreenUrl";
 import { getProjects } from "../lib/projects/projectStore";
 
@@ -14,17 +15,33 @@ export default function ErdFullscreenPage() {
     () => resolveErdProjectId(window.location.search),
     []
   );
-  const db = getDatabase(projectId);
   const projectName =
     getProjects().find((project) => project.id === projectId)?.name ??
     "Project";
 
   const [tables, setTables] = useState<SchemaTable[]>([]);
 
+  // This tab never owns the database: the workspace tab usually does, and two owners overwrite each other.
   const refreshSchema = useCallback(async () => {
-    const schema = await getSchema(db);
-    setTables(schema);
-  }, [db]);
+    const schema = await withDatabaseIfFree(projectId, () =>
+      getSchema(getDatabase(projectId))
+    );
+    if (schema) {
+      setTables(schema);
+    } else {
+      postTabMessage({ type: "schema-request", dbId: projectId });
+    }
+  }, [projectId]);
+
+  useEffect(
+    () =>
+      onTabMessage((message) => {
+        if (message.type === "schema" && message.dbId === projectId) {
+          setTables(message.tables);
+        }
+      }),
+    [projectId]
+  );
 
   useEffect(() => {
     void refreshSchema();
@@ -44,7 +61,7 @@ export default function ErdFullscreenPage() {
   }, [refreshSchema]);
 
   return (
-    <AppBootGate db={db}>
+    <AppBootGate>
       <div className="flex h-dvh min-h-0 flex-col bg-surface text-ink">
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-surface-raised px-4 py-2.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-2.5">

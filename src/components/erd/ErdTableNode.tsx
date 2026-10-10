@@ -9,25 +9,46 @@ import { cn } from "../../lib/utils/cn";
 
 type ErdTableNodeType = Node<ErdTableNodeData, "erdTable">;
 
+const HANDLE_SIDES = [
+  ["source", "top", Position.Top],
+  ["source", "right", Position.Right],
+  ["source", "bottom", Position.Bottom],
+  ["source", "left", Position.Left],
+  ["target", "top", Position.Top],
+  ["target", "right", Position.Right],
+  ["target", "bottom", Position.Bottom],
+  ["target", "left", Position.Left],
+] as const;
+
+const hiddenHandleStyle = {
+  width: 1,
+  height: 1,
+  minWidth: 0,
+  minHeight: 0,
+  pointerEvents: "none",
+} as const;
+
 export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
   const { table } = data;
   const pkSet = new Set(table.primaryKeys);
   const fkSet = new Set(table.foreignKeys.map((fk) => fk.column_name));
 
+  // Table-level anchors for edges without a column (many-to-many via junction tables).
+  const tableHandles = HANDLE_SIDES.map(([role, side, position]) => (
+    <Handle
+      key={`${role}-${side}`}
+      type={role}
+      id={`${role}-${side}`}
+      position={position}
+      className="!border-none !bg-transparent !opacity-0"
+      style={hiddenHandleStyle}
+    />
+  ));
+
   const columnHandles = table.columns.flatMap((col, index) => {
     const rowTop = columnRowCenter(index);
-    const sides = [
-      ["source", "top", Position.Top],
-      ["source", "right", Position.Right],
-      ["source", "bottom", Position.Bottom],
-      ["source", "left", Position.Left],
-      ["target", "top", Position.Top],
-      ["target", "right", Position.Right],
-      ["target", "bottom", Position.Bottom],
-      ["target", "left", Position.Left],
-    ] as const;
 
-    return sides.map(([role, side, position]) => {
+    return HANDLE_SIDES.map(([role, side, position]) => {
       const id = `${role}-${side}-col-${col.column_name}`;
       const isVerticalSide = side === "left" || side === "right";
       return (
@@ -38,11 +59,7 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
           position={position}
           className="!border-none !bg-transparent !opacity-0"
           style={{
-            width: 1,
-            height: 1,
-            minWidth: 0,
-            minHeight: 0,
-            pointerEvents: "none",
+            ...hiddenHandleStyle,
             ...(isVerticalSide ? { top: rowTop } : { left: "50%" }),
           }}
         />
@@ -52,6 +69,7 @@ export default function ErdTableNode({ data }: NodeProps<ErdTableNodeType>) {
 
   return (
     <div className="min-w-[248px] overflow-hidden border-2 border-retro-edge bg-surface-elevated shadow-[4px_4px_0_var(--color-retro-edge)]">
+      {tableHandles}
       {columnHandles}
 
       <div className="flex items-center gap-2 border-b border-line bg-accent-soft px-3 py-2.5">

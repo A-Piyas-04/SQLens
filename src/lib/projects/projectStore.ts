@@ -14,7 +14,8 @@ export type Project = {
   updatedAt: string;
 };
 
-const PROJECTS_KEY = "sqlens-projects";
+export const PROJECTS_KEY = "sqlens-projects";
+const PROJECTS_BACKUP_KEY = "sqlens-projects-unreadable-backup";
 const ACTIVE_PROJECT_KEY = "sqlens-active-project";
 
 export const historyKey = (id: string) => `sqlens-history-${id}`;
@@ -32,13 +33,29 @@ function generateId(): string {
 
 // ─── Project list ──────────────────────────────────────────────────────────
 
+function isProject(value: unknown): value is Project {
+  if (!value || typeof value !== "object") return false;
+  const p = value as Record<string, unknown>;
+  return typeof p.id === "string" && p.id.length > 0 && typeof p.name === "string";
+}
+
 export function getProjects(): Project[] {
+  const raw = safeGetLocalStorage(PROJECTS_KEY);
+  if (!raw) return [];
+
+  let parsed: unknown;
   try {
-    const raw = safeGetLocalStorage(PROJECTS_KEY);
-    return raw ? (JSON.parse(raw) as Project[]) : [];
+    parsed = JSON.parse(raw);
   } catch {
-    return [];
+    parsed = undefined;
   }
+
+  const projects = Array.isArray(parsed) ? parsed.filter(isProject) : [];
+  if (!Array.isArray(parsed) || projects.length !== parsed.length) {
+    // Keep the original value so a later write can never be the only copy of the user's project list.
+    safeSetLocalStorage(PROJECTS_BACKUP_KEY, raw);
+  }
+  return projects;
 }
 
 function saveProjects(projects: Project[]): void {
@@ -109,6 +126,19 @@ export function getSqlensStorageKeys(): string[] {
 }
 
 /** Removes all SQLens localStorage data and every SQLens PGlite IndexedDB database. */
+/**
+ * Asks the browser to exempt SQLens storage from automatic eviction (low disk, Safari's
+ * 7-day script-storage cap). Best effort; the browser may decline.
+ */
+export async function requestPersistentStorage(): Promise<void> {
+  try {
+    if (!navigator.storage?.persist || (await navigator.storage.persisted())) return;
+    await navigator.storage.persist();
+  } catch {
+    /* unsupported or denied */
+  }
+}
+
 export async function clearAllLocalData(): Promise<void> {
   const projectIds = [...getProjects().map((project) => project.id), SQL50_DB_ID];
 

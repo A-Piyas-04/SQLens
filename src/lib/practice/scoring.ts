@@ -1,7 +1,7 @@
-const BASE_SCORE = 100;
-const HINT_PENALTY = 10;
-const FAILED_ATTEMPT_PENALTY = 5;
-const SOLUTION_VIEWED_PENALTY = 20;
+export const BASE_SCORE = 100;
+export const HINT_PENALTY = 10;
+export const FAILED_ATTEMPT_PENALTY = 5;
+export const SOLUTION_VIEWED_PENALTY = 20;
 
 export function computeScore(options: {
   hintsUsed: number;

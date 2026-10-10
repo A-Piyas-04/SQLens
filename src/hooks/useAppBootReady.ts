@@ -1,5 +1,6 @@
-import type { PGlite } from "@electric-sql/pglite";
 import { useEffect, useState } from "react";
+
+import { getDatabase } from "../lib/db/createDatabase";
 
 export type BootStep =
   | "engine"
@@ -17,11 +18,12 @@ const BOOT_STEPS: { id: BootStep; label: string }[] = [
 const MIN_SPLASH_MS = 1400;
 const STEP_MS = 380;
 
-export function useAppBootReady(db: PGlite) {
-  const [step, setStep] = useState<BootStep>("engine");
-  const [isReady, setIsReady] = useState(false);
+export function useAppBootReady(dbId: string | undefined, skip = false) {
+  const [step, setStep] = useState<BootStep>(skip ? "ready" : "engine");
+  const [isReady, setIsReady] = useState(skip);
 
   useEffect(() => {
+    if (skip) return;
     let cancelled = false;
 
     async function boot() {
@@ -33,7 +35,7 @@ export function useAppBootReady(db: PGlite) {
 
       setStep("database");
       try {
-        await db.query("SELECT 1 AS ok");
+        if (dbId) await getDatabase(dbId).query("SELECT 1 AS ok");
       } catch {
         // PGlite may still be warming up — proceed so the workspace can recover.
       }
@@ -55,7 +57,7 @@ export function useAppBootReady(db: PGlite) {
     return () => {
       cancelled = true;
     };
-  }, [db]);
+  }, [dbId, skip]);
 
   const stepIndex = BOOT_STEPS.findIndex((item) => item.id === step);
   const progress = ((stepIndex + 1) / BOOT_STEPS.length) * 100;

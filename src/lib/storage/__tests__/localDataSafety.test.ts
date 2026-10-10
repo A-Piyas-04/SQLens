@@ -65,6 +65,19 @@ describe("local data safety", () => {
     expect(localStorage.getItem(historyKey(remove.id))).toBeNull();
   });
 
+  it("returns only valid projects and backs up an unreadable project list", () => {
+    localStorage.setItem("sqlens-projects", "{not json");
+    expect(getProjects()).toEqual([]);
+    expect(localStorage.getItem("sqlens-projects-unreadable-backup")).toBe("{not json");
+
+    const valid = { id: "p1", name: "One", createdAt: "", updatedAt: "" };
+    localStorage.setItem("sqlens-projects", JSON.stringify([valid, null, { name: "no id" }]));
+    expect(getProjects()).toEqual([valid]);
+
+    localStorage.setItem("sqlens-projects", JSON.stringify({ id: "p1" }));
+    expect(getProjects()).toEqual([]);
+  });
+
   it("clear local data removes every SQLens key and database but nothing else", async () => {
     const project = createProject("One");
     setProjectDraft(project.id, "SELECT 1;");

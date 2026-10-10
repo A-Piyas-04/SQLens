@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useState } from "react";
-import type { PGlite } from "@electric-sql/pglite";
 import { Cpu, Loader2 } from "lucide-react";
 
+import { getDatabase } from "../../lib/db/createDatabase";
 import { generateSnapshots } from "../../lib/simulator/snapshot/generateSnapshots";
 import type { SimulatorSnapshot, StageDiff } from "../../lib/simulator/types/snapshotTypes";
 
@@ -12,7 +12,7 @@ const SimulatorPlaybackModal = lazy(
 type Props = {
   query: string;
   selectedText: string;
-  db: PGlite;
+  dbId: string;
 };
 
 type SimulateState =
@@ -26,7 +26,7 @@ type SimulateState =
       sql: string;
     };
 
-export default function SimulateButton({ query, selectedText, db }: Props) {
+export default function SimulateButton({ query, selectedText, dbId }: Props) {
   const [state, setState] = useState<SimulateState>({ status: "idle" });
 
   const isSelection = !!selectedText.trim();
@@ -37,7 +37,7 @@ export default function SimulateButton({ query, selectedText, db }: Props) {
     const sql = selectedText.trim() || query;
     setState({ status: "loading" });
 
-    const result = await generateSnapshots({ sql, db });
+    const result = await generateSnapshots({ sql, db: getDatabase(dbId) });
     if (!result.success) {
       setState({ status: "error", message: result.error });
       return;
@@ -49,7 +49,7 @@ export default function SimulateButton({ query, selectedText, db }: Props) {
       diffs: result.diffs,
       sql,
     });
-  }, [db, query, selectedText]);
+  }, [dbId, query, selectedText]);
 
   const ledState =
     state.status === "loading"

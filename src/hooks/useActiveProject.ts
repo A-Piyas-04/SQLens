@@ -1,11 +1,14 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-import { deleteProjectDatabase, getDatabase } from "../lib/db/createDatabase";
+import { deleteProjectDatabase } from "../lib/db/createDatabase";
+import { isDatabaseOpenInAnotherTab } from "../lib/db/tabLock";
 import {
   createProject,
   deleteProject as deleteProjectInStore,
   ensureDefaultProject,
   getProjects,
+  PROJECTS_KEY,
   renameProject as renameProjectInStore,
   setActiveProjectId,
   type Project,
@@ -22,12 +25,17 @@ export function useActiveProject() {
   const activeProject =
     projects.find((p) => p.id === activeProjectId) ?? projects[0];
 
-  // PGlite instance is looked up (or created) synchronously from the registry
-  const db = getDatabase(activeProjectId);
-
   const syncProjects = useCallback(() => {
     setProjects(getProjects());
   }, []);
+
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === null || event.key === PROJECTS_KEY) syncProjects();
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [syncProjects]);
 
   const handleCreateProject = useCallback(
     (name?: string): Project => {
@@ -54,8 +62,15 @@ export function useActiveProject() {
   }, []);
 
   const handleDeleteProject = useCallback(
-    (id: string): void => {
-      const remaining = projects.filter((p) => p.id !== id);
+    async (id: string): Promise<void> => {
+      if (await isDatabaseOpenInAnotherTab(id)) {
+        toast.error("This project is open in another tab. Close it there first, then delete it.", {
+          id: "sqlens-delete-open-elsewhere",
+        });
+        return;
+      }
+
+      const remaining = getProjects().filter((p) => p.id !== id);
       deleteProjectInStore(id);
 
       if (id === activeProjectId) {
@@ -79,14 +94,13 @@ export function useActiveProject() {
         void deleteProjectDatabase(id);
       }, 0);
     },
-    [activeProjectId, projects, syncProjects]
+    [activeProjectId, syncProjects]
   );
 
   return {
     projects,
     activeProject,
     activeProjectId,
-    db,
     createProject: handleCreateProject,
     renameProject: handleRenameProject,
     switchProject: handleSwitchProject,

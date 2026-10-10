@@ -25,6 +25,11 @@ export function getDatabase(projectId: string): PGlite {
   return registry.get(projectId)!;
 }
 
+/** Closes and forgets the instance; the next `getDatabase` reloads fresh state from IndexedDB. */
+export async function closeDatabase(projectId: string): Promise<void> {
+  await closeRegisteredDatabase(projectId);
+}
+
 async function closeRegisteredDatabase(projectId: string): Promise<void> {
   const db = registry.get(projectId);
   registry.delete(projectId);

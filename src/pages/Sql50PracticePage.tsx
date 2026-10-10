@@ -1,15 +1,18 @@
-import { ExternalLink, GraduationCap } from "lucide-react";
+import { ExternalLink, GraduationCap, HelpCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import StatusMessage from "../components/common/StatusMessage";
 import Button from "../components/common/Button";
 import Skeleton from "../components/common/Skeleton";
 import AppBootGate from "../components/layout/AppBootGate";
+import DatabaseInUseScreen from "../components/layout/DatabaseInUseScreen";
+import { useDatabaseTabLock } from "../hooks/useDatabaseTabLock";
 import HintPanel from "../features/sql50/components/HintPanel";
 import ProblemHeader from "../features/sql50/components/ProblemHeader";
 import ProblemStatement from "../features/sql50/components/ProblemStatement";
 import ProblemStatementModal from "../features/sql50/components/ProblemStatementModal";
 import ProgressPanel from "../features/sql50/components/ProgressPanel";
+import ScoringInfoModal from "../features/sql50/components/ScoringInfoModal";
 import SolutionModal from "../features/sql50/components/SolutionModal";
 import Sql50ActionBar from "../features/sql50/components/Sql50ActionBar";
 import Sql50EditorPanel from "../features/sql50/components/Sql50EditorPanel";
@@ -31,12 +34,32 @@ import { useSubmissionEngine } from "../features/sql50/hooks/useSubmissionEngine
 import { markSolutionViewed } from "../features/sql50/services/progressStore";
 import { notifyProgressUpdate } from "../features/sql50/hooks/useProblemProgress";
 import { PACK_ID } from "../features/sql50/services/progressStore";
+import { SQL50_DB_ID } from "../features/sql50/types/sql50";
+import {
+  hasSeenScoringIntro,
+  markScoringIntroSeen,
+} from "../lib/practice/scoringIntroStore";
 import { cn } from "../lib/utils/cn";
 import type { SqlEditorHandle } from "../components/editor/SqlEditor";
 
 type MobileTab = "problems" | "schema" | "help";
 
 export default function Sql50PracticePage() {
+  const lock = useDatabaseTabLock(SQL50_DB_ID);
+  if (lock.status !== "held") {
+    return (
+      <DatabaseInUseScreen
+        status={lock.status}
+        subject="Practice SQL 50"
+        onTakeOver={lock.takeOver}
+      />
+    );
+  }
+  return <Sql50PracticeWorkspace />;
+}
+
+/** Mounted only while this tab owns the SQL 50 practice database. */
+function Sql50PracticeWorkspace() {
   const workspace = useSql50();
   const { analytics, getProblemProgress, toggleBookmark } = useProblemProgress();
   const simulation = useSql50Simulation(workspace.db);
@@ -52,6 +75,7 @@ export default function Sql50PracticePage() {
 
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [statementOpen, setStatementOpen] = useState(false);
+  const [scoringOpen, setScoringOpen] = useState(() => !hasSeenScoringIntro());
   const [acceptedScore, setAcceptedScore] = useState<number | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("problems");
 
@@ -93,6 +117,11 @@ export default function Sql50PracticePage() {
     }
     setSolutionOpen(true);
   }, [progress.solved, workspace.activeProblem.id]);
+
+  const handleCloseScoring = useCallback(() => {
+    markScoringIntroSeen();
+    setScoringOpen(false);
+  }, []);
 
   const handlePlaySimulation = useCallback(async () => {
     clearSimulationError();
@@ -198,7 +227,7 @@ export default function Sql50PracticePage() {
   );
 
   return (
-    <AppBootGate db={workspace.db} className="h-dvh">
+    <AppBootGate dbId={SQL50_DB_ID} className="h-dvh">
       <Sql50PageLayout
         header={
           <header className="flex shrink-0 items-center justify-between gap-4 border-b-2 border-retro-edge bg-surface-raised px-4 py-2.5 shadow-[0_3px_0_var(--color-border-strong)] sm:px-5">
@@ -213,16 +242,27 @@ export default function Sql50PracticePage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                window.location.href = "/";
-              }}
-            >
-              <ExternalLink className="size-3.5" aria-hidden />
-              Workspace
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setScoringOpen(true)}
+                aria-label="How scoring works"
+              >
+                <HelpCircle className="size-3.5" aria-hidden />
+                <span className="hidden sm:inline">Scoring</span>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  window.location.href = "/";
+                }}
+              >
+                <ExternalLink className="size-3.5" aria-hidden />
+                Workspace
+              </Button>
+            </div>
           </header>
         }
         left={leftSidebar}
@@ -387,6 +427,8 @@ export default function Sql50PracticePage() {
         onClose={() => setSolutionOpen(false)}
         onVisualize={handleVisualize}
       />
+
+      <ScoringInfoModal isOpen={scoringOpen} onClose={handleCloseScoring} />
     </AppBootGate>
   );
 }

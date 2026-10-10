@@ -13,6 +13,7 @@ import {
 import { getSchema, type SchemaTable } from "../lib/db/schema";
 import {
   getProjectDraft,
+  requestPersistentStorage,
   setProjectDraft,
 } from "../lib/projects/projectStore";
 import { simplifySqlError } from "../lib/sql/simplifyError";
@@ -42,11 +43,22 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   const dbRef = useRef(db);
   const queryRef = useRef(query);
   const selectedTextRef = useRef(selectedText);
+  const tablesRef = useRef(tables);
 
   useEffect(() => {
     projectIdRef.current = projectId;
     dbRef.current = db;
+    tablesRef.current = tables;
   });
+
+  /** Every path that drops the public schema must go through this so user tables are never wiped silently. */
+  function confirmReplaceTables(action: string): boolean {
+    const count = tablesRef.current.length;
+    if (count === 0) return true;
+    return window.confirm(
+      `${action} will permanently delete the ${count} table${count === 1 ? "" : "s"} and all data in this project's database. Continue?`
+    );
+  }
 
   useEffect(() => {
     queryRef.current = query;
@@ -132,9 +144,11 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
     const result = await runQuery(dbRef.current, sqlToRun);
     await applyQueryResult(sqlToRun, result, { isPartial, saveHistory: true });
     setIsRunning(false);
+    if (result.success) void requestPersistentStorage();
   }
 
   async function handleResetDatabase() {
+    if (!confirmReplaceTables("Resetting the database")) return;
     await resetDatabase(dbRef.current);
     withViewTransition(() => {
       startUiTransition(() => {
@@ -159,6 +173,7 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
   async function loadSampleDatabase(databaseId: string) {
     const sample = getSampleDatabaseById(databaseId);
     if (!sample) return;
+    if (!confirmReplaceTables(`Loading "${sample.name}"`)) return;
 
     setIsRunning(true);
     setError("");
@@ -202,6 +217,7 @@ export function useSqlWorkspace(db: PGlite, projectId: string) {
 
     const sample = getSampleDatabaseById(preset.databaseId);
     if (!sample) return;
+    if (!confirmReplaceTables(`Applying "${preset.title}"`)) return;
 
     setIsRunning(true);
     setError("");
