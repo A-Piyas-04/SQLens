@@ -203,7 +203,7 @@ function Workspace({ projectState }: { projectState: ProjectState }) {
             onRun={workspace.handleRunQuery}
             hasSelection={hasSelection}
             toolbar={
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
                 <ImportSqlButton
                   disabled={workspace.isRunning}
                   currentQuery={workspace.query}

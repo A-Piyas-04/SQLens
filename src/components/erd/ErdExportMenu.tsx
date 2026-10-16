@@ -111,8 +111,8 @@ export default function ErdExportMenu({ tables, containerRef }: Props) {
         <DesignedTextModal text={designedText} onClose={() => setDesignedText(null)} />
       ) : null}
 
-      <Panel position="top-right" className="!m-3">
-      <div ref={menuRef} className="relative">
+      <Panel position="top-right" className="!m-2 sm:!m-3">
+      <div ref={menuRef} className="relative max-w-[min(100vw-2rem,16rem)]">
         <Button
           variant="ghost"
           size="sm"
@@ -120,9 +120,13 @@ export default function ErdExportMenu({ tables, containerRef }: Props) {
           onClick={() => setIsOpen((open) => !open)}
           aria-expanded={isOpen}
           aria-haspopup="menu"
+          aria-label={isExporting ? "Exporting" : "Export"}
+          title="Export"
         >
           <Download className="size-3.5" aria-hidden />
-          {isExporting ? "Exporting…" : "Export"}
+          <span className="hidden sm:inline">
+            {isExporting ? "Exporting…" : "Export"}
+          </span>
           <ChevronDown
             className={cn("size-3.5 transition-transform", isOpen && "rotate-180")}
             aria-hidden
@@ -133,7 +137,7 @@ export default function ErdExportMenu({ tables, containerRef }: Props) {
           <div
             role="menu"
             className={cn(
-              "absolute right-0 top-full z-50 mt-1 min-w-[10.5rem]",
+              "absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] max-w-[min(100vw-2rem,16rem)]",
               "rounded-sm border border-line bg-surface-elevated py-1 shadow-md",
               "shadow-sm "
             )}

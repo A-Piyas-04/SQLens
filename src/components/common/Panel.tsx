@@ -38,18 +38,25 @@ export default function Panel({
       )}
     >
       {(title || action) && (
-        <header className="relative z-[1] flex items-center gap-3 px-6 pb-1 pt-3.5">
+        <header className="relative z-[1] flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-1 pt-3.5 sm:px-6">
           {title ? (
             <h2 className="min-w-0 shrink truncate font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
               {title}
             </h2>
           ) : null}
-          <span className="min-w-6 flex-1 border-t border-dashed border-retro-edge/40" aria-hidden />
-          {action}
+          <span
+            className="min-w-6 flex-1 border-t border-dashed border-retro-edge/40 max-sm:hidden"
+            aria-hidden
+          />
+          {action ? (
+            <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+              {action}
+            </div>
+          ) : null}
         </header>
       )}
 
-      <div className={cn("relative z-[1] px-5 pb-6 sm:px-6", title || action ? "pt-3" : "pt-6")}>
+      <div className={cn("relative z-[1] px-4 pb-6 sm:px-6", title || action ? "pt-3" : "pt-6")}>
         {children}
       </div>
     </section>

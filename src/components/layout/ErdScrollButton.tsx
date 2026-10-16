@@ -1,3 +1,5 @@
+import { GitFork } from "lucide-react";
+
 import Button from "../common/Button";
 import { cn } from "../../lib/utils/cn";
 
@@ -24,9 +26,11 @@ export default function ErdScrollButton({
       size="sm"
       onClick={scrollToErd}
       aria-label="Scroll to Entity Relationship Diagram"
+      title="View Entity Relationship Diagram"
       className={cn("font-semibold text-accent-ink", className)}
     >
-      View ERD
+      <GitFork className="size-3.5 sm:hidden" aria-hidden />
+      <span className="hidden sm:inline">View ERD</span>
     </Button>
   );
 }

@@ -29,7 +29,7 @@ export default function QueryToolbar({
 
   const buttons = (
     <div
-      className={cn("flex items-center gap-2", variant === "header" && "shrink-0")}
+      className={cn("flex flex-wrap items-center gap-2", variant === "header" && "shrink-0")}
       {...(variant === "header" ? { "data-tour": "run-query" } : {})}
     >
       <Button
@@ -52,9 +52,13 @@ export default function QueryToolbar({
         size={variant === "header" ? "sm" : "md"}
         onClick={onReset}
         disabled={isRunning}
+        aria-label="Reset database"
+        title="Reset database"
       >
         <RotateCcw className="size-3.5" aria-hidden />
-        Reset DB
+        <span className={variant === "header" ? "hidden sm:inline" : undefined}>
+          Reset DB
+        </span>
       </Button>
     </div>
   );
@@ -67,7 +71,7 @@ export default function QueryToolbar({
     <div className="space-y-2">
       <div className="flex flex-col gap-3 sm:flex-row">{buttons}</div>
 
-      <p className="text-xs">
+      <p className="text-xs break-words">
         {hasSelection ? (
           <span className="text-accent-ink">
             ● Selection active — only selected SQL will run
@@ -85,7 +89,7 @@ export default function QueryToolbar({
 /** Hint shown below the SQL editor when using header toolbar layout */
 export function QueryToolbarHint({ hasSelection }: { hasSelection: boolean }) {
   return (
-    <p className="mt-2 text-xs">
+    <p className="mt-2 text-xs break-words">
       {hasSelection ? (
         <span className="text-accent-ink">
           ● Selection active — only selected SQL will run

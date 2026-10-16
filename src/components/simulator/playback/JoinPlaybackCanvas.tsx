@@ -33,8 +33,10 @@ function KeyPanel({ side, title, rows, joinKey, identity, cellRefs, activeId, ma
   const win = windowRows(rows, important, JOIN_PANEL_ROWS);
   return (
     <div data-join-panel={side} className="min-w-0">
-      <div className="mb-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">{title}</p>
+      <div className="mb-2 min-w-0">
+        <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-ink-muted" title={title}>
+          {title}
+        </p>
         <p className="text-[10px] text-ink-muted">{rows.length} rows</p>
       </div>
       <div role="table" aria-label={title} className="overflow-hidden rounded-sm border border-line">
@@ -43,12 +45,17 @@ function KeyPanel({ side, title, rows, joinKey, identity, cellRefs, activeId, ma
             role="columnheader"
             data-join-key-header
             data-focused={keysFocused || undefined}
-            className="pb-join-key-header"
+            className="pb-join-key-header truncate"
+            title={joinKey ?? "key"}
           >
             {joinKey ?? "key"}
           </div>
           {identity && (
-            <div role="columnheader" className="px-3 py-2 text-left font-semibold text-ink-muted">
+            <div
+              role="columnheader"
+              className="min-w-0 truncate px-3 py-2 text-left font-semibold text-ink-muted"
+              title={identity}
+            >
               {identity}
             </div>
           )}
@@ -72,12 +79,15 @@ function KeyPanel({ side, title, rows, joinKey, identity, cellRefs, activeId, ma
                   if (el) cellRefs.current.set(row._rowId, el);
                   else cellRefs.current.delete(row._rowId);
                 }}
-                className={cn("px-3 py-1.5 font-mono", val === null && "italic text-join-null")}
+                className={cn(
+                  "min-w-0 truncate px-3 py-1.5 font-mono",
+                  val === null && "italic text-join-null"
+                )}
               >
                 {val === undefined ? "—" : formatValue(val)}
               </div>
               {identity && (
-                <div role="cell" className="truncate px-3 py-1.5 text-ink-secondary">
+                <div role="cell" className="min-w-0 truncate px-3 py-1.5 text-ink-secondary">
                   {formatValue(row[identity])}
                 </div>
               )}
@@ -181,11 +191,12 @@ export default function JoinPlaybackCanvas({ model, view }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="overflow-x-auto scrollbar-thin">
       <div
         ref={stageRef}
         data-join-stage
         className={cn(
-          "relative grid grid-cols-[minmax(0,1fr)_minmax(110px,170px)_minmax(0,1fr)] items-start gap-3",
+          "relative grid min-w-[36rem] grid-cols-[minmax(0,1fr)_minmax(110px,170px)_minmax(0,1fr)] items-start gap-3",
           resultVisible && "pb-join-receded"
         )}
       >
@@ -251,6 +262,7 @@ export default function JoinPlaybackCanvas({ model, view }: Props) {
         )}
 
         <JoinArrowOverlay width={geometry.w} height={geometry.h} arrows={geometry.arrows} overlayUid={uid} />
+      </div>
       </div>
 
       {view.showSkippedSummary && model.skippedStepCount > 0 && (

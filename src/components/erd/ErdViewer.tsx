@@ -12,7 +12,7 @@ import {
   type ReactFlowInstance,
 } from "@xyflow/react";
 import { GitFork } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import Button from "../common/Button";
 
@@ -30,6 +30,26 @@ type ErdNode = Node<ErdTableNodeData, "erdTable">;
 /** Above this, Dagre layout + React Flow is deferred until the user asks for it. */
 export const ERD_LARGE_SCHEMA_TABLE_THRESHOLD = 150;
 
+const MD_QUERY = "(min-width: 768px)";
+
+function subscribeMd(onChange: () => void) {
+  const mq = window.matchMedia(MD_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+function getMdSnapshot() {
+  return window.matchMedia(MD_QUERY).matches;
+}
+
+function getMdServerSnapshot() {
+  return true;
+}
+
+function useShowMiniMap() {
+  return useSyncExternalStore(subscribeMd, getMdSnapshot, getMdServerSnapshot);
+}
+
 const nodeTypes = { erdTable: ErdTableNode };
 const edgeTypes = { erdCardinality: ErdCardinalityEdge };
 
@@ -43,6 +63,7 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
   const [nodes, setNodes, onNodesChange] = useNodesState<ErdNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [largeSchemaConfirmed, setLargeSchemaConfirmed] = useState(false);
+  const showMiniMap = useShowMiniMap();
   const rfInstanceRef = useRef<ReactFlowInstance<ErdNode, Edge> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -110,7 +131,7 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
       className={
         fullscreen
           ? "h-full min-h-0 overflow-hidden rounded-sm border border-line"
-          : "h-[540px] overflow-hidden rounded-sm border border-line"
+          : "h-[320px] overflow-hidden rounded-sm border border-line sm:h-[min(70vh,540px)]"
       }
     >
       <ReactFlow
@@ -142,15 +163,17 @@ export default function ErdViewer({ tables, fullscreen = false, projectId }: Pro
           }}
         />
 
-        <MiniMap
-          nodeColor="var(--color-accent)"
-          maskColor="rgba(28, 25, 22, 0.12)"
-          style={{
-            background: "var(--color-bg-subtle)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "4px",
-          }}
-        />
+        {showMiniMap ? (
+          <MiniMap
+            nodeColor="var(--color-accent)"
+            maskColor="rgba(28, 25, 22, 0.12)"
+            style={{
+              background: "var(--color-bg-subtle)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "4px",
+            }}
+          />
+        ) : null}
 
         {projectId && !fullscreen ? (
           <ErdMaximizeButton projectId={projectId} />

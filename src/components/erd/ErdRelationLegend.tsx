@@ -119,23 +119,35 @@ const RELATION_ROWS = [
 ] as const;
 
 export default function ErdRelationLegend() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   return (
-    <Panel position="bottom-left" className="!m-3 !mb-28 max-w-[min(100%,18rem)]">
+    <Panel
+      position="bottom-left"
+      className={cn(
+        "!m-2 !mb-14 max-w-[min(calc(100%-1rem),18rem)] sm:!m-3 sm:!mb-28"
+      )}
+    >
       <div className="overflow-hidden rounded-sm border border-line bg-surface-elevated shadow-sm">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="flex w-full items-center gap-2 border-b border-line px-3 py-2 text-left text-xs font-semibold text-ink hover:bg-surface-muted"
+          className={cn(
+            "flex items-center gap-2 border-b border-line text-left text-xs font-semibold text-ink hover:bg-surface-muted",
+            open ? "w-full px-3 py-2" : "size-9 justify-center px-0 sm:w-full sm:justify-start sm:px-3 sm:py-2"
+          )}
           aria-expanded={open}
+          aria-label="Relationship notation"
+          title="Relationship notation"
         >
           <Info className="size-3.5 shrink-0 text-accent" aria-hidden />
-          <span>Relationship notation</span>
+          <span className={cn(open ? "inline" : "hidden sm:inline")}>
+            Relationship notation
+          </span>
         </button>
 
         {open ? (
-          <div className="space-y-3 px-3 py-2.5 text-[10px] leading-snug text-ink-muted">
+          <div className="max-h-[min(50vh,20rem)] space-y-3 overflow-y-auto px-3 py-2.5 text-[10px] leading-snug text-ink-muted scrollbar-thin">
             <div className="space-y-1.5">
               <p className="font-semibold uppercase tracking-wide text-ink">Line endings</p>
               <div className="flex items-center gap-2">
@@ -169,7 +181,7 @@ export default function ErdRelationLegend() {
                     {row.title}
                   </p>
                   <p>{row.detail}</p>
-                  <p className="font-mono text-[9px] text-ink-muted/90">{row.sample}</p>
+                  <p className="break-all font-mono text-[9px] text-ink-muted/90">{row.sample}</p>
                 </div>
               ))}
             </div>
