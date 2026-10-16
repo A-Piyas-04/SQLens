@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 
 import { useCollapsibleSidebar } from "../../hooks/useCollapsibleSidebar";
 import { cn } from "../../lib/utils/cn";
+import MeetTheDevButton from "./MeetTheDevButton";
 import ResizableSidebar from "./ResizableSidebar";
 
 type Props = {
@@ -53,15 +54,19 @@ export default function WorkspaceLayout({
         </aside>
       </div>
 
-      <ResizableSidebar
-        width={sidebarWidth}
-        isResizing={isResizing}
-        onResizeStart={onResizeStart}
-        collapsed={collapsed}
-        onToggleCollapsed={toggle}
-      >
-        {sidebar}
-      </ResizableSidebar>
+      {/* Desktop left rail: sidebar and Meet the Dev are siblings, not nested */}
+      <div className="hidden shrink-0 flex-col items-start gap-6 lg:flex">
+        <ResizableSidebar
+          width={sidebarWidth}
+          isResizing={isResizing}
+          onResizeStart={onResizeStart}
+          collapsed={collapsed}
+          onToggleCollapsed={toggle}
+        >
+          {sidebar}
+        </ResizableSidebar>
+        <MeetTheDevButton />
+      </div>
 
       <main className="min-w-0 flex-1 space-y-5">{children}</main>
     </div>

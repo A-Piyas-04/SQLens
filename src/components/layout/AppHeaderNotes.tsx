@@ -1,4 +1,4 @@
-import { NotesIcon } from "../icons";
+import { BellIcon } from "../icons";
 import { cn } from "../../lib/utils/cn";
 import {
   HEADER_ACTION_ICON_SIZE,
@@ -16,10 +16,16 @@ export default function AppHeaderNotes({ onOpenNotes }: Props) {
       onClick={onOpenNotes}
       aria-label="Open notes"
       title="Good to know"
-      className={cn(headerActionButtonClass)}
+      className={cn(
+        headerActionButtonClass,
+        "relative w-9 justify-center px-0"
+      )}
     >
-      <NotesIcon size={HEADER_ACTION_ICON_SIZE} className="shrink-0" />
-      <span>Notes</span>
+      <BellIcon size={HEADER_ACTION_ICON_SIZE} className="shrink-0" />
+      <span
+        className="absolute right-1 top-1 size-1.5 rounded-full bg-danger-ink ring-1 ring-surface-elevated"
+        aria-hidden
+      />
     </button>
   );
 }

@@ -1,17 +1,14 @@
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
-import { PracticeHubIcon } from "../icons";
 import {
   PRACTICE_CATEGORIES,
   getPracticeCategory,
   type PracticeCategoryId,
 } from "../../constants/practiceCategories";
 import {
-  HEADER_ACTION_ICON_SIZE,
   headerActionButtonClass,
   headerActionButtonOpenClass,
-  headerActionIconAccentClass,
 } from "../layout/headerActionButton";
 import { cn } from "../../lib/utils/cn";
 import PracticeCategoryContent from "./PracticeCategoryContent";
@@ -267,13 +264,6 @@ export default function PracticeRadialMenu({
           isOpen && headerActionButtonOpenClass
         )}
       >
-        {isOpen ? (
-          <span className="inline-flex shrink-0 items-center justify-center rounded-sm border border-danger-ink bg-danger-ink p-0.5 text-white">
-            <X className="size-4" aria-hidden />
-          </span>
-        ) : (
-          <PracticeHubIcon size={HEADER_ACTION_ICON_SIZE} className={cn("shrink-0", headerActionIconAccentClass)} />
-        )}
         <span>{isOpen ? "Close" : "Practice"}</span>
       </button>
     </div>
