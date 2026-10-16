@@ -4,6 +4,7 @@ import OnboardingTour from "./components/onboarding/OnboardingTour";
 import SimulateButton from "./components/simulator/SimulateButton";
 import AppBootGate from "./components/layout/AppBootGate";
 import AppHeader from "./components/layout/AppHeader";
+import AppNotesModal from "./components/layout/AppNotesModal";
 import LoadingBanner from "./components/layout/LoadingBanner";
 import WorkspaceLayout from "./components/layout/WorkspaceLayout";
 import SqlEditor, { type SqlEditorHandle } from "./components/editor/SqlEditor";
@@ -78,6 +79,7 @@ function Workspace({ projectState }: { projectState: ProjectState }) {
   const { width, isResizing, onResizeStart } = useResizablePanel();
 
   const [practiceMenuOpen, setPracticeMenuOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [practiceCategory, setPracticeCategory] = useState<PracticeCategoryId | null>(
     null
   );
@@ -168,6 +170,7 @@ function Workspace({ projectState }: { projectState: ProjectState }) {
       <div className="relative mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
         <AppHeader
           promo={<Sql50HeaderButton />}
+          onOpenNotes={() => setNotesOpen(true)}
           onStartTour={onboarding.restart}
           actions={
             <PracticeRadialMenu
@@ -183,6 +186,8 @@ function Workspace({ projectState }: { projectState: ProjectState }) {
             />
           }
         />
+
+        <AppNotesModal isOpen={notesOpen} onClose={() => setNotesOpen(false)} />
 
         <WorkspaceLayout
           sidebarWidth={width}

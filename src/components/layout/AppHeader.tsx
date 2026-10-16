@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import AppHeaderHelp from "./AppHeaderHelp";
+import AppHeaderNotes from "./AppHeaderNotes";
 import {
   headerToolbarClass,
   headerToolbarDividerClass,
@@ -10,10 +11,16 @@ type Props = {
   actions?: ReactNode;
   promo?: ReactNode;
   onStartTour?: () => void;
+  onOpenNotes?: () => void;
 };
 
-export default function AppHeader({ actions, promo, onStartTour }: Props) {
-  const hasToolbar = Boolean(onStartTour || actions || promo);
+export default function AppHeader({
+  actions,
+  promo,
+  onStartTour,
+  onOpenNotes,
+}: Props) {
+  const hasToolbar = Boolean(onStartTour || onOpenNotes || actions || promo);
 
   return (
     <header className="surface-3d rounded-sm border border-line bg-surface-inset">
@@ -57,11 +64,15 @@ export default function AppHeader({ actions, promo, onStartTour }: Props) {
             {promo ? (
               <div className="flex items-center px-2 sm:px-3">{promo}</div>
             ) : null}
-            {promo && (onStartTour || actions) ? (
+            {promo && (onOpenNotes || onStartTour || actions) ? (
+              <div className={headerToolbarDividerClass} aria-hidden />
+            ) : null}
+            {onOpenNotes ? <AppHeaderNotes onOpenNotes={onOpenNotes} /> : null}
+            {onOpenNotes && onStartTour ? (
               <div className={headerToolbarDividerClass} aria-hidden />
             ) : null}
             {onStartTour ? <AppHeaderHelp onStartTour={onStartTour} /> : null}
-            {onStartTour && actions ? (
+            {(onOpenNotes || onStartTour) && actions ? (
               <div className={headerToolbarDividerClass} aria-hidden />
             ) : null}
             {actions ? (

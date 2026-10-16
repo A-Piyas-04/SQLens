@@ -5,6 +5,7 @@ import type { IconProps } from "./Icon";
 export type { IconProps } from "./Icon";
 export { SqlensLogo } from "./SqlensLogo";
 export { HelpTourIcon } from "./HelpTourIcon";
+export { NotesIcon } from "./NotesIcon";
 export { PracticeHubIcon } from "./PracticeHubIcon";
 export { SchemaTablesIcon } from "./SchemaTablesIcon";
 export { ProjectFolderIcon } from "./ProjectFolderIcon";
