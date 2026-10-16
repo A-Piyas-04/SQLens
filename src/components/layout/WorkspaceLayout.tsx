@@ -26,7 +26,7 @@ export default function WorkspaceLayout({
   return (
     <div
       className={cn(
-        "flex flex-col gap-6 lg:flex-row lg:items-start",
+        "flex flex-col gap-6 lg:flex-row lg:items-stretch",
         isResizing && "select-none"
       )}
     >
@@ -54,8 +54,8 @@ export default function WorkspaceLayout({
         </aside>
       </div>
 
-      {/* Desktop left rail: sidebar and Meet the Dev are siblings, not nested */}
-      <div className="hidden shrink-0 flex-col items-start gap-6 lg:flex">
+      {/* Desktop left rail: sidebar and Meet the Dev are siblings; button pinned to bottom */}
+      <div className="hidden shrink-0 flex-col items-start lg:flex">
         <ResizableSidebar
           width={sidebarWidth}
           isResizing={isResizing}
@@ -65,7 +65,9 @@ export default function WorkspaceLayout({
         >
           {sidebar}
         </ResizableSidebar>
-        <MeetTheDevButton />
+        <div className="mt-auto">
+          <MeetTheDevButton />
+        </div>
       </div>
 
       <main className="min-w-0 flex-1 space-y-5">{children}</main>
